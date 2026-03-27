@@ -8,12 +8,14 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "start": "serve dist -s",
     "extract:pdf": "node scripts/extract-pdf.mjs",
     "update:resume": ".venv/bin/python scripts/update-resume.py"
   },
   "dependencies": {
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "serve": "^14.2.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
