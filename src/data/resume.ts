@@ -2,111 +2,90 @@ import type { ResumeData } from '../components/Resume'
 
 const resume: ResumeData = {
   name: 'Reid Collins',
-  title: 'Technical Program Manager',
+  title: 'Senior Technical Program Manager / Backend Engineer',
   contact: {
-    location: 'Brooklyn, New York',
-    email: 'hihelloreid@gmail.com',
-    phone: '646-250-2869',
-    website: 'https://hihelloreid.com',
+    location: 'Brooklyn, NY',
+    email: 'hire.reid.collins@gmail.com',
+    linkedin: 'https://linkedin.com/in/reidcollins',
   },
   summary:
-    'Technical Program Manager and former software developer with deep experience in Agile delivery, roadmap execution, and platform reliability. Blends hands-on coding with program leadership to align engineering work to business priorities and keep complex systems stable and efficient.',
-  skills: [
-    'Perl',
-    'Python',
-    'Ruby',
-    'Bash',
-    'MySQL',
-    'Hive',
-    'SQL*Loader',
-    'Postgres',
-    'MongoDB',
-    'SDLC',
-    'Scrum (CSM)',
-    'Kanban',
-    'Jira',
-    'Confluence',
-    'Bitbucket',
-    'OpsGenie',
-    'Heroku',
-    'AWS (EC2 & S3)',
-    'Git',
-    'Puppet',
+    'Senior Technical Program Manager and Backend Engineer with a hybrid background in software development and program leadership. Experienced leading large-scale platform migrations and building production systems on AWS, including backend services, data pipelines, and observability frameworks. Proven ability to drive complex initiatives while remaining hands-on.',
+  skillCategories: [
+    { category: 'Languages', items: ['Python', 'Perl', 'Ruby', 'Bash'] },
+    { category: 'AWS', items: ['ECS/Fargate', 'Lambda', 'SQS', 'EventBridge', 'SageMaker', 'S3', 'Athena'] },
+    { category: 'Data', items: ['MySQL', 'PostgreSQL', 'ClickHouse', 'Hive', 'DynamoDB'] },
+    { category: 'Observability', items: ['Prometheus', 'Grafana', 'custom metrics', 'structured logging'] },
+    { category: 'Tools', items: ['Git', 'Bitbucket', 'Jira', 'Confluence', 'Swagger/OpenAPI', 'Docker', 'GitHub Copilot', 'Cursor'] },
   ],
   experience: [
     {
-      company: 'Cheetah Digital',
-      role: 'Technical Program Manager',
-      period: '2019 — Present',
-      summary:
-        'Own day-to-day Agile delivery and program execution for the Cheetahmail platform; ensure work aligns with roadmap priorities and critical client needs.',
-      achievements: [
-        'Facilitated Scrum for platform team: 95% ceremony attendance; sprint predictability improved from ~65% to ~88% over 2 quarters.',
-        'Contributed hands-on code during peak demand, accelerating delivery of urgent fixes by ~20% average time saved per incident.',
-        'Partnered with SRE to harden reliability; change failure rate reduced by ~30% and p95 API latency improved by ~18%.',
-        'Delivered cross-platform data flow initiatives, cutting manual handoffs by ~40% through automation.',
-        'Led Holiday SWAT program; zero P1s across Black Friday/Cyber Monday and <0.2% error rate during peak traffic.',
+      company: 'Marigold (acquired by Zeta Global)',
+      role: 'Senior Technical Program Manager / Backend Engineer',
+      period: '2021 — 2026',
+      achievementGroups: [
+        {
+          heading: 'Program Leadership & Delivery',
+          items: [
+            'Led migration from Phabricator to Bitbucket across teams, including repo migration, branching redesign, and bot integration',
+            'Led migration from on-prem Jira to Jira Cloud, defining scope, redesigning workflows, and managing contractor execution within budget',
+            'Led team execution processes, including sprint planning, backlog grooming, and retrospectives; maintained Jira board accuracy and workflow discipline to improve delivery consistency in a Kanban environment',
+          ],
+        },
+        {
+          heading: 'Platform & Backend Systems',
+          items: [
+            'Implemented a containerized API proxy and token system, owning application logic and token workflows; partnered with SRE on ECS/Fargate deployment',
+            'Led migration from Oracle to MySQL, including schema reconstruction, CSV-based data migration, removal of Oracle-specific constructs, and fallback sync mechanisms',
+            'Supported migration of image caching from Akamai to Cloudflare via application changes and client certificate coordination',
+            'Developed backend modules for authentication, campaign data, service health, DynamoDB integration, and high-throughput external platform communication',
+            'Created Swagger/OpenAPI documentation and partnered with teams to support API integration',
+          ],
+        },
+        {
+          heading: 'Machine Learning / Data Platform',
+          items: [
+            'Contributed to a serverless ML pipeline for Propensity-to-Purchase using Lambda, SQS, EventBridge, and SageMaker',
+            'Built data prep workflows using Athena, Feature Store, and S3; supported model training and inference',
+            'Led client onboarding: defined data requirements, sourced historical data, mapped events to users, and backfilled Feature Store datasets',
+          ],
+        },
+        {
+          heading: 'Observability & Reliability',
+          items: [
+            'Built a custom observability framework (structured logging, tracing, Prometheus metrics), Grafana dashboards, and alerting integrations with monitoring teams',
+          ],
+        },
       ],
     },
     {
       company: 'Cheetah Digital',
-      role: 'Software Developer / Scrum Master',
-      period: '2015 — 2019',
+      role: 'Technical Program Manager / Software Developer',
+      period: '2015 — 2021',
       achievements: [
-        'Led two teams through Waterfall→Scrum transition; increased throughput ~25% and decreased average cycle time ~22%.',
-        'Drove full ceremonies cadence and backlog hygiene; reduced rollover stories by ~35%.',
-        'Partnered with release/network/DB teams to streamline deployments; cut change lead time by ~28%.',
-        'Handled urgent client escalations; restored service or shipped mitigations within SLA in >90% of cases.',
-        'Took on development tasks to unblock teams; shaved ~10–15% off critical-path timelines when engaged.',
+        'Scrum Master and technical contributor across engineering teams, supporting Agile delivery and sprint execution',
+        'Coordinated engineering, SRE, and release teams to deliver platform improvements',
+        'Contributed to backend systems and data processing pipelines',
+        'Worked directly with clients on integrations and troubleshooting',
       ],
     },
     {
-      company: 'Bespoke Global',
-      role: 'Software Developer (Contract)',
-      period: 'March 2014',
+      company: 'CheetahMail / Experian',
+      role: 'Software Developer',
+      period: '2008 — 2015',
       achievements: [
-        'Shipped multi-step checkout redesign; reduced checkout abandonment by an estimated ~8–12%.',
-        'Introduced state machine validation; decreased invalid submissions and support tickets ~20%.',
-        'Built HAML partials and refined product display logic; improved page-to-page consistency and performance.',
-      ],
-    },
-    {
-      company: 'Cheetahmail (Experian)',
-      role: 'Software Developer, Platform Team',
-      period: '2011 — 2013',
-      achievements: [
-        'Enabled faster marketing reporting via SQL*Loader ingestion of high-volume data; cut processing times by ~35–50%.',
-        'Implemented Memcached; reduced DB queries on hot paths by ~60% and improved page render times ~25–30%.',
-        'Completed XSS audit and fixes; reduced security findings to zero blocking issues for renewals.',
-        'Partnered with QA/Release to create rollout tests; decreased rollback frequency by ~20%.',
-      ],
-    },
-    {
-      company: 'Cheetahmail (Experian)',
-      role: 'Software Developer, Client Development Team',
-      period: '2008 — 2010',
-      achievements: [
-        'Launched data-driven remarketing; increased campaign conversions by an estimated ~10–15% across pilots.',
-        'Automated inventory feed conversion to CDB/BerkeleyDB; removed manual steps and cut processing time by hours daily.',
-        'Built automated subscriber attrition reporting; improved list quality and targeting decisions.',
-        'Delivered import/export integrations; provided daily/weekly/monthly/quarterly metric aggregation.',
-        'Joined sales calls as technical SME; accelerated onboarding for new clients to API suite.',
+        'Improved reporting performance using SQL*Loader to bulk-load high-volume data',
+        'Built nightly ETL workflows for client data feeds (text/XML) into BerkeleyDB/CDB structures',
+        'Supported client onboarding and API integrations with sales and technical teams',
       ],
     },
   ],
   education: [
     {
       school: 'Tulane University',
-      degree: 'Bachelor of Arts — International Relations',
-      period: 'Graduated 05/1998',
+      degree: 'Bachelor of Arts, International Relations',
+      period: '',
     },
-  ],
-  links: [
-    { label: 'Personal Site', url: 'https://hihelloreid.com' },
-    { label: 'Resume (PDF)', url: '/docs/reidcollins.pdf' },
   ],
 }
 
 export default resume
-
-

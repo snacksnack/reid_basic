@@ -1,12 +1,12 @@
 .resume {
   width: 100%;
-  max-width: 900px;
+  max-width: 850px;
 }
 
 .toolbar { display: flex; gap: 0.5rem; justify-content: center; align-items: center; position: sticky; top: 0.75rem; margin-bottom: 1rem; z-index: 10; transition: box-shadow 160ms ease; }
 .toolbar.stuck { box-shadow: 0 6px 12px -8px rgba(0,0,0,0.25); background: rgba(255,255,255,0.9); backdrop-filter: saturate(160%) blur(4px); }
 .toolbar-sentinel { height: 1px; }
-.toolbar-button, .print-button {
+.toolbar-button {
   display: inline-block;
   padding: 0.45rem 0.7rem;
   border: 1px solid #e6e8ee;
@@ -17,18 +17,18 @@
 
 .header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .name {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.75rem;
+  font-weight: 700;
   line-height: 1.2;
 }
 
 .title {
-  margin: 0.25rem 0 0.5rem 0;
-  color: var(--muted);
+  display: none;
 }
 
 .contact {
@@ -37,32 +37,61 @@
   flex-wrap: wrap;
   justify-content: center;
   color: var(--muted);
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
 }
 
-/* Hide sensitive contact details on web */
-.contact-item.email, .contact-item.phone { display: none; }
+.contact-item.phone { display: none; }
 
 .contact .sep {
   color: #c2c7d1;
+  margin-right: 0.25rem;
 }
 
 .section {
-  margin: 2rem 0;
+  margin: 1.25rem 0;
 }
 
 .section-title {
-  margin: 0 0 0.75rem 0;
-  font-size: 1rem;
-  letter-spacing: 0.08em;
-  color: var(--muted);
+  margin: 0 0 0.6rem 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text);
   text-transform: uppercase;
+  border-bottom: 1.5px solid var(--text);
+  padding-bottom: 0.3rem;
 }
 
 .summary {
   margin: 0;
-  line-height: 1.65;
+  line-height: 1.55;
+  font-size: 0.95rem;
 }
 
+/* Categorized skills (PDF-style) */
+.skill-categories {
+  margin: 0;
+  padding: 0;
+}
+
+.skill-category {
+  display: flex;
+  gap: 0.4rem;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.skill-category-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.skill-category-items {
+  margin: 0;
+}
+
+/* Flat skills fallback */
 .skills {
   list-style: none;
   padding: 0;
@@ -79,6 +108,22 @@
   font-size: 0.9rem;
 }
 
+/* Achievement groups (sub-headed bullet sections) */
+.achievement-groups {
+  margin-top: 0.25rem;
+}
+
+.achievement-group {
+  margin-bottom: 0.5rem;
+}
+
+.achievement-group-heading {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin: 0.5rem 0 0.15rem 0;
+}
+
+/* Experience */
 .experience {
   padding: 0;
   margin: 0;
@@ -86,27 +131,54 @@
 
 .experience-item {
   list-style: none;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .experience-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: baseline;
-  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
 }
 
-.experience-role-company .role { font-weight: 600; }
-.experience-role-company .company { font-weight: 500; }
-.experience-meta { color: var(--muted); }
+.experience-header .company {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.experience-role-period {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.experience-role-period .role {
+  font-style: italic;
+}
+
+.experience-role-period .period {
+  color: var(--muted);
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+.experience-location {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
 
 .experience-summary {
-  margin: 0.5rem 0 0.25rem 0;
+  margin: 0.35rem 0 0.25rem 0;
+  font-size: 0.95rem;
 }
 
 .achievements {
   margin: 0.25rem 0 0 1.15rem;
+  padding-left: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.achievements li {
+  margin-bottom: 0.2rem;
 }
 
 .technologies {
@@ -128,16 +200,19 @@
   flex-wrap: wrap;
 }
 
+/* Education */
 .education {
   list-style: none;
   padding: 0;
   margin: 0;
+  font-size: 0.95rem;
 }
 
 .education-item .degree { font-weight: 600; }
-.education-item .school { font-weight: 500; }
+.education-item .school { font-weight: 400; }
 .education-item .period { color: var(--muted); }
 
+/* Links */
 .links {
   list-style: none;
   padding: 0;
@@ -145,6 +220,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem 1rem;
+  font-size: 0.95rem;
 }
 
 /* Projects */
@@ -156,13 +232,13 @@
 .project-description { margin: 0.25rem 0 0.25rem 0; }
 
 /* Compact vs detailed tweaks */
-.resume.compact .section { margin: 1.25rem 0; }
-.resume.compact .summary { font-size: 0.95rem; }
+.resume.compact .section { margin: 0.9rem 0; }
+.resume.compact .summary { font-size: 0.9rem; }
 .resume.compact .skill-chip { font-size: 0.85rem; padding: 0.15rem 0.4rem; }
 .resume.compact .achievements { margin-left: 1rem; }
-.resume.compact .experience-item { margin-bottom: 0.75rem; }
-.resume.compact .section-title { margin-bottom: 0.5rem; }
-.resume.compact .header { margin-bottom: 1.25rem; }
+.resume.compact .experience-item { margin-bottom: 0.6rem; }
+.resume.compact .section-title { margin-bottom: 0.4rem; }
+.resume.compact .header { margin-bottom: 0.75rem; }
 
 /* Print (PDF) refinements */
 @page { size: A4; margin: 0.5in; }
@@ -171,14 +247,10 @@
   #root { padding: 0; }
   .resume { max-width: none; }
   a { color: inherit; text-decoration: none; }
-  .print-button { display: none; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .section { page-break-inside: avoid; }
   .toolbar { display: none; }
-  .resume.compact .section { margin: 0.9rem 0; }
-  .resume.compact .header { margin-bottom: 1rem; }
-  /* Hide sensitive contact details in print */
-  .contact-item.email, .contact-item.phone { display: none; }
+  .resume.compact .section { margin: 0.7rem 0; }
+  .resume.compact .header { margin-bottom: 0.75rem; }
+  .contact-item.phone { display: none; }
 }
-
-

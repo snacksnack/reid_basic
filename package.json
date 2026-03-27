@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "extract:pdf": "node scripts/extract-pdf.mjs"
+    "extract:pdf": "node scripts/extract-pdf.mjs",
+    "update:resume": ".venv/bin/python scripts/update-resume.py"
   },
   "dependencies": {
     "react": "^19.1.1",

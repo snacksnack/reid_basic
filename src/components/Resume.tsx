@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
-type Achievement = string
+export interface AchievementGroup {
+  heading: string
+  items: string[]
+}
 
 export interface ExperienceItem {
   company: string
@@ -8,7 +11,8 @@ export interface ExperienceItem {
   period: string
   location?: string
   summary?: string
-  achievements?: Achievement[]
+  achievements?: string[]
+  achievementGroups?: AchievementGroup[]
   technologies?: string[]
 }
 
@@ -45,12 +49,18 @@ export interface CertificationItem {
   year?: string
 }
 
+export interface SkillCategory {
+  category: string
+  items: string[]
+}
+
 export interface ResumeData {
   name: string
   title: string
   contact?: ContactInfo
   summary?: string
   skills?: string[]
+  skillCategories?: SkillCategory[]
   experience?: ExperienceItem[]
   education?: EducationItem[]
   links?: LinkItem[]
@@ -91,7 +101,7 @@ function ContactLine({ contact }: { contact?: ContactInfo }) {
       type: 'linkedin',
       node: (
         <a href={contact.linkedin} target="_blank" rel="noreferrer noopener">
-          LinkedIn
+          {contact.linkedin.replace(/^https?:\/\//, '')}
         </a>
       ),
     })
@@ -118,12 +128,10 @@ function ContactLine({ contact }: { contact?: ContactInfo }) {
 }
 
 export default function Resume({ data }: ResumeProps) {
-  const [isCompact, setIsCompact] = useState(false)
-  const [showCoverLetter, setShowCoverLetter] = useState(false)
   const [isToolbarStuck, setIsToolbarStuck] = useState(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
-  const rootClassName = useMemo(() => `resume ${isCompact ? 'compact' : 'detailed'}`, [isCompact])
+  const rootClassName = 'resume'
 
   useEffect(() => {
     const sentinel = sentinelRef.current
@@ -146,44 +154,20 @@ export default function Resume({ data }: ResumeProps) {
         <a
           className="toolbar-button"
           href="/docs/reidcollins.pdf"
-          target="_blank"
-          rel="noreferrer noopener"
-          aria-label="View PDF"
+          download
+          aria-label="Download PDF"
         >
-          View PDF
-        </a>
-        <button
-          className="toolbar-button"
-          onClick={() => setIsCompact((v) => !v)}
-          aria-pressed={isCompact}
-          aria-label="Toggle compact layout"
-        >
-          {isCompact ? 'Detailed layout' : 'Compact layout'}
-        </button>
-        <button
-          className="toolbar-button"
-          onClick={() => setShowCoverLetter((v) => !v)}
-          aria-pressed={showCoverLetter}
-          aria-label="Toggle cover letter"
-        >
-          {showCoverLetter ? 'Hide cover letter' : 'Show cover letter'}
-        </button>
-        <button className="print-button" onClick={() => window.print()} aria-label="Download PDF">
           Download PDF
-        </button>
+        </a>
+        <a
+          className="toolbar-button"
+          href="/docs/reidcollins.docx"
+          download
+          aria-label="Download DOCX"
+        >
+          Download DOCX
+        </a>
       </div>
-      {showCoverLetter && (
-        <section className="section cover-letter">
-          <h2 className="section-title">Cover Letter</h2>
-          <p>
-            {data.coverLetter ||
-              'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Maecenas faucibus mollis interdum. Donec ullamcorper nulla non metus auctor fringilla.'}
-          </p>
-          <p>
-            {'Aenean lacinia bibendum nulla sed consectetur. Curabitur blandit tempus porttitor. Sed posuere consectetur est at lobortis. Praesent commodo cursus magna, vel scelerisque nisl consectetur et.'}
-          </p>
-        </section>
-      )}
       <header className="header">
         <h1 className="name">{data.name}</h1>
         <p className="title">{data.title}</p>
@@ -197,7 +181,21 @@ export default function Resume({ data }: ResumeProps) {
         </section>
       )}
 
-      {data.skills && data.skills.length > 0 && (
+      {data.skillCategories && data.skillCategories.length > 0 && (
+        <section className="section">
+          <h2 className="section-title">Technical Skills</h2>
+          <dl className="skill-categories" aria-label="Skills list">
+            {data.skillCategories.map((cat) => (
+              <div className="skill-category" key={cat.category}>
+                <dt className="skill-category-label">{cat.category}:</dt>
+                <dd className="skill-category-items">{cat.items.join(', ')}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
+      {!data.skillCategories && data.skills && data.skills.length > 0 && (
         <section className="section">
           <h2 className="section-title">Skills</h2>
           <ul className="skills" aria-label="Skills list">
@@ -212,24 +210,34 @@ export default function Resume({ data }: ResumeProps) {
 
       {data.experience && data.experience.length > 0 && (
         <section className="section">
-          <h2 className="section-title">Experience</h2>
+          <h2 className="section-title">Professional Experience</h2>
           <ol className="experience" aria-label="Work experience">
             {data.experience.map((item) => (
               <li className="experience-item" key={`${item.company}-${item.role}-${item.period}`}>
                 <div className="experience-header">
-                  <div className="experience-role-company">
+                  <div className="company">{item.company}</div>
+                  <div className="experience-role-period">
                     <span className="role">{item.role}</span>
-                    <span className="at"> at </span>
-                    <span className="company">{item.company}</span>
-                  </div>
-                  <div className="experience-meta">
                     <span className="period">{item.period}</span>
-                    {item.location && <span className="sep">•</span>}
-                    {item.location && <span className="location">{item.location}</span>}
                   </div>
+                  {item.location && <div className="experience-location">{item.location}</div>}
                 </div>
                 {item.summary && <p className="experience-summary">{item.summary}</p>}
-                {item.achievements && item.achievements.length > 0 && (
+                {item.achievementGroups && item.achievementGroups.length > 0 && (
+                  <div className="achievement-groups">
+                    {item.achievementGroups.map((group) => (
+                      <div className="achievement-group" key={group.heading}>
+                        <h4 className="achievement-group-heading">{group.heading}</h4>
+                        <ul className="achievements">
+                          {group.items.map((a, idx) => (
+                            <li key={idx}>{a}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!item.achievementGroups && item.achievements && item.achievements.length > 0 && (
                   <ul className="achievements">
                     {item.achievements.map((a, idx) => (
                       <li key={idx}>{a}</li>
@@ -259,9 +267,8 @@ export default function Resume({ data }: ResumeProps) {
             {data.education.map((ed) => (
               <li key={`${ed.school}-${ed.degree}-${ed.period}`} className="education-item">
                 <span className="degree">{ed.degree}</span>
-                <span className="at"> at </span>
-                <span className="school">{ed.school}</span>
-                <span className="period"> — {ed.period}</span>
+                <span className="school"> — {ed.school}</span>
+                {ed.period && <span className="period"> ({ed.period})</span>}
               </li>
             ))}
           </ul>
