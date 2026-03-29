@@ -133,7 +133,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(join(__dirname, 'dist')))
-  app.get('*', (_req, res) => {
+  app.get('/{*splat}', (_req, res) => {
     res.sendFile(join(__dirname, 'dist', 'index.html'))
   })
 }
