@@ -42,11 +42,34 @@ LIGATURE_PAIRS = [
 ]
 
 
+KNOWN_WORD_FIXES = {
+    "soAware": "software",
+    "SoAware": "Software",
+    "Sogware": "Software",
+    "sogware": "software",
+    "plaForm": "platform",
+    "PlaForm": "Platform",
+    "plaGorm": "platform",
+    "PlaGorm": "Platform",
+    "PlaKorm": "Platform",
+    "MigraLon": "Migration",
+    "migraLon": "migration",
+    "Eventtiridge": "EventBridge",
+}
+
+
 def fix_ligatures(text: str) -> str:
     for old, new in LIGATURE_PAIRS:
         text = text.replace(old, new)
     text = re.sub(r"(\w)[VQ]\s?l(\w)", r"\1fl\2", text)
     text = re.sub(r"(\w)[VQ]\s?i(\w)", r"\1fi\2", text)
+
+    for broken, fixed in KNOWN_WORD_FIXES.items():
+        text = text.replace(broken, fixed)
+
+    # ti ligature extracted as G between lowercase letters
+    text = re.sub(r"(?<=[a-z])G(?=[a-z])", "ti", text)
+
     return text
 
 
