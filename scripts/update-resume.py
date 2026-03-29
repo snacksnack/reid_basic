@@ -42,48 +42,74 @@ LIGATURE_PAIRS = [
 ]
 
 
-KNOWN_WORD_FIXES = {
-    "soAware": "software",
-    "SoAware": "Software",
-    "Sogware": "Software",
-    "sogware": "software",
-    "plaForm": "platform",
-    "PlaForm": "Platform",
-    "plaGorm": "platform",
-    "PlaGorm": "Platform",
-    "PlaKorm": "Platform",
-    "MigraLon": "Migration",
-    "migraLon": "migration",
-    "Eventtiridge": "EventBridge",
-}
+CANARY_PATTERNS = [
+    (r"[Pp]la(.)orm", "tf"),
+    (r"[Ss]o(.)ware", "ft"),
+    (r"migra(.)on", "ti"),
+]
 
 
-def fix_ligatures(text: str) -> str:
+def detect_ligature_chars(all_text: str) -> dict[str, str]:
+    """Detect which characters the font uses for ti/tf/ft ligatures
+    by scanning for known canary words like 'platform', 'software', 'migration'.
+    Collects all variant chars (body vs bold font may differ)."""
+    mapping: dict[str, str] = {}
+    for pattern, ligature in CANARY_PATTERNS:
+        for m in re.finditer(pattern, all_text):
+            char = m.group(1)
+            if char not in ligature and char not in mapping:
+                mapping[char] = ligature
+    return mapping
+
+
+def _apply_lig_char(text: str, char: str, replacement: str) -> str:
+    """Replace a ligature character, requiring at least one lowercase neighbor
+    so that ALL-CAPS section headers (PROFESSIONAL, TECHNICAL, etc.) are left intact."""
+    esc = re.escape(char)
+    if char == "@":
+        text = re.sub(rf"(?<=[a-z]){esc}(?=[a-z])(?![a-z]*\.[a-z]{{2,}})", replacement, text)
+    else:
+        text = re.sub(rf"(?<=[a-z]){esc}(?=[a-zA-Z-])", replacement, text)
+        text = re.sub(rf"(?<=[a-zA-Z-]){esc}(?=[a-z])", replacement, text)
+        if replacement == "ti":
+            text = re.sub(rf"(?<=-){esc}(?=[a-z]{{2}})", replacement, text)
+    return text
+
+
+def fix_ligatures(text: str, lig_map: dict[str, str] | None = None) -> str:
     for old, new in LIGATURE_PAIRS:
         text = text.replace(old, new)
     text = re.sub(r"(\w)[VQ]\s?l(\w)", r"\1fl\2", text)
     text = re.sub(r"(\w)[VQ]\s?i(\w)", r"\1fi\2", text)
 
-    for broken, fixed in KNOWN_WORD_FIXES.items():
-        text = text.replace(broken, fixed)
+    if lig_map:
+        for char, replacement in lig_map.items():
+            text = _apply_lig_char(text, char, replacement)
 
-    # ti ligature extracted as G between lowercase letters
-    text = re.sub(r"(?<=[a-z])G(?=[a-z])", "ti", text)
+    text = re.sub(r"(\w)- (\w)", r"\1-\2", text)
 
     return text
 
 
 def extract_lines(pdf_path: Path) -> list[str]:
-    lines: list[str] = []
+    raw_pages: list[str] = []
     with pdfplumber.open(str(pdf_path)) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
-            if not text:
-                continue
-            for raw in text.split("\n"):
-                cleaned = fix_ligatures(raw.strip())
-                if cleaned:
-                    lines.append(cleaned)
+            if text:
+                raw_pages.append(text)
+
+    all_raw = "\n".join(raw_pages)
+    lig_map = detect_ligature_chars(all_raw)
+    if lig_map:
+        print(f"  Detected ligature mapping: {lig_map}")
+
+    lines: list[str] = []
+    for page_text in raw_pages:
+        for raw in page_text.split("\n"):
+            cleaned = fix_ligatures(raw.strip(), lig_map)
+            if cleaned:
+                lines.append(cleaned)
     return lines
 
 

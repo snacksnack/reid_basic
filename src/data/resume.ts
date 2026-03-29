@@ -3,6 +3,7 @@ import type { ResumeData } from '../components/Resume'
 const resume: ResumeData = {
   name: 'Reid Collins',
   title: 'Senior Technical Program Manager / Backend Engineer',
+  tagline: 'Open to Senior Technical Program Manager, Platform, and Infrastructure roles',
   contact: {
     location: 'Brooklyn, NY',
     email: 'hire.reid.collins@gmail.com',

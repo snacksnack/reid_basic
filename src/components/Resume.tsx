@@ -57,6 +57,7 @@ export interface SkillCategory {
 export interface ResumeData {
   name: string
   title: string
+  tagline?: string
   contact?: ContactInfo
   summary?: string
   skills?: string[]
@@ -172,6 +173,7 @@ export default function Resume({ data }: ResumeProps) {
         <h1 className="name">{data.name}</h1>
         <p className="title">{data.title}</p>
         <ContactLine contact={data.contact} />
+        {data.tagline && <p className="tagline">{data.tagline}</p>}
       </header>
 
       {data.summary && (

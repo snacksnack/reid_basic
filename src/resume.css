@@ -41,6 +41,13 @@
   margin-top: 0.25rem;
 }
 
+.tagline {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
 .contact-item.phone { display: none; }
 
 .contact .sep {
