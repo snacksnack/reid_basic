@@ -127,6 +127,43 @@ This prevents scripts or bots from burning through OpenAI credits. A real user h
 
 As an additional safeguard, set a monthly budget cap in your OpenAI account at [platform.openai.com/settings/organization/limits](https://platform.openai.com/settings/organization/limits). This is a hard ceiling regardless of what happens on the server side.
 
+### Chat logging (Postgres)
+
+Every user message and AI response is logged to a `chat_logs` table in the Heroku Postgres database. Each row captures:
+
+| Column | Description |
+|--------|-------------|
+| `session_id` | Unique ID generated per browser session (groups a conversation together) |
+| `ip_address` | Visitor's IP address |
+| `role` | `user` or `assistant` |
+| `content` | The message text |
+| `created_at` | Timestamp |
+
+The table is auto-created on server startup if it doesn't exist. Logging is non-blocking — if Postgres is unavailable, the chatbot still works.
+
+**Useful queries** (run via `heroku pg:psql --app hihelloreid`):
+
+```sql
+-- See all conversations, most recent first
+SELECT session_id, role, content, created_at
+FROM chat_logs ORDER BY created_at DESC;
+
+-- List recent sessions with their first message
+SELECT session_id, ip_address, MIN(created_at) AS started,
+       (SELECT content FROM chat_logs c2
+        WHERE c2.session_id = c.session_id AND c2.role = 'user'
+        ORDER BY created_at LIMIT 1) AS first_question
+FROM chat_logs c
+GROUP BY session_id, ip_address
+ORDER BY started DESC;
+
+-- Count conversations by day
+SELECT DATE(created_at) AS day, COUNT(DISTINCT session_id) AS sessions
+FROM chat_logs GROUP BY day ORDER BY day DESC;
+```
+
+**Local development:** Logging is skipped when `DATABASE_URL` is not set, so the chatbot works fine locally without Postgres.
+
 ### System prompt
 
 The system prompt in `server.js` contains the full resume text and instructions for the AI. If you update your resume content, update the system prompt to match.

@@ -2,6 +2,7 @@ import express from 'express'
 import OpenAI from 'openai'
 import cors from 'cors'
 import rateLimit from 'express-rate-limit'
+import pg from 'pg'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
@@ -16,6 +17,7 @@ const __dirname = dirname(__filename)
 const app = express()
 const port = process.env.PORT || 3001
 
+app.set('trust proxy', 1)
 app.use(express.json())
 
 if (process.env.NODE_ENV !== 'production') {
@@ -24,11 +26,49 @@ if (process.env.NODE_ENV !== 'production') {
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+const pool = process.env.DATABASE_URL
+  ? new pg.Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    })
+  : null
+
+async function initDb() {
+  if (!pool) return
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_logs (
+      id SERIAL PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      ip_address TEXT,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
+  console.log('chat_logs table ready')
+}
+
+async function logMessage(sessionId, ip, role, content) {
+  if (!pool) return
+  try {
+    await pool.query(
+      'INSERT INTO chat_logs (session_id, ip_address, role, content) VALUES ($1, $2, $3, $4)',
+      [sessionId, ip, role, content]
+    )
+  } catch (err) {
+    console.error('Failed to log chat message:', err.message)
+  }
+}
+
+initDb().catch(err => console.error('DB init error:', err.message))
+
 const SYSTEM_PROMPT = `You are an AI assistant embedded on Reid Collins's personal resume website. Your job is to answer questions about Reid's professional background, skills, and experience.
 
 Use ONLY the resume information below. If asked something not covered, say so honestly and suggest reaching out to Reid at hire.reid.collins@gmail.com.
 
 Keep responses concise (2–4 sentences when possible). Be professional but conversational. Do not invent information.
+
+In your first reply to the user, naturally ask what company or team they're hiring for. Use a light tone, something like: "By the way, are you hiring for a specific team or company? Or is it top secret?" If they don't answer or deflect, don't push — just move on.
 
 ---
 
@@ -102,10 +142,18 @@ const chatLimiter = rateLimit({
 
 app.post('/api/chat', chatLimiter, async (req, res) => {
   try {
-    const { messages } = req.body
+    const { messages, sessionId } = req.body
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'messages array is required' })
+    }
+
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown'
+    const sid = sessionId || 'no-session'
+
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')
+    if (lastUserMsg) {
+      await logMessage(sid, ip, 'user', lastUserMsg.content)
     }
 
     const trimmed = messages.slice(-MAX_CONVERSATION_MESSAGES)
@@ -123,6 +171,8 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     const reply =
       completion.choices[0]?.message?.content ||
       "Sorry, I couldn't generate a response."
+
+    await logMessage(sid, ip, 'assistant', reply)
 
     res.json({ reply })
   } catch (err) {

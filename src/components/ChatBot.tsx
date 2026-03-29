@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import './ChatBot.css'
 
 interface Message {
@@ -14,6 +14,10 @@ const MAX_USER_MESSAGES = 10
 const LIMIT_MESSAGE =
   "Okay, you're clearly very thorough — I respect that. But you've burned through enough OpenAI tokens to buy Reid a coffee, so I'm cutting you off. For anything else, reach out to him directly at hire.reid.collins@gmail.com."
 
+function generateSessionId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
@@ -21,6 +25,7 @@ export default function ChatBot() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const sessionId = useMemo(generateSessionId, [])
 
   const userMessageCount = messages.filter((m) => m.role === 'user').length
   const isLimitReached = userMessageCount >= MAX_USER_MESSAGES
@@ -58,7 +63,7 @@ export default function ChatBot() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updated }),
+        body: JSON.stringify({ messages: updated, sessionId }),
       })
 
       if (!res.ok) throw new Error('request failed')
