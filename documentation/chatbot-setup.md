@@ -170,6 +170,56 @@ The system prompt in `server.js` contains the full resume text and instructions 
 
 ---
 
+## Nightly Email Digest
+
+A script (`scripts/chat-digest.mjs`) queries Postgres for the last 24 hours of chat activity and emails you a summary. If there were no chats, it skips the email.
+
+### What the email contains
+
+- Number of conversations and total messages
+- Each conversation grouped by session, showing IP address, start time, and the full user/bot exchange
+
+### Setup on Heroku
+
+1. **Add Heroku Scheduler** (free):
+
+```bash
+heroku addons:create scheduler:standard --app hihelloreid
+```
+
+2. **Open the scheduler dashboard:**
+
+```bash
+heroku addons:open scheduler --app hihelloreid
+```
+
+3. **Add a job:**
+   - Command: `node scripts/chat-digest.mjs`
+   - Frequency: **Daily**
+   - Time: Pick a time (e.g. 06:00 UTC = 2:00 AM ET)
+
+### Configuration
+
+- **Recipient email:** Defaults to `hire.reid.collins@gmail.com`. Override by setting `DIGEST_EMAIL` on Heroku:
+
+```bash
+heroku config:set DIGEST_EMAIL=your-email@example.com --app hihelloreid
+```
+
+- **Email sending:** Uses the existing SendGrid SMTP credentials (`SENDGRID_USERNAME` / `SENDGRID_PASSWORD`) already configured on Heroku.
+
+### Test locally
+
+You can't test email locally without SendGrid credentials, but you can test the query by temporarily setting `DATABASE_URL` and `SENDGRID_USERNAME`/`SENDGRID_PASSWORD` in your `.env` file.
+
+### Test on Heroku
+
+```bash
+heroku run node scripts/chat-digest.mjs --app hihelloreid
+```
+
+---
+
 ## npm Scripts Reference
 
 | Command | What it does |
@@ -178,3 +228,4 @@ The system prompt in `server.js` contains the full resume text and instructions 
 | `npm run dev:server` | Start Express server with file watching (backend) |
 | `npm run build` | TypeScript check + production build |
 | `npm run start` | Run production server (`node server.js`) |
+| `npm run digest` | Run chat digest email manually |

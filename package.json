@@ -11,13 +11,15 @@
     "start": "node server.js",
     "dev:server": "node --watch-path=server.js server.js",
     "extract:pdf": "node scripts/extract-pdf.mjs",
-    "update:resume": ".venv/bin/python scripts/update-resume.py"
+    "update:resume": ".venv/bin/python scripts/update-resume.py",
+    "digest": "node scripts/chat-digest.mjs"
   },
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",
+    "nodemailer": "^8.0.4",
     "openai": "^6.33.0",
     "pg": "^8.20.0",
     "react": "^19.1.1",
