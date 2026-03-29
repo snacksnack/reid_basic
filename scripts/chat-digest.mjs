@@ -68,7 +68,7 @@ async function run() {
   })
 
   await transporter.sendMail({
-    from: `Resume Chatbot <${process.env.SENDGRID_USERNAME}>`,
+    from: `Resume Chatbot <hire.reid.collins@gmail.com>`,
     to: RECIPIENT,
     subject: `Chatbot Digest: ${sessionCount} conversation${sessionCount === 1 ? '' : 's'} — ${today}`,
     text,
