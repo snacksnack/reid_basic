@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import CareerTimeline, { slugify } from './CareerTimeline'
 
 export interface AchievementGroup {
   heading: string
@@ -54,6 +55,12 @@ export interface SkillCategory {
   items: string[]
 }
 
+export interface TimelineEntry {
+  company: string
+  role: string
+  period: string
+}
+
 export interface ResumeData {
   name: string
   title: string
@@ -63,6 +70,7 @@ export interface ResumeData {
   skills?: string[]
   skillCategories?: SkillCategory[]
   experience?: ExperienceItem[]
+  timelineEntries?: TimelineEntry[]
   education?: EducationItem[]
   links?: LinkItem[]
   projects?: ProjectItem[]
@@ -221,9 +229,10 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
       {data.experience && data.experience.length > 0 && (
         <section className="section">
           <h2 className="section-title">Professional Experience</h2>
+          <CareerTimeline experience={data.experience} timelineEntries={data.timelineEntries} />
           <ol className="experience" aria-label="Work experience">
             {data.experience.map((item) => (
-              <li className="experience-item" key={`${item.company}-${item.role}-${item.period}`}>
+              <li className="experience-item" id={`exp-${slugify(item.company)}`} key={`${item.company}-${item.role}-${item.period}`}>
                 <div className="experience-header">
                   <div className="company">{item.company}</div>
                   <div className="experience-role-period">

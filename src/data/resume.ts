@@ -19,6 +19,11 @@ const resume: ResumeData = {
     { category: 'Tools', items: ['Git', 'Bitbucket', 'Jira', 'Confluence', 'Swagger/OpenAPI', 'Docker', 'GitHub Copilot', 'Cursor'] },
     { category: 'Certifications', items: ['Certified Scrum Master (CSM)'] },
   ],
+  timelineEntries: [
+    { company: 'CheetahMail / Experian', role: 'Software Developer', period: '2008 — 2015' },
+    { company: 'Cheetah Digital', role: 'Technical Program Manager / Software Developer', period: '2015 — 2021' },
+    { company: 'Marigold (Zeta Global)', role: 'Senior TPM / Backend Engineer', period: '2021 — 2026' },
+  ],
   experience: [
     {
       company: 'Marigold (acquired by Zeta Global)',
@@ -77,6 +82,7 @@ const resume: ResumeData = {
       role: 'Software Developer',
       period: '2008 — 2015',
       achievements: [
+        'Joined CheetahMail as an early employee during startup funding rounds; grew with the company through its acquisition by Experian, transitioning from client services into engineering',
         'Scrum master and developer for Cheetahmail development team',
         'Improved reporting performance by implementing bulk data loading solutions using SQL*Loader for high-volume datasets',
         'Built ETL pipelines for client data ingestion (text/XML) into BerkeleyDB/CDB systems and supported API integrations',
