@@ -24,7 +24,7 @@ npm run test:watch
 
 ### Server API tests (`tests/server.test.ts`)
 
-Tests the Express API endpoints without requiring external services (no OpenAI key, no Postgres).
+Tests the Express API endpoints without requiring external services (no OpenAI key, no Postgres). The OpenAI client is only instantiated when `OPENAI_API_KEY` is set, so the server starts cleanly in CI and test environments without credentials. The `/api/chat` endpoint returns a 503 if OpenAI is not configured.
 
 | Endpoint | What's tested |
 |----------|--------------|
@@ -67,7 +67,7 @@ Tests the `Resume` component renders correctly using `@testing-library/react`.
 
 **What it does:**
 1. Checks out the code
-2. Sets up Node.js 20 with npm caching
+2. Sets up Node.js 22 with npm caching
 3. Runs `npm ci` (clean install)
 4. Runs `npm test` (all test suites)
 

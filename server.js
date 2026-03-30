@@ -25,7 +25,9 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(cors())
 }
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null
 
 const pool = process.env.DATABASE_URL
   ? new pg.Pool({
@@ -268,6 +270,10 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'messages array is required' })
+    }
+
+    if (!openai) {
+      return res.status(503).json({ error: 'Chat is not configured' })
     }
 
     const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown'
