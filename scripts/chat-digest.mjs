@@ -30,7 +30,14 @@ async function run() {
     ORDER BY created_at
   `)
 
-  if (chatRows.length === 0 && downloadRows.length === 0 && viewRows.length === 0) {
+  const { rows: contactRows } = await pool.query(`
+    SELECT name, email, message, ip_address, created_at
+    FROM contact_submissions
+    WHERE created_at >= NOW() - INTERVAL '24 hours'
+    ORDER BY created_at
+  `)
+
+  if (chatRows.length === 0 && downloadRows.length === 0 && viewRows.length === 0 && contactRows.length === 0) {
     console.log('No activity in the last 24 hours — skipping email.')
     await pool.end()
     return
@@ -71,6 +78,18 @@ async function run() {
       text += `  ${dl.format.toUpperCase()} — ${time} — IP: ${dl.ip_address}\n`
     }
     text += '\n'
+  }
+
+  if (contactRows.length > 0) {
+    text += `CONTACT SUBMISSIONS (${contactRows.length})\n`
+    text += '-'.repeat(40) + '\n\n'
+    for (const c of contactRows) {
+      const time = new Date(c.created_at).toLocaleTimeString('en-US')
+      text += `  From: ${c.name} <${c.email}>\n`
+      text += `  IP: ${c.ip_address}\n`
+      text += `  Time: ${time}\n`
+      text += `  Message: ${c.message}\n\n`
+    }
   }
 
   const sessions = new Map()
@@ -115,11 +134,11 @@ async function run() {
   await transporter.sendMail({
     from: `Resume Chatbot <hire.reid.collins@gmail.com>`,
     to: RECIPIENT,
-    subject: `Resume Digest: ${viewRows.length} view${viewRows.length === 1 ? '' : 's'}, ${downloadRows.length} download${downloadRows.length === 1 ? '' : 's'}, ${sessionCount} chat${sessionCount === 1 ? '' : 's'} — ${today}`,
+    subject: `Resume Digest: ${viewRows.length} view${viewRows.length === 1 ? '' : 's'}, ${downloadRows.length} download${downloadRows.length === 1 ? '' : 's'}, ${contactRows.length} contact${contactRows.length === 1 ? '' : 's'}, ${sessionCount} chat${sessionCount === 1 ? '' : 's'} — ${today}`,
     text,
   })
 
-  console.log(`Digest sent to ${RECIPIENT} — ${viewRows.length} view(s), ${downloadRows.length} download(s), ${sessionCount} chat(s)`)
+  console.log(`Digest sent to ${RECIPIENT} — ${viewRows.length} view(s), ${downloadRows.length} download(s), ${contactRows.length} contact(s), ${sessionCount} chat(s)`)
   await pool.end()
 }
 

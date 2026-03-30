@@ -309,6 +309,57 @@ heroku run node scripts/chat-digest.mjs --app hihelloreid
 
 ---
 
+## Contact form
+
+A "Contact Reid" button in the toolbar opens a modal where visitors can submit their name, email, and a message. Submissions are logged to Postgres and included in the nightly digest.
+
+### How it works
+
+1. Visitor clicks "Contact Reid" in the toolbar
+2. A modal appears with Name, Email, and Message fields
+3. On submit, the form sends a `POST /api/contact` request
+4. The submission is saved to the `contact_submissions` table
+5. **In production**, an immediate email notification is sent to Reid via SendGrid (with reply-to set to the visitor's email so you can reply directly)
+6. The nightly digest email also includes all submissions from the last 24 hours
+
+### Database schema
+
+| Column | Description |
+|--------|-------------|
+| `name` | Visitor's name |
+| `email` | Visitor's email address |
+| `message` | The message body |
+| `ip_address` | Visitor's IP address |
+| `created_at` | Timestamp |
+
+### Rate limiting
+
+The `/api/contact` endpoint is rate-limited to **3 submissions per IP per hour** to prevent abuse.
+
+### Useful queries
+
+```sql
+-- All contact submissions
+SELECT * FROM contact_submissions ORDER BY created_at DESC;
+
+-- Submissions from today
+SELECT * FROM contact_submissions WHERE created_at >= CURRENT_DATE ORDER BY created_at;
+
+-- Cross-reference with chatters
+SELECT DISTINCT cs.name, cs.email, cs.message, cs.created_at
+FROM contact_submissions cs
+JOIN chat_logs cl ON cs.ip_address = cl.ip_address
+ORDER BY cs.created_at DESC;
+```
+
+### Components
+
+- **`ContactModal.tsx`** — React component with the form UI and success state
+- **`ContactModal.css`** — Styling (modal overlay, animations, form fields)
+- **`server.js`** — `POST /api/contact` endpoint with validation and rate limiting
+
+---
+
 ## npm Scripts Reference
 
 | Command | What it does |

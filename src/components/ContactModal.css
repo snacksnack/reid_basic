@@ -1,0 +1,150 @@
+.contact-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: contact-fade-in 150ms ease-out;
+}
+
+@keyframes contact-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.contact-modal {
+  background: white;
+  border-radius: 16px;
+  width: 400px;
+  max-width: calc(100vw - 2rem);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: contact-slide-up 200ms ease-out;
+}
+
+@keyframes contact-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.contact-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  background: var(--accent);
+  color: white;
+}
+
+.contact-modal-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.contact-modal-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  opacity: 0.85;
+  transition: opacity 120ms;
+}
+
+.contact-modal-close:hover {
+  opacity: 1;
+}
+
+.contact-modal-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.contact-field span {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.contact-field input,
+.contact-field textarea {
+  border: 1px solid #dde0e6;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 120ms;
+  resize: vertical;
+}
+
+.contact-field input:focus,
+.contact-field textarea:focus {
+  border-color: var(--accent);
+}
+
+.contact-submit {
+  padding: 0.6rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+
+.contact-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.contact-submit:not(:disabled):hover {
+  opacity: 0.88;
+}
+
+.contact-error {
+  color: #d32f2f;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.contact-success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+}
+
+.contact-success p {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+@media print {
+  .contact-overlay {
+    display: none;
+  }
+}

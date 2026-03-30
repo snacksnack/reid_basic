@@ -72,6 +72,7 @@ export interface ResumeData {
 
 interface ResumeProps {
   data: ResumeData
+  onContactClick?: () => void
 }
 
 function ContactLine({ contact }: { contact?: ContactInfo }) {
@@ -128,7 +129,7 @@ function ContactLine({ contact }: { contact?: ContactInfo }) {
   )
 }
 
-export default function Resume({ data }: ResumeProps) {
+export default function Resume({ data, onContactClick }: ResumeProps) {
   const [isToolbarStuck, setIsToolbarStuck] = useState(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
@@ -166,6 +167,15 @@ export default function Resume({ data }: ResumeProps) {
         >
           Download DOCX
         </a>
+        {onContactClick && (
+          <button
+            className="toolbar-button"
+            onClick={onContactClick}
+            aria-label="Contact Reid"
+          >
+            Contact Reid
+          </button>
+        )}
       </div>
       <header className="header">
         <h1 className="name">{data.name}</h1>

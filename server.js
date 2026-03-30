@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import pg from 'pg'
+import { createTransport } from 'nodemailer'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
@@ -62,6 +63,16 @@ async function initDb() {
       ip_address TEXT,
       user_agent TEXT,
       referrer TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS contact_submissions (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      ip_address TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `)
@@ -199,6 +210,56 @@ app.post('/api/pageview', (req, res) => {
   const path = req.body.path || '/'
   logPageView(path, ip, req.headers['user-agent'] || '', req.body.referrer || '')
   res.sendStatus(204)
+})
+
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many submissions — please try again later.' },
+})
+
+app.post('/api/contact', contactLimiter, async (req, res) => {
+  const { name, email, message } = req.body
+
+  if (!name?.trim() || !email?.trim() || !message?.trim()) {
+    return res.status(400).json({ error: 'Name, email, and message are required.' })
+  }
+
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown'
+
+  if (pool) {
+    try {
+      await pool.query(
+        'INSERT INTO contact_submissions (name, email, message, ip_address) VALUES ($1, $2, $3, $4)',
+        [name.trim(), email.trim(), message.trim(), ip]
+      )
+    } catch (err) {
+      console.error('Failed to log contact submission:', err.message)
+    }
+  }
+
+  if (process.env.SENDGRID_USERNAME && process.env.SENDGRID_PASSWORD) {
+    const recipient = process.env.DIGEST_EMAIL || 'hire.reid.collins@gmail.com'
+    const transporter = createTransport({
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      auth: {
+        user: process.env.SENDGRID_USERNAME,
+        pass: process.env.SENDGRID_PASSWORD,
+      },
+    })
+    transporter.sendMail({
+      from: `Resume Site <hire.reid.collins@gmail.com>`,
+      to: recipient,
+      replyTo: email.trim(),
+      subject: `Contact form: ${name.trim()}`,
+      text: `New contact form submission\n\nName: ${name.trim()}\nEmail: ${email.trim()}\nIP: ${ip}\n\n${message.trim()}`,
+    }).catch(err => console.error('Failed to send contact email:', err.message))
+  }
+
+  res.json({ ok: true })
 })
 
 app.post('/api/chat', chatLimiter, async (req, res) => {

@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server.js",
-    "dev:server": "node --watch-path=server.js server.js",
+    "dev:server": "node --watch server.js",
     "extract:pdf": "node scripts/extract-pdf.mjs",
     "update:resume": ".venv/bin/python scripts/update-resume.py",
     "digest": "node scripts/chat-digest.mjs"
