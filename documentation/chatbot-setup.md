@@ -127,6 +127,71 @@ This prevents scripts or bots from burning through OpenAI credits. A real user h
 
 As an additional safeguard, set a monthly budget cap in your OpenAI account at [platform.openai.com/settings/organization/limits](https://platform.openai.com/settings/organization/limits). This is a hard ceiling regardless of what happens on the server side.
 
+### Visitor analytics (Postgres)
+
+Every page load is logged to a `page_views` table. The frontend fires a `POST /api/pageview` request once on mount, capturing the visitor's path and referrer. The server adds IP and user agent.
+
+| Column | Description |
+|--------|-------------|
+| `path` | URL path visited (e.g. `/`) |
+| `ip_address` | Visitor's IP address |
+| `user_agent` | Browser/client user agent string |
+| `referrer` | Where they came from (e.g. LinkedIn, Google, or empty for direct) |
+| `created_at` | Timestamp |
+
+**Useful queries** (run via `heroku pg:psql --app hihelloreid`):
+
+```sql
+-- Page views per day with unique visitors
+SELECT DATE(created_at) AS day,
+       COUNT(*) AS views,
+       COUNT(DISTINCT ip_address) AS unique_visitors
+FROM page_views GROUP BY day ORDER BY day DESC;
+
+-- Top referrers
+SELECT referrer, COUNT(*) AS visits
+FROM page_views
+WHERE referrer != ''
+GROUP BY referrer ORDER BY visits DESC;
+
+-- Visitors who viewed, chatted, AND downloaded (high intent)
+SELECT DISTINCT pv.ip_address, pv.referrer, pv.created_at AS visited_at
+FROM page_views pv
+JOIN chat_logs cl ON pv.ip_address = cl.ip_address
+JOIN download_logs dl ON pv.ip_address = dl.ip_address;
+```
+
+The nightly digest includes a page views summary with total views, unique visitors, and a breakdown by referrer.
+
+### Download tracking (Postgres)
+
+Every resume download (PDF or DOCX) is logged to a `download_logs` table. The download buttons in the toolbar route through `/api/download/pdf` and `/api/download/docx`, which log the event and serve the file.
+
+| Column | Description |
+|--------|-------------|
+| `format` | `pdf` or `docx` |
+| `ip_address` | Visitor's IP address |
+| `user_agent` | Browser/client user agent string |
+| `referrer` | The referring URL (e.g. LinkedIn, Google) |
+| `created_at` | Timestamp |
+
+**Useful queries** (run via `heroku pg:psql --app hihelloreid`):
+
+```sql
+-- See all downloads, most recent first
+SELECT * FROM download_logs ORDER BY created_at DESC;
+
+-- Downloads per day
+SELECT DATE(created_at) AS day, format, COUNT(*) AS downloads
+FROM download_logs GROUP BY day, format ORDER BY day DESC;
+
+-- Cross-reference downloaders with chatters (same IP)
+SELECT DISTINCT d.ip_address, d.format, d.created_at AS downloaded_at, c.content AS first_question
+FROM download_logs d
+JOIN chat_logs c ON d.ip_address = c.ip_address AND c.role = 'user'
+ORDER BY d.created_at DESC;
+```
+
 ### Chat logging (Postgres)
 
 Every user message and AI response is logged to a `chat_logs` table in the Heroku Postgres database. Each row captures:

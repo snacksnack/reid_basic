@@ -45,7 +45,27 @@ async function initDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `)
-  console.log('chat_logs table ready')
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS download_logs (
+      id SERIAL PRIMARY KEY,
+      format TEXT NOT NULL,
+      ip_address TEXT,
+      user_agent TEXT,
+      referrer TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS page_views (
+      id SERIAL PRIMARY KEY,
+      path TEXT NOT NULL,
+      ip_address TEXT,
+      user_agent TEXT,
+      referrer TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
+  console.log('database tables ready')
 }
 
 async function logMessage(sessionId, ip, role, content) {
@@ -57,6 +77,30 @@ async function logMessage(sessionId, ip, role, content) {
     )
   } catch (err) {
     console.error('Failed to log chat message:', err.message)
+  }
+}
+
+async function logDownload(format, ip, userAgent, referrer) {
+  if (!pool) return
+  try {
+    await pool.query(
+      'INSERT INTO download_logs (format, ip_address, user_agent, referrer) VALUES ($1, $2, $3, $4)',
+      [format, ip, userAgent, referrer]
+    )
+  } catch (err) {
+    console.error('Failed to log download:', err.message)
+  }
+}
+
+async function logPageView(path, ip, userAgent, referrer) {
+  if (!pool) return
+  try {
+    await pool.query(
+      'INSERT INTO page_views (path, ip_address, user_agent, referrer) VALUES ($1, $2, $3, $4)',
+      [path, ip, userAgent, referrer]
+    )
+  } catch (err) {
+    console.error('Failed to log page view:', err.message)
   }
 }
 
@@ -140,6 +184,13 @@ const chatLimiter = rateLimit({
   message: { error: 'Too many requests — please try again later.' },
 })
 
+app.post('/api/pageview', (req, res) => {
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown'
+  const path = req.body.path || '/'
+  logPageView(path, ip, req.headers['user-agent'] || '', req.body.referrer || '')
+  res.sendStatus(204)
+})
+
 app.post('/api/chat', chatLimiter, async (req, res) => {
   try {
     const { messages, sessionId } = req.body
@@ -179,6 +230,19 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     console.error('Chat API error:', err)
     res.status(500).json({ error: 'Failed to generate response' })
   }
+})
+
+const VALID_FORMATS = { pdf: 'reidcollins.pdf', docx: 'reidcollins.docx' }
+
+app.get('/api/download/:format', async (req, res) => {
+  const filename = VALID_FORMATS[req.params.format]
+  if (!filename) return res.status(404).json({ error: 'invalid format' })
+
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown'
+  logDownload(req.params.format, ip, req.headers['user-agent'] || '', req.headers['referer'] || '')
+
+  const docsDir = process.env.NODE_ENV === 'production' ? 'dist' : 'public'
+  res.download(join(__dirname, docsDir, 'docs', filename), filename)
 })
 
 if (process.env.NODE_ENV === 'production') {

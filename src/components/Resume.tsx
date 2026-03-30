@@ -154,16 +154,14 @@ export default function Resume({ data }: ResumeProps) {
       <div className={`toolbar${isToolbarStuck ? ' stuck' : ''}`} role="group" aria-label="Actions">
         <a
           className="toolbar-button"
-          href="/docs/reidcollins.pdf"
-          download
+          href="/api/download/pdf"
           aria-label="Download PDF"
         >
           Download PDF
         </a>
         <a
           className="toolbar-button"
-          href="/docs/reidcollins.docx"
-          download
+          href="/api/download/docx"
           aria-label="Download DOCX"
         >
           Download DOCX
