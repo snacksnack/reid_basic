@@ -149,7 +149,7 @@
 
 .chat-input-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.5rem;
   padding: 0.75rem;
   border-top: 1px solid #e6e8ee;
@@ -166,6 +166,10 @@
   font-family: inherit;
   outline: none;
   transition: border-color 120ms;
+  resize: none;
+  overflow-y: auto;
+  max-height: 120px;
+  line-height: 1.4;
 }
 
 .chat-input:focus {

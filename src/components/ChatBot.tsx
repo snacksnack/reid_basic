@@ -30,7 +30,7 @@ export default function ChatBot() {
   const userMessageCount = messages.filter((m) => m.role === 'user').length
   const isLimitReached = userMessageCount >= MAX_USER_MESSAGES
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -50,6 +50,7 @@ export default function ChatBot() {
     const updated = [...messages, userMessage]
     setMessages(updated)
     setInput('')
+    if (inputRef.current) inputRef.current.style.height = 'auto'
 
     const newUserCount = userMessageCount + 1
     if (newUserCount >= MAX_USER_MESSAGES) {
@@ -164,12 +165,16 @@ export default function ChatBot() {
               sendMessage()
             }}
           >
-            <input
+            <textarea
               ref={inputRef}
               className="chat-input"
-              type="text"
+              rows={1}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+              }}
               onKeyDown={handleKeyDown}
               disabled={isLoading || isLimitReached}
               placeholder={isLimitReached ? 'Message limit reached' : 'Ask a question...'}

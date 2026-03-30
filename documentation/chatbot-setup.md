@@ -229,6 +229,30 @@ FROM chat_logs GROUP BY day ORDER BY day DESC;
 
 **Local development:** Logging is skipped when `DATABASE_URL` is not set, so the chatbot works fine locally without Postgres.
 
+### Job description matcher (hidden feature)
+
+The chatbot has a hidden job description matching mode, activated by typing `/match` followed by a job description. This is intended for Reid's private use only — the chatbot will never mention it to visitors.
+
+**How to use:**
+
+In the chatbot, type:
+
+```
+/match [paste job description here]
+```
+
+The AI will respond with:
+1. **Strong Matches** — skills and experience that directly align
+2. **Transferable Experience** — adjacent skills where Reid could ramp quickly
+3. **Overall Assessment** — optimistic summary of fit
+
+The analysis is deliberately framed as an advocate — it focuses on strengths and frames gaps constructively (e.g. "strong containerization experience with ECS/Fargate translates naturally to Kubernetes").
+
+**Notes:**
+- The chat input is a textarea that auto-expands, so pasting long job descriptions works fine
+- The `/match` trigger is handled entirely in the system prompt — no special code paths
+- Visitors will never see this feature unless they guess the trigger
+
 ### System prompt
 
 The system prompt in `server.js` contains the full resume text and instructions for the AI. If you update your resume content, update the system prompt to match.
