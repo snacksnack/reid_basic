@@ -3,14 +3,13 @@ import type { ResumeData } from '../components/Resume'
 const resume: ResumeData = {
   name: 'Reid Collins',
   title: 'Senior Technical Program Manager / Backend Engineer',
-  tagline: 'Open to Senior Technical Program Manager, Platform, and Infrastructure roles',
   contact: {
     location: 'Brooklyn, NY',
     email: 'hire.reid.collins@gmail.com',
     linkedin: 'https://linkedin.com/in/reidcollins',
   },
   summary:
-    'Senior Technical Program Manager with a hybrid background in software engineering and program leadership. Proven track record of driving large-scale platform migrations, leading cross-functional initiatives, and delivering production systems on AWS.',
+    'Senior Technical Program Manager / Backend Engineer with a hybrid background in software engineering and program leadership. Proven track record of driving large-scale platform migrations, leading cross-functional initiatives, and delivering production systems on AWS.',
   skillCategories: [
     { category: 'Languages', items: ['Python', 'Perl', 'Ruby', 'Bash'] },
     { category: 'AWS', items: ['ECS/Fargate', 'Lambda', 'SQS', 'EventBridge', 'SageMaker', 'S3', 'Athena'] },
@@ -18,11 +17,6 @@ const resume: ResumeData = {
     { category: 'Observability', items: ['Prometheus', 'Grafana', 'distributed tracing', 'structured logging'] },
     { category: 'Tools', items: ['Git', 'Bitbucket', 'Jira', 'Confluence', 'Swagger/OpenAPI', 'Docker', 'GitHub Copilot', 'Cursor'] },
     { category: 'Certifications', items: ['Certified Scrum Master (CSM)'] },
-  ],
-  timelineEntries: [
-    { company: 'CheetahMail / Experian', role: 'Software Developer', period: '2008 — 2015' },
-    { company: 'Cheetah Digital', role: 'Technical Program Manager / Software Developer', period: '2015 — 2021' },
-    { company: 'Marigold (Zeta Global)', role: 'Senior TPM / Backend Engineer', period: '2021 — 2026' },
   ],
   experience: [
     {
@@ -42,9 +36,9 @@ const resume: ResumeData = {
         {
           heading: 'Platform & Backend Systems',
           items: [
-            'Developed a containerized API proxy and token management system on AWS ECS/Fargate, improving authentication reliability and service scalability',
-            'Drove migration from Oracle to MySQL, including schema redesign, data migration strategy, and elimination of legacy database dependencies',
-            'Coordinated migration of image caching infrastructure from Akamai to Cloudflare, aligning application changes and external dependencies',
+            'Developed a containerized API proxy and token management system on AWS ECS/Fargate, improving authentication reliability and service scalability in a high throughput system',
+            'Drove migration from Oracle to MySQL, including schema redesign, data migration strategy, and implementing code changes to eliminate legacy database dependencies',
+            'Coordinated migration of image caching infrastructure from Akamai to Cloudflare, updating image caching code base, partnering with clients to install updated domain certs',
             'Developed backend services for authentication, campaign data, service health, and DynamoDB integrations in high-throughput systems',
             'Defined API contracts using Swagger/OpenAPI to support cross-team and client integrations',
           ],
@@ -54,13 +48,13 @@ const resume: ResumeData = {
           items: [
             'Led onboarding of 100+ clients to ML platform over two quarters, designing ingestion pipelines using ClickHouse S3 integration and EventBridge to process multi-terabyte datasets (10–50GB per client)',
             'Partnered with Analytics to deliver nightly pipelines using Athena and S3, defining ClickHouse queries, implementing client-driven export controls via flag files, enabling cross-team S3 access via AWS SAM, and building monitoring to ensure reliable ingestion',
-            'Contributed to delivery of Propensity-to-Purchase and Discount Optimization models via a serverless ML platform (Lambda, SQS, EventBridge, SageMaker), introducing a data assessment layer and partnering across teams to source higher-quality purchase data from distributed systems (ClickHouse, Hive)',
+            'Contributed to delivery of Propensity-to-Purchase and Discount Optimization models via a serverless ML platform (Lambda, SQS, EventBridge, SageMaker), coding a data assessment layer and partnering across teams to source higher-quality purchase data from distributed systems (ClickHouse, Hive)',
           ],
         },
         {
           heading: 'Observability & Reliability',
           items: [
-            'Led development of a custom observability framework (structured logging, distributed tracing, Prometheus, Grafana) for high-throughput, time-sensitive systems processing thousands of messages per minute',
+            'Led development of a custom observability framework (structured logging, distributed tracing, Prometheus, Grafana) for high-throughput, time-sensitive systems processing thousands of event based messages per minute',
             'Improved system reliability and visibility across clients by enabling real-time monitoring, alerting, and faster issue detection and resolution',
           ],
         },
@@ -82,7 +76,6 @@ const resume: ResumeData = {
       role: 'Software Developer',
       period: '2008 — 2015',
       achievements: [
-        'Joined CheetahMail as an early employee during startup funding rounds; grew with the company through its acquisition by Experian, transitioning from client services into engineering',
         'Scrum master and developer for Cheetahmail development team',
         'Improved reporting performance by implementing bulk data loading solutions using SQL*Loader for high-volume datasets',
         'Built ETL pipelines for client data ingestion (text/XML) into BerkeleyDB/CDB systems and supported API integrations',
