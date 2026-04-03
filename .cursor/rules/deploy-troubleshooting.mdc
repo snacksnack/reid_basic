@@ -1,0 +1,61 @@
+---
+description: Troubleshoot Heroku deployment failures, build errors, or site issues
+alwaysApply: false
+---
+
+# Deployment Troubleshooting
+
+When the user reports a deploy failure, site issue, or build error, follow these diagnostic steps.
+
+## Step 1: Identify the failure point
+
+Ask or determine which stage failed:
+- **CI failed** (GitHub Actions) — tests didn't pass
+- **Heroku build failed** — the app didn't build on Heroku
+- **App crashes after deploy** — build succeeded but the site is down
+- **Site works but something is wrong** — partial breakage (chatbot, downloads, etc.)
+
+## Step 2: Gather evidence
+
+Run these commands as needed (the Heroku app name is `hihelloreid`):
+
+| What to check | Command |
+|---------------|---------|
+| CI status | `gh run list --limit 5` |
+| CI failure details | `gh run view <run-id> --log-failed` |
+| Heroku build logs | `heroku builds --app hihelloreid` |
+| Heroku app logs | `heroku logs --tail --app hihelloreid` |
+| Heroku app status | `heroku ps --app hihelloreid` |
+| Heroku config vars | `heroku config --app hihelloreid` |
+| Local tests | `npm test` |
+| Local build | `npm run build` |
+
+## Step 3: Common issues and fixes
+
+### CI failures
+- **TypeScript errors**: Run `npx tsc --noEmit` locally, fix the type errors
+- **ESLint errors**: Run `npx eslint .` locally, fix the lint errors
+- **Test failures**: Run `npm test` locally, read the failure output
+
+### Heroku build failures
+- **Missing dependency**: Check if a package is in `devDependencies` but needed at runtime — move it to `dependencies`
+- **Build script error**: Heroku runs `npm run build` (`tsc -b && vite build`). Run it locally to reproduce.
+- **Node version mismatch**: Check `engines` in `package.json` if present
+
+### App crashes after deploy
+- **Missing env var**: Compare `heroku config --app hihelloreid` against `.env.example`. Required vars: `OPENAI_API_KEY`. Optional: `DATABASE_URL` (auto-set by Heroku Postgres), `SENDGRID_USERNAME`, `SENDGRID_PASSWORD`, `DIGEST_EMAIL`
+- **Port binding**: The server uses `process.env.PORT` which Heroku sets automatically. Verify with `heroku logs --app hihelloreid | grep "Server running"`
+- **File not found**: The Procfile runs `node server.js`. Server serves static files from `dist/` in production. Verify `dist/` is built: `heroku run ls dist/ --app hihelloreid`
+
+### Site up but chatbot broken
+- **OpenAI key expired/invalid**: Check `heroku config:get OPENAI_API_KEY --app hihelloreid` returns a valid key
+- **Rate limited**: Check Heroku logs for "Too many requests" messages
+- **resume-prompt.txt missing**: Server loads `src/data/resume-prompt.txt` at startup. Verify it exists and is committed.
+
+### Site up but downloads broken
+- **Files missing from dist/**: Verify `public/docs/reidcollins.pdf` and `public/docs/reidcollins.docx` are committed. Vite copies `public/` to `dist/` during build.
+
+## Step 4: Verify the fix
+- Run `npm test` locally
+- Push and confirm CI passes at https://github.com/snacksnack/reid_basic/actions
+- Check Heroku logs after deploy: `heroku logs --tail --app hihelloreid`
