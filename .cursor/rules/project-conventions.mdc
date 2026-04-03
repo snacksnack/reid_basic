@@ -1,0 +1,56 @@
+---
+description: Project coding conventions for building new features or modifying existing code
+alwaysApply: true
+---
+
+# Project Conventions
+
+## React Components
+
+- **One component per file**, default export, PascalCase filename matching component name
+- **Props**: define a dedicated interface (`ResumeProps`, `ContactModalProps`), not inline
+- **Shared types**: live in `Resume.tsx`, imported elsewhere with `import type`
+- **Small helpers**: can live in the same file as the parent component (e.g. `ContactLine` in `Resume.tsx`)
+- **State**: local `useState` only — no Redux/Zustand. Lift state to `App.tsx` only when siblings need it
+- **Refs**: use `useRef` for focus management, scroll behavior, and DOM observation
+- **Accessibility**: use `aria-label`, `role`, semantic HTML (`<main>`, `<section>`, `<header>`), keyboard support
+
+## CSS
+
+- **No CSS Modules or BEM** — flat, hyphenated class names grouped by feature prefix
+- **Component CSS**: co-located file (`ChatBot.css` next to `ChatBot.tsx`), imported at top of component
+- **Resume CSS**: `resume.css` imported from `App.tsx`, not from `Resume.tsx`
+- **Design tokens**: defined as CSS variables in `index.css` (`:root`): `--text`, `--muted`, `--bg`, `--accent`. Always use these instead of hardcoded colors
+- **Modifiers**: extra class, not BEM syntax (e.g. `.chat-bubble.user`, `.toolbar.stuck`)
+- **Print styles**: include `@media print` rules to hide interactive elements (chat, toolbar, modals)
+
+## API Calls (Frontend)
+
+- **Native `fetch`** with relative paths (`/api/...`) — Vite proxies to Express in dev
+- **POST requests**: `Content-Type: application/json` + `JSON.stringify(body)`
+- **Error handling**: `try/catch` with user-visible fallback for interactive features; silent `.catch(() => {})` for analytics
+- **Downloads**: plain `<a href="/api/download/pdf">` links, not fetch
+
+## Server Endpoints (`server.js`)
+
+- **Route prefix**: always `/api`
+- **Inline handlers**: `app.post('/api/thing', async (req, res) => { ... })`
+- **Validation**: manual checks with early `return res.status(400).json({ error: '...' })`
+- **Rate limiting**: `express-rate-limit` per-route where needed, JSON error messages
+- **Error responses**: `{ error: string }` — 400 for bad input, 404 for not found, 503 for unconfigured service, 500 for server errors
+- **Logging**: `console.error('Context:', err.message)` — log on server, generic message to client
+- **Graceful degradation**: DB and email failures are logged but don't break the user response
+
+## TypeScript
+
+- **Strict mode** enabled (`strict`, `noUnusedLocals`, `noUnusedParameters`)
+- **`import type`** for type-only imports
+- **ESM**: `"type": "module"` in `package.json`, `import`/`export` everywhere
+
+## Naming
+
+- **Files**: PascalCase for components (`ChatBot.tsx`), camelCase for data/utils (`resume.ts`)
+- **Components**: PascalCase (`Resume`, `ChatBot`)
+- **Handlers**: `handleSubmit`, `sendMessage`, `onClose` (callback props use `on` prefix)
+- **Booleans**: `is` prefix (`isOpen`, `isLoading`, `isToolbarStuck`)
+- **Constants**: `UPPER_SNAKE` for config values (`MAX_USER_MESSAGES`, `VALID_FORMATS`)
