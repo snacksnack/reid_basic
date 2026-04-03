@@ -1,0 +1,35 @@
+---
+description: Procedure for updating resume content after new PDF/DOCX files are placed in public/docs/
+alwaysApply: false
+---
+
+# Resume Update Procedure
+
+When the user says they updated their resume (new PDF/DOCX in `public/docs/`), follow these steps in order:
+
+## Step 1: Generate resume data
+Run `npm run update:resume` — this reads the PDF and writes both:
+- `src/data/resume.ts` (structured data for the React frontend)
+- `src/data/resume-prompt.txt` (plain text for the chatbot system prompt, loaded by `server.js` at startup)
+
+## Step 2: Review resume.ts for parsing issues
+Read `src/data/resume.ts` and check for:
+- **Ligature errors**: characters like `J`, `K`, `G`, `@` substituted for `ti`, `tf`, `ft` (e.g. "Jcket" → "ticket")
+- **Line-break artifacts**: "cross- team" → "cross-team"
+- **Empty strings** in achievement arrays
+- **Truncated or merged bullets**
+- **Correct company/role/period** for each job
+
+Fix any issues found in `resume.ts`.
+
+## Step 3: Review resume-prompt.txt
+Read `src/data/resume-prompt.txt` and verify the same issues. Since both files are generated from the same script, fixes to the script's ligature handling benefit both. If issues persist, fix them directly.
+
+## Step 4: Update plain text extract (optional)
+Run `npm run extract:pdf` to update `public/docs/reidcollins.txt`.
+
+## Step 5: Run tests
+Run `npm test` to verify all 3 test suites pass (server, frontend, build).
+
+## Step 6: Report changes
+Tell the user what changed vs. the previous version and list any parsing fixes applied. Do NOT commit unless asked.

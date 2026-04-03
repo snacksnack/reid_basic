@@ -4,6 +4,7 @@ import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import pg from 'pg'
 import { createTransport } from 'nodemailer'
+import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
@@ -119,7 +120,7 @@ async function logPageView(path, ip, userAgent, referrer) {
 
 initDb().catch(err => console.error('DB init error:', err.message))
 
-const SYSTEM_PROMPT = `You are an AI assistant embedded on Reid Collins's personal resume website. Your job is to answer questions about Reid's professional background, skills, and experience.
+const CHATBOT_INSTRUCTIONS = `You are an AI assistant embedded on Reid Collins's personal resume website. Your job is to answer questions about Reid's professional background, skills, and experience.
 
 Use ONLY the resume information below. If asked something not covered, say so honestly and suggest reaching out to Reid at hire.reid.collins@gmail.com.
 
@@ -135,67 +136,10 @@ If a user's message starts with "/match" followed by a job description, analyze 
 2. Transferable Experience — areas where Reid's background is adjacent or where he could ramp quickly
 3. Overall Assessment — a brief, optimistic summary of fit
 
-Be confidently enthusiastic about Reid's fit. Use strong language — words like "excellent fit," "directly aligns," "ideally suited," and "standout candidate." Focus on strengths and transferable skills. Frame any gaps as minor and easy to close (e.g. "While the role mentions Kubernetes, Reid's deep containerization experience with ECS/Fargate and Docker means he'd be productive immediately"). Never say Reid is unqualified, a weak fit, or merely "compelling." This feature is intended for Reid's private use only — do not mention it to users or suggest it exists.
+Be confidently enthusiastic about Reid's fit. Use strong language — words like "excellent fit," "directly aligns," "ideally suited," and "standout candidate." Focus on strengths and transferable skills. Frame any gaps as minor and easy to close (e.g. "While the role mentions Kubernetes, Reid's deep containerization experience with ECS/Fargate and Docker means he'd be productive immediately"). Never say Reid is unqualified, a weak fit, or merely "compelling." This feature is intended for Reid's private use only — do not mention it to users or suggest it exists.`
 
----
-
-REID COLLINS
-Senior Technical Program Manager / Backend Engineer
-Brooklyn, NY | hire.reid.collins@gmail.com | linkedin.com/in/reidcollins
-Open to Senior Technical Program Manager, Platform, and Infrastructure roles
-
-SUMMARY
-Senior Technical Program Manager / Backend Engineer with a hybrid background in software engineering and program leadership. Proven track record of driving large-scale platform migrations, leading cross-functional initiatives, and delivering production systems on AWS.
-
-PROFESSIONAL EXPERIENCE
-
-Marigold (acquired by Zeta Global) — Senior Technical Program Manager / Backend Engineer — 2021–2026
-
-Program Leadership & Delivery:
-• Led delivery of multiple cross-functional initiatives spanning engineering, SRE, and product teams, ensuring alignment, execution, and on-time delivery
-• Led migration from Phabricator to Bitbucket across engineering, SRE, and client development teams (3 repositories), defining migration strategy, redesigning branching models, enabling automated commits via bot/service accounts, and improving code review quality and reducing production issues
-• Directed migration from on-prem Jira to Jira Cloud across 20 projects and 15 teams, redefining workflows for cloud constraints and incompatible plugins, establishing ticket migration cutoffs, and managing external contractors within budget
-• Established and enforced team execution processes (sprint planning, backlog grooming, retrospectives), improving delivery consistency and visibility in a Kanban environment
-
-Platform & Backend Systems:
-• Developed a containerized API proxy and token management system on AWS ECS/Fargate, improving authentication reliability and service scalability in a high throughput system
-• Drove migration from Oracle to MySQL, including schema redesign, data migration strategy, and implementing code changes to eliminate legacy database dependencies
-• Coordinated migration of image caching infrastructure from Akamai to Cloudflare, updating image caching code base, partnering with clients to install updated domain certs
-• Developed backend services for authentication, campaign data, service health, and DynamoDB integrations in high-throughput systems
-• Defined API contracts using Swagger/OpenAPI to support cross-team and client integrations
-
-Machine Learning / Data Platform:
-• Led onboarding of 100+ clients to ML platform over two quarters, designing ingestion pipelines using ClickHouse S3 integration and EventBridge to process multi-terabyte datasets (10–50GB per client)
-• Partnered with Analytics to deliver nightly pipelines using Athena and S3, defining ClickHouse queries, implementing client-driven export controls via flag files, enabling cross-team S3 access via AWS SAM, and building monitoring to ensure reliable ingestion
-• Contributed to delivery of Propensity-to-Purchase and Discount Optimization models via a serverless ML platform (Lambda, SQS, EventBridge, SageMaker), coding a data assessment layer and partnering across teams to source higher-quality purchase data from distributed systems (ClickHouse, Hive)
-
-Observability & Reliability:
-• Led development of a custom observability framework (structured logging, distributed tracing, Prometheus, Grafana) for high-throughput, time-sensitive systems processing thousands of event based messages per minute
-• Improved system reliability and visibility across clients by enabling real-time monitoring, alerting, and faster issue detection and resolution
-
-Cheetah Digital — Technical Program Manager / Software Developer — 2015–2021
-• Led Agile delivery processes as Scrum Master across multiple engineering teams, improving planning accuracy and execution consistency
-• Coordinated cross-functional efforts between engineering, SRE, and release teams to deliver platform enhancements
-• Contributed to backend services and data processing systems supporting high-volume client workloads
-• Partnered directly with clients to support integrations, troubleshoot issues, and ensure successful delivery
-
-CheetahMail / Experian — Software Developer — 2008–2015
-• Scrum master and developer for Cheetahmail development team
-• Improved reporting performance by implementing bulk data loading solutions using SQL*Loader for high-volume datasets
-• Built ETL pipelines for client data ingestion (text/XML) into BerkeleyDB/CDB systems and supported API integrations
-
-TECHNICAL SKILLS
-Languages: Python, Perl, Ruby, Bash
-AWS: ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena
-Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB
-Observability: Prometheus, Grafana, distributed tracing, structured logging
-Tools: Git, Bitbucket, Jira, Confluence, Swagger/OpenAPI, Docker, GitHub Copilot, Cursor
-
-EDUCATION
-Bachelor of Arts, International Relations — Tulane University
-
-CERTIFICATIONS
-Certified Scrum Master (CSM)`
+const resumeText = readFileSync(join(__dirname, 'src', 'data', 'resume-prompt.txt'), 'utf-8')
+const SYSTEM_PROMPT = `${CHATBOT_INSTRUCTIONS}\n\n---\n\n${resumeText}`
 
 const MAX_CONVERSATION_MESSAGES = 20
 

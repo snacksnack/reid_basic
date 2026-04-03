@@ -22,6 +22,7 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 PDF_PATH = ROOT / "public" / "docs" / "reidcollins.pdf"
 TS_PATH = ROOT / "src" / "data" / "resume.ts"
+PROMPT_PATH = ROOT / "src" / "data" / "resume-prompt.txt"
 
 SECTION_HEADERS_RE = re.compile(
     r"^(?:SUMMARY|PROFESSIONAL EXPERIENCE|TECHNICAL SKILLS(?:\s*&\s*EDUCATION)?|EDUCATION)$"
@@ -205,9 +206,12 @@ def parse_experience(lines: list[str]) -> list[dict]:
                 current_heading = line
                 current_bullets = []
             elif line.startswith("\u2022"):
-                current_bullets.append(line.lstrip("\u2022 \t"))
+                bullet = line.lstrip("\u2022 \t")
+                if bullet:
+                    current_bullets.append(bullet)
             elif current_bullets:
-                current_bullets[-1] += " " + line
+                joined = current_bullets[-1] + " " + line
+                current_bullets[-1] = re.sub(r"(\w)- (\w)", r"\1-\2", joined)
 
         if current_bullets:
             groups.append({"heading": current_heading, "items": current_bullets})
@@ -346,6 +350,74 @@ def generate_ts(header, summary, skills, experience, education) -> str:
     return "\n".join(out)
 
 
+def generate_prompt_txt(header, summary, skills, experience, education) -> str:
+    """Generate a plain-text resume for the chatbot system prompt."""
+    out: list[str] = []
+
+    def w(line: str = ""):
+        out.append(line)
+
+    title = experience[0]["role"] if experience else ""
+    contact_parts = []
+    if header["location"]:
+        contact_parts.append(header["location"])
+    if header["email"]:
+        contact_parts.append(header["email"])
+    if header["linkedin"]:
+        li = header["linkedin"].replace("https://", "")
+        contact_parts.append(li)
+
+    w(header["name"].upper())
+    w(title)
+    w(" | ".join(contact_parts))
+    w("")
+    w("SUMMARY")
+    w(summary)
+    w("")
+    w("PROFESSIONAL EXPERIENCE")
+
+    for job in experience:
+        period = job["period"].replace(" — ", "–")
+        w("")
+        w(f"{job['company']} — {job['role']} — {period}")
+
+        if "achievementGroups" in job:
+            for group in job["achievementGroups"]:
+                w("")
+                w(f"{group['heading']}:")
+                for item in group["items"]:
+                    w(f"• {item}")
+        elif job.get("achievements"):
+            for item in job["achievements"]:
+                w(f"• {item}")
+
+    w("")
+    w("TECHNICAL SKILLS")
+    certs: list[str] = []
+    for cat in skills:
+        if cat["category"].lower() == "certifications":
+            certs = cat["items"]
+            continue
+        w(f"{cat['category']}: {', '.join(cat['items'])}")
+
+    if education:
+        w("")
+        w("EDUCATION")
+        for ed in education:
+            if ed["school"]:
+                w(f"{ed['degree']} — {ed['school']}")
+            else:
+                w(ed["degree"])
+
+    if certs:
+        w("")
+        w("CERTIFICATIONS")
+        for c in certs:
+            w(c)
+
+    return "\n".join(out)
+
+
 def main():
     if not PDF_PATH.exists():
         sys.exit(f"PDF not found: {PDF_PATH}")
@@ -375,8 +447,12 @@ def main():
 
     ts = generate_ts(header, summary, skills, experience, education)
     TS_PATH.write_text(ts, encoding="utf-8")
-
     print(f"Wrote {TS_PATH}")
+
+    prompt = generate_prompt_txt(header, summary, skills, experience, education)
+    PROMPT_PATH.write_text(prompt, encoding="utf-8")
+    print(f"Wrote {PROMPT_PATH}")
+
     print(f"  {len(experience)} jobs, {len(skills)} skill categories, {len(education)} education entries")
     print()
     print("Review the output and verify:")
