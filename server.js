@@ -79,6 +79,17 @@ async function initDb() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS tool_usage (
+      id SERIAL PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      ip_address TEXT,
+      tool_name TEXT NOT NULL,
+      tool_args JSONB,
+      tool_result TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `)
   console.log('database tables ready')
 }
 
@@ -118,6 +129,18 @@ async function logPageView(path, ip, userAgent, referrer) {
   }
 }
 
+async function logToolUsage(sessionId, ip, toolName, toolArgs, toolResult) {
+  if (!pool) return
+  try {
+    await pool.query(
+      'INSERT INTO tool_usage (session_id, ip_address, tool_name, tool_args, tool_result) VALUES ($1, $2, $3, $4, $5)',
+      [sessionId, ip, toolName, JSON.stringify(toolArgs), toolResult]
+    )
+  } catch (err) {
+    console.error('Failed to log tool usage:', err.message)
+  }
+}
+
 initDb().catch(err => console.error('DB init error:', err.message))
 
 const chatbotInstructions = readFileSync(join(__dirname, 'src', 'data', 'chatbot-instructions.txt'), 'utf-8')
@@ -125,6 +148,49 @@ const resumeText = readFileSync(join(__dirname, 'src', 'data', 'resume-prompt.tx
 const SYSTEM_PROMPT = `${chatbotInstructions}\n\n---\n\n${resumeText}`
 
 const MAX_CONVERSATION_MESSAGES = 20
+const MAX_TOOL_ROUNDS = 3
+
+const TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'schedule_meeting',
+      description:
+        'Get a scheduling link for the visitor to book a meeting with Reid Collins. ' +
+        'Use when someone wants to schedule a call, meeting, or interview with Reid.',
+      parameters: {
+        type: 'object',
+        properties: {
+          topic: {
+            type: 'string',
+            description:
+              'What the visitor wants to discuss (e.g., "engineering role at Acme Corp", "contract opportunity")',
+          },
+        },
+      },
+    },
+  },
+]
+
+function executeToolCall(name, args) {
+  if (name === 'schedule_meeting') {
+    const schedulingUrl = process.env.SCHEDULING_URL
+    if (!schedulingUrl) {
+      return JSON.stringify({
+        available: false,
+        fallback_email: 'hire.reid.collins@gmail.com',
+        message:
+          'Online scheduling is not currently configured. Suggest the visitor email Reid directly.',
+      })
+    }
+    return JSON.stringify({
+      available: true,
+      scheduling_url: schedulingUrl,
+      topic: args.topic || null,
+    })
+  }
+  return JSON.stringify({ error: `Unknown tool: ${name}` })
+}
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -213,19 +279,48 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 
     const trimmed = messages.slice(-MAX_CONVERSATION_MESSAGES)
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...trimmed,
-      ],
-      max_tokens: 500,
-      temperature: 0.7,
-    })
+    const apiMessages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...trimmed,
+    ]
 
-    const reply =
-      completion.choices[0]?.message?.content ||
-      "Sorry, I couldn't generate a response."
+    let reply = null
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: apiMessages,
+        tools: TOOLS,
+        max_tokens: 500,
+        temperature: 0.7,
+      })
+
+      const choice = completion.choices[0]
+
+      if (choice.message.tool_calls?.length) {
+        apiMessages.push(choice.message)
+
+        for (const toolCall of choice.message.tool_calls) {
+          const args = JSON.parse(toolCall.function.arguments || '{}')
+          const result = executeToolCall(toolCall.function.name, args)
+
+          apiMessages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: result,
+          })
+
+          await logToolUsage(sid, ip, toolCall.function.name, args, result)
+        }
+        continue
+      }
+
+      reply = choice.message.content || "Sorry, I couldn't generate a response."
+      break
+    }
+
+    if (!reply) {
+      reply = "Sorry, I couldn't generate a response."
+    }
 
     await logMessage(sid, ip, 'assistant', reply)
 
@@ -262,4 +357,4 @@ if (process.env.NODE_ENV !== 'test') {
   })
 }
 
-export { app }
+export { app, TOOLS, executeToolCall }

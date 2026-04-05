@@ -253,6 +253,24 @@ The analysis is deliberately framed as an advocate — it focuses on strengths a
 - The `/match` trigger is handled entirely in the system prompt — no special code paths
 - Visitors will never see this feature unless they guess the trigger
 
+### Agentic tool use (schedule meeting)
+
+The chatbot supports **OpenAI function calling** — the LLM can invoke server-side tools during a conversation. Currently one tool is implemented:
+
+- **`schedule_meeting`** — When a visitor asks to schedule a call or meeting, the model calls this tool to retrieve a scheduling link (Calendly, Cal.com, etc.) and presents it naturally in the response.
+
+**Setup:** Set the `SCHEDULING_URL` environment variable to your booking page URL. If not set, the tool gracefully falls back to suggesting email.
+
+```bash
+# Local
+echo 'SCHEDULING_URL=https://calendly.com/your-link' >> .env
+
+# Heroku
+heroku config:set SCHEDULING_URL=https://calendly.com/your-link --app hihelloreid
+```
+
+For full details on the architecture, how the tool-calling loop works, the database table, and how to add new tools, see **[Agentic Tool Use](agentic-tool-use.md)**.
+
 ### System prompt
 
 The system prompt in `server.js` contains the full resume text and instructions for the AI. If you update your resume content, update the system prompt to match.

@@ -4,11 +4,15 @@ import request from 'supertest'
 import type { Express } from 'express'
 
 let app: Express
+let TOOLS: unknown[]
+let executeToolCall: (name: string, args: Record<string, unknown>) => string
 
 beforeAll(async () => {
   process.env.NODE_ENV = 'test'
   const mod = await import('../server.js')
   app = mod.app
+  TOOLS = mod.TOOLS
+  executeToolCall = mod.executeToolCall
 })
 
 describe('GET /api/download/:format', () => {
@@ -77,5 +81,43 @@ describe('POST /api/chat', () => {
       .post('/api/chat')
       .send({})
     expect(res.status).toBe(400)
+  })
+})
+
+describe('TOOLS definition', () => {
+  it('exports a non-empty tools array', () => {
+    expect(Array.isArray(TOOLS)).toBe(true)
+    expect(TOOLS.length).toBeGreaterThan(0)
+  })
+
+  it('defines schedule_meeting with correct schema', () => {
+    const tool = (TOOLS as Array<{ type: string; function: { name: string; parameters: unknown } }>)
+      .find(t => t.function.name === 'schedule_meeting')
+    expect(tool).toBeDefined()
+    expect(tool!.type).toBe('function')
+    expect(tool!.function.parameters).toHaveProperty('properties.topic')
+  })
+})
+
+describe('executeToolCall', () => {
+  it('returns scheduling URL when SCHEDULING_URL is set', () => {
+    process.env.SCHEDULING_URL = 'https://calendly.com/test'
+    const result = JSON.parse(executeToolCall('schedule_meeting', { topic: 'engineering role' }))
+    expect(result.available).toBe(true)
+    expect(result.scheduling_url).toBe('https://calendly.com/test')
+    expect(result.topic).toBe('engineering role')
+    delete process.env.SCHEDULING_URL
+  })
+
+  it('returns fallback when SCHEDULING_URL is not set', () => {
+    delete process.env.SCHEDULING_URL
+    const result = JSON.parse(executeToolCall('schedule_meeting', {}))
+    expect(result.available).toBe(false)
+    expect(result.fallback_email).toBe('hire.reid.collins@gmail.com')
+  })
+
+  it('handles unknown tool names', () => {
+    const result = JSON.parse(executeToolCall('unknown_tool', {}))
+    expect(result.error).toMatch(/unknown tool/i)
   })
 })
