@@ -27,7 +27,9 @@ Run these commands as needed (the Heroku app name is `hihelloreid`):
 | Heroku app logs | `heroku logs --tail --app hihelloreid` |
 | Heroku app status | `heroku ps --app hihelloreid` |
 | Heroku config vars | `heroku config --app hihelloreid` |
-| Local tests | `npm test` |
+| Heroku buildpacks | `heroku buildpacks --app hihelloreid` |
+| Local frontend tests | `npm test` |
+| Local server tests | `pytest tests/test_server.py -v` |
 | Local build | `npm run build` |
 
 ## Step 3: Common issues and fixes
@@ -35,27 +37,31 @@ Run these commands as needed (the Heroku app name is `hihelloreid`):
 ### CI failures
 - **TypeScript errors**: Run `npx tsc --noEmit` locally, fix the type errors
 - **ESLint errors**: Run `npx eslint .` locally, fix the lint errors
-- **Test failures**: Run `npm test` locally, read the failure output
+- **Frontend test failures**: Run `npm test` locally, read the failure output
+- **Server test failures**: Run `pytest tests/test_server.py -v` locally, read the failure output
 
 ### Heroku build failures
-- **Missing dependency**: Check if a package is in `devDependencies` but needed at runtime — move it to `dependencies`
-- **Build script error**: Heroku runs `npm run build` (`tsc -b && vite build`). Run it locally to reproduce.
-- **Node version mismatch**: Check `engines` in `package.json` if present
+- **Missing Python dependency**: Check `requirements.txt` has all needed packages
+- **Missing Node dependency**: Check if a package is in `devDependencies` but needed at build time — move it to `dependencies` or ensure it's used only in the build step
+- **Build script error**: Heroku Node buildpack runs `npm run build` (`tsc -b && vite build`). Run it locally to reproduce.
+- **Buildpack order**: Node.js must run before Python. Verify with `heroku buildpacks --app hihelloreid`. Order should be: `heroku/nodejs`, `heroku/python`.
+- **Python version**: Check `runtime.txt` specifies a supported version
 
 ### App crashes after deploy
-- **Missing env var**: Compare `heroku config --app hihelloreid` against `.env.example`. Required vars: `OPENAI_API_KEY`. Optional: `DATABASE_URL` (auto-set by Heroku Postgres), `SENDGRID_USERNAME`, `SENDGRID_PASSWORD`, `DIGEST_EMAIL`
-- **Port binding**: The server uses `process.env.PORT` which Heroku sets automatically. Verify with `heroku logs --app hihelloreid | grep "Server running"`
-- **File not found**: The Procfile runs `node server.js`. Server serves static files from `dist/` in production. Verify `dist/` is built: `heroku run ls dist/ --app hihelloreid`
+- **Missing env var**: Compare `heroku config --app hihelloreid` against required vars. Required: `OPENAI_API_KEY`, `FLASK_ENV=production`. Optional: `DATABASE_URL` (auto-set by Heroku Postgres), `SENDGRID_USERNAME`, `SENDGRID_PASSWORD`, `DIGEST_EMAIL`, `SCHEDULING_URL`
+- **Port binding**: Gunicorn binds to `$PORT` which Heroku sets automatically. Verify with `heroku logs --app hihelloreid | grep "Listening"`
+- **File not found**: The Procfile runs `gunicorn app:app`. Flask serves static files from `dist/` in production. Verify `dist/` is built: `heroku run ls dist/ --app hihelloreid`
+- **Import error**: A Python package might be missing from `requirements.txt`. Check Heroku logs for `ModuleNotFoundError`
 
 ### Site up but chatbot broken
 - **OpenAI key expired/invalid**: Check `heroku config:get OPENAI_API_KEY --app hihelloreid` returns a valid key
 - **Rate limited**: Check Heroku logs for "Too many requests" messages
-- **resume-prompt.txt missing**: Server loads `src/data/resume-prompt.txt` at startup. Verify it exists and is committed.
+- **resume-prompt.txt missing**: Flask loads `src/data/resume-prompt.txt` at startup. Verify it exists and is committed.
 
 ### Site up but downloads broken
 - **Files missing from dist/**: Verify `public/docs/reidcollins.pdf` and `public/docs/reidcollins.docx` are committed. Vite copies `public/` to `dist/` during build.
 
 ## Step 4: Verify the fix
-- Run `npm test` locally
+- Run `npm test` and `pytest tests/test_server.py -v` locally
 - Push and confirm CI passes at https://github.com/snacksnack/reid_basic/actions
 - Check Heroku logs after deploy: `heroku logs --tail --app hihelloreid`

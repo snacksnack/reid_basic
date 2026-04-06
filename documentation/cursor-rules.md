@@ -26,11 +26,12 @@ Each rule has a **trigger mode** that controls when it's loaded:
 - **React components** — one per file, default export, PascalCase names, dedicated props interfaces, local `useState` only (no Redux), accessibility attributes
 - **CSS** — flat hyphenated class names grouped by feature prefix (not BEM, not CSS Modules), design tokens via CSS variables in `index.css`, co-located `.css` files imported at top of component, print styles for interactive elements
 - **Frontend API calls** — native `fetch` with relative `/api/...` paths, `try/catch` with user-visible fallback, silent catch for analytics
-- **Server endpoints** — `/api` prefix, inline handlers, manual validation with early `return res.status(400)`, rate limiting per-route, graceful degradation when DB/email fail
+- **Flask API endpoints** — `/api` prefix, decorator-based route handlers in `app.py`, manual validation with early `return jsonify({"error": ...}), 400`, rate limiting via `flask-limiter`, graceful degradation when DB/email fail
 - **TypeScript** — strict mode, `import type` for type-only imports, ESM everywhere
-- **Naming** — PascalCase files/components, `is` prefix for booleans, `UPPER_SNAKE` for constants, `on` prefix for callback props
+- **Python** — type hints encouraged, f-strings for formatting, `logging` module for errors, `pathlib.Path` for file paths
+- **Naming** — PascalCase files/components (React), snake_case (Python), `is_` prefix for booleans, `UPPER_SNAKE` for constants
 
-**Example:** If you ask the agent to "add a new API endpoint for feedback," it will follow the existing pattern: inline handler, `/api/feedback` route, manual validation, `{ error: string }` responses, and `console.error` logging.
+**Example:** If you ask the agent to "add a new API endpoint for feedback," it will follow the existing pattern: Flask route decorator, `/api/feedback` route, manual validation, `{"error": string}` responses, and `logging.error` for failures.
 
 ---
 
@@ -46,7 +47,7 @@ Each rule has a **trigger mode** that controls when it's loaded:
 3. Reviews `resume-prompt.txt` for the same issues
 4. Fixes any problems it finds in both files
 5. Runs `npm run extract:pdf` to update the plain text extract
-6. Runs `npm test` to verify nothing broke
+6. Runs tests (`npm test` + `npm run test:server`) to verify nothing broke
 7. Reports what changed — does NOT commit unless you ask
 
 **Why this exists:** Updating the resume involves multiple steps with a manual review requirement (the PDF parser produces "almost right" output that needs ligature correction). Encoding it as a rule means the agent handles the full procedure consistently every time.
@@ -65,15 +66,15 @@ Each rule has a **trigger mode** that controls when it's loaded:
    - `gh run list` / `gh run view` for GitHub Actions CI status
    - `heroku builds`, `heroku logs`, `heroku ps` for Heroku status
    - `heroku config` to check environment variables
-   - `npm test` / `npm run build` locally to reproduce
+   - `npm test` / `pytest` locally to reproduce
 3. **Matches against known issues** — checks common failure patterns:
-   - CI: TypeScript errors, ESLint errors, test failures
-   - Heroku build: missing dependency in wrong section, build script error
-   - App crash: missing env var, port binding, missing files
+   - CI: TypeScript errors, ESLint errors, test failures (frontend or server)
+   - Heroku build: missing dependency, build script error, buildpack issues
+   - App crash: missing env var (`FLASK_ENV`, `OPENAI_API_KEY`), port binding, missing files
    - Partial breakage: expired OpenAI key, missing `resume-prompt.txt`, missing resume files in `dist/`
 4. **Verifies the fix** — runs tests, confirms CI passes, checks Heroku logs
 
-**Key details encoded:** The Heroku app name (`hihelloreid`), required vs. optional environment variables, the build pipeline (`tsc -b && vite build`), and the file structure expectations in production.
+**Key details encoded:** The Heroku app name (`hihelloreid`), required vs. optional environment variables, the dual-buildpack setup (Node.js + Python), and the file structure expectations in production.
 
 ---
 
@@ -81,7 +82,7 @@ Each rule has a **trigger mode** that controls when it's loaded:
 
 **Trigger:** Description match — activates when you want to change the chatbot's behavior
 
-**Purpose:** Tells the agent where the chatbot's personality is defined so it can make changes without touching `server.js`.
+**Purpose:** Tells the agent where the chatbot's personality is defined so it can make changes without touching `app.py`.
 
 **How the chatbot prompt works:**
 
@@ -94,7 +95,7 @@ The chatbot's system prompt is built from two text files, combined at server sta
 
 **What the agent does when you want a change:**
 1. Edits `src/data/chatbot-instructions.txt`
-2. Runs `npm test`
+2. Runs tests (`npm test` + `npm run test:server`)
 3. Reports the changes
 
 **Example prompts:**

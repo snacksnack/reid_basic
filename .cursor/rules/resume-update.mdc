@@ -10,7 +10,7 @@ When the user says they updated their resume (new PDF/DOCX in `public/docs/`), f
 ## Step 1: Generate resume data
 Run `npm run update:resume` — this reads the PDF and writes both:
 - `src/data/resume.ts` (structured data for the React frontend)
-- `src/data/resume-prompt.txt` (plain text for the chatbot system prompt, loaded by `server.js` at startup)
+- `src/data/resume-prompt.txt` (plain text for the chatbot system prompt, loaded by `app.py` at startup)
 
 ## Step 2: Review resume.ts for parsing issues
 Read `src/data/resume.ts` and check for:
@@ -29,7 +29,7 @@ Read `src/data/resume-prompt.txt` and verify the same issues. Since both files a
 Run `npm run extract:pdf` to update `public/docs/reidcollins.txt`.
 
 ## Step 5: Run tests
-Run `npm test` to verify all 3 test suites pass (server, frontend, build).
+Run `npm test` to verify frontend tests pass, then run `npm run test:server` to verify server tests pass.
 
 ## Step 6: Report changes
 Tell the user what changed vs. the previous version and list any parsing fixes applied. Do NOT commit unless asked.

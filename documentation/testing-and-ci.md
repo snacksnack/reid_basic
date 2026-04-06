@@ -2,19 +2,23 @@
 
 ## Overview
 
-The project uses **Vitest** for testing and **GitHub Actions** for continuous integration. Heroku is configured for automatic deploys from the `main` branch, gated on CI checks passing.
+The project uses **Vitest** for frontend tests and **pytest** for backend tests. **GitHub Actions** handles continuous integration. Heroku is configured for automatic deploys from the `main` branch, gated on CI checks passing.
 
-**Pipeline:** Push to `main` → GitHub Actions runs tests → Heroku deploys (if tests pass)
+**Pipeline:** Push to `main` → GitHub Actions runs all tests → Heroku deploys (if tests pass)
 
 ---
 
 ## Running Tests
 
 ```bash
-# Run all tests once
+# Frontend tests (React components + build verification)
 npm test
 
-# Run tests in watch mode (re-runs on file changes)
+# Server tests (Flask API endpoints + tool definitions)
+npm run test:server
+# or: pytest tests/test_server.py -v
+
+# Frontend tests in watch mode
 npm run test:watch
 ```
 
@@ -22,18 +26,22 @@ npm run test:watch
 
 ## Test Suites
 
-### Server API tests (`tests/server.test.ts`)
+### Server API tests (`tests/test_server.py`)
 
-Tests the Express API endpoints without requiring external services (no OpenAI key, no Postgres). The OpenAI client is only instantiated when `OPENAI_API_KEY` is set, so the server starts cleanly in CI and test environments without credentials. The `/api/chat` endpoint returns a 503 if OpenAI is not configured.
+Tests the Flask API endpoints using Flask's built-in test client. No external services required (no OpenAI key, no Postgres). The OpenAI client is only instantiated when `OPENAI_API_KEY` is set, so the server starts cleanly in CI and test environments without credentials. The `/api/chat` endpoint returns a 503 if OpenAI is not configured.
 
 | Endpoint | What's tested |
 |----------|--------------|
 | `POST /api/pageview` | Returns 204 on valid request |
 | `POST /api/contact` | Rejects empty body (400), rejects missing fields (400), accepts valid submission (200) |
 | `POST /api/chat` | Rejects empty messages array (400), rejects missing messages field (400) |
-| `GET /api/download/:format` | Returns 404 with error for invalid format, recognizes valid formats |
+| `GET /api/download/<fmt>` | Returns 404 with error for invalid format, recognizes valid formats |
 
-The server exports the Express `app` without starting the listener when `NODE_ENV=test`, allowing `supertest` to make requests directly.
+Additional test classes cover the `TOOLS` schema definitions and `execute_tool_call` function directly.
+
+**Test fixtures** (`tests/conftest.py`):
+- `client` — Flask test client with `TESTING=True`
+- `_disable_rate_limit` — auto-use fixture that disables `flask-limiter` during tests
 
 ### Frontend component tests (`tests/app.test.tsx`)
 
@@ -68,8 +76,11 @@ Tests the `Resume` component renders correctly using `@testing-library/react`.
 **What it does:**
 1. Checks out the code
 2. Sets up Node.js 22 with npm caching
-3. Runs `npm ci` (clean install)
-4. Runs `npm test` (all test suites)
+3. Sets up Python 3.12 with pip caching
+4. Runs `npm ci` (clean install of frontend deps)
+5. Runs `pip install -r requirements.txt` (install backend deps)
+6. Runs `npm test` (frontend test suites via vitest)
+7. Runs `pytest tests/test_server.py -v` (server test suite)
 
 If any test fails, the workflow fails and Heroku will not deploy.
 
@@ -96,8 +107,32 @@ You can still trigger a manual deploy from the Heroku Dashboard if needed (e.g.,
 
 ## Adding New Tests
 
+### Server tests (Python / pytest)
+
+Add test classes or functions in `tests/test_server.py`. Use the `client` fixture for HTTP tests:
+
+```python
+class TestNewEndpoint:
+    def test_returns_200(self, client):
+        res = client.post("/api/new-endpoint", json={"key": "value"})
+        assert res.status_code == 200
+```
+
+Import functions directly from `app.py` for unit tests:
+
+```python
+from app import execute_tool_call
+
+class TestNewTool:
+    def test_returns_expected_result(self):
+        result = json.loads(execute_tool_call("new_tool", {"arg": "value"}))
+        assert result["key"] == "expected"
+```
+
+### Frontend tests (TypeScript / vitest)
+
 Test files go in the `tests/` directory:
-- `*.test.ts` for server/Node.js tests (add `// @vitest-environment node` at the top)
+- `*.test.ts` for Node.js tests (add `// @vitest-environment node` at the top)
 - `*.test.tsx` for React component tests (uses `jsdom` environment by default)
 
 The test setup file (`tests/setup.ts`) provides:
@@ -108,13 +143,20 @@ The test setup file (`tests/setup.ts`) provides:
 
 ## Dependencies
 
+### Python (server tests)
+
+| Package | Purpose |
+|---------|---------|
+| `pytest` | Test runner and framework |
+| `flask` | Provides test client via `app.test_client()` |
+
+### JavaScript (frontend tests)
+
 | Package | Purpose |
 |---------|---------|
 | `vitest` | Test runner (integrates with Vite) |
 | `@testing-library/react` | React component testing utilities |
 | `@testing-library/jest-dom` | DOM assertion matchers |
 | `jsdom` | Browser environment simulation for component tests |
-| `supertest` | HTTP assertions for Express endpoints |
-| `@types/supertest` | TypeScript types for supertest |
 
-All testing dependencies are in `devDependencies` and are not included in the production build.
+All JavaScript testing dependencies are in `devDependencies` and are not included in the production build.

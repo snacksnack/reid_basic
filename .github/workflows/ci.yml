@@ -18,7 +18,16 @@ jobs:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
 
-      - name: Run tests
+      - run: npm ci
+      - run: pip install -r requirements.txt
+
+      - name: Frontend tests
         run: npm test
+
+      - name: Server tests
+        run: pytest tests/test_server.py -v

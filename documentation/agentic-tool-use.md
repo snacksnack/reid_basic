@@ -12,9 +12,9 @@ The **chatbot is the agent**. Specifically, GPT-4o-mini with the system prompt. 
 
 - **Agent** = the chatbot (the LLM with its system prompt and tool definitions)
 - **Tool** = a capability the agent can call, like `schedule_meeting`. The agent decides when to use it — not the visitor, not hardcoded logic.
-- **Agentic loop** = the `for` loop in `/api/chat` in `server.js`. The agent gets multiple turns to think: call a tool, get the result back, then formulate a final response.
+- **Agentic loop** = the `for` loop in `/api/chat` in `app.py`. The agent gets multiple turns to think: call a tool, get the result back, then formulate a final response.
 
-All of the agentic work lives in **`server.js`** — the tool schema, the execution handler, and the orchestration loop. The frontend (`ChatBot.tsx`) is completely unaware that tools are involved; it sends messages and receives a text reply, same as before.
+All of the agentic work lives in **`app.py`** — the tool schema, the execution handler, and the orchestration loop. The frontend (`ChatBot.tsx`) is completely unaware that tools are involved; it sends messages and receives a text reply, same as before.
 
 | Before | Now |
 |--------|-----|
@@ -44,7 +44,7 @@ Visitor sends message
         ▼
 ┌──────────────────┐
 │  POST /api/chat  │
-│  (Express)       │
+│  (Flask)         │
 └────────┬─────────┘
          │
          ▼
@@ -56,10 +56,10 @@ Visitor sends message
 └────────┬─────────────────────────────┘
          │
          ▼
-    ┌────────────┐       YES        ┌─────────────────┐
-    │ tool_calls │ ───────────────► │ executeToolCall  │
-    │ in reply?  │                  │ (server-side)    │
-    └────┬───────┘                  └────────┬────────┘
+    ┌────────────┐       YES        ┌──────────────────┐
+    │ tool_calls │ ───────────────► │ execute_tool_call │
+    │ in reply?  │                  │ (server-side)     │
+    └────┬───────┘                  └────────┬─────────┘
          │ NO                                │
          │                                   │ result appended
          │                           ┌───────▼──────────┐
@@ -87,7 +87,7 @@ Key points:
 
 Three actors are involved:
 - **Frontend** = the visitor's browser running `ChatBot.tsx` — sends the HTTP request
-- **Server** = `server.js` (Express) — receives the request, orchestrates the loop
+- **Server** = `app.py` (Flask) — receives the request, orchestrates the loop
 - **Agent** = the LLM (GPT-4o-mini) — called by the server, decides whether to use tools
 
 The flow:
@@ -97,11 +97,11 @@ The flow:
 3. **Server calls the agent (OpenAI)** with the `tools` parameter containing all tool schemas
 4. **Agent responds** with either:
    - **A text message** (`finish_reason: 'stop'`) → return it to the frontend
-   - **One or more tool calls** (`message.tool_calls` array) → continue to step 5
+   - **One or more tool calls** (`message.tool_calls` list) → continue to step 5
 5. **Server executes each tool call**:
    - Parses the `arguments` JSON from the agent's response
-   - Calls `executeToolCall(name, args)` which runs the corresponding handler
-   - Appends the agent's tool-call message and each tool result to `apiMessages`
+   - Calls `execute_tool_call(name, args)` which runs the corresponding handler
+   - Appends the agent's tool-call message and each tool result to `api_messages`
    - Logs the tool invocation to the `tool_usage` database table
 6. **Server calls the agent again** with the updated messages (now including tool results)
 7. **Repeat** from step 4, up to `MAX_TOOL_ROUNDS` times
@@ -116,7 +116,7 @@ Round 1 → OpenAI:
 Round 1 ← OpenAI:
   { tool_calls: [{ id: "call_abc", function: { name: "schedule_meeting", arguments: '{"topic":"discuss role"}' } }] }
 
-Server executes: executeToolCall("schedule_meeting", { topic: "discuss role" })
+Server executes: execute_tool_call("schedule_meeting", { "topic": "discuss role" })
   → '{"available":true,"scheduling_url":"https://calendly.com/reid","topic":"discuss role"}'
 
 Round 2 → OpenAI:
@@ -184,12 +184,12 @@ SCHEDULING_URL=https://calendly.com/your-link
 heroku config:set SCHEDULING_URL=https://calendly.com/your-link --app hihelloreid
 ```
 
-### Constants (in `server.js`)
+### Constants (in `app.py`)
 
 | Constant | Default | Description |
 |----------|---------|-------------|
 | `MAX_TOOL_ROUNDS` | 3 | Maximum iterations of the tool-calling loop per request. Prevents runaway API calls if the model keeps requesting tools. |
-| `TOOLS` | Array | OpenAI function schemas. Exported for testing. |
+| `TOOLS` | List | OpenAI function schemas. Imported by tests. |
 
 ---
 
@@ -254,29 +254,29 @@ The `ChatBot.tsx` component includes a `Linkified` helper that detects URLs in a
 
 ## How to Add a New Tool
 
-Adding a tool to the chatbot involves three steps:
+Adding a tool to the chatbot involves these steps:
 
 ### Step 1: Define the tool schema
 
-Add an entry to the `TOOLS` array in `server.js`. Follow the [OpenAI function calling spec](https://platform.openai.com/docs/guides/function-calling):
+Add an entry to the `TOOLS` list in `app.py`. Follow the [OpenAI function calling spec](https://platform.openai.com/docs/guides/function-calling):
 
-```js
+```python
 {
-  type: 'function',
-  function: {
-    name: 'your_tool_name',
-    description: 'When to call this tool — be specific so the model invokes it correctly.',
-    parameters: {
-      type: 'object',
-      properties: {
-        param1: {
-          type: 'string',
-          description: 'What this parameter represents',
+    "type": "function",
+    "function": {
+        "name": "your_tool_name",
+        "description": "When to call this tool — be specific so the model invokes it correctly.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "param1": {
+                    "type": "string",
+                    "description": "What this parameter represents",
+                },
+            },
+            "required": ["param1"],
         },
-      },
-      required: ['param1'],  // omit if all params are optional
     },
-  },
 }
 ```
 
@@ -285,29 +285,27 @@ Add an entry to the `TOOLS` array in `server.js`. Follow the [OpenAI function ca
 - Be specific about when to use it and when *not* to
 - The model reads this to decide whether to call the tool
 
-### Step 2: Add the handler to `executeToolCall`
+### Step 2: Add the handler to `execute_tool_call`
 
-```js
-function executeToolCall(name, args) {
-  if (name === 'schedule_meeting') { ... }
+```python
+def execute_tool_call(name, args):
+    if name == "schedule_meeting":
+        ...
 
-  if (name === 'your_tool_name') {
-    // Your logic here — call APIs, query data, compute results
-    return JSON.stringify({
-      // Return structured data the model can use to craft a response
-      result: 'whatever the model needs',
-    })
-  }
+    if name == "your_tool_name":
+        # Your logic here — call APIs, query data, compute results
+        return json.dumps({
+            "result": "whatever the model needs",
+        })
 
-  return JSON.stringify({ error: `Unknown tool: ${name}` })
-}
+    return json.dumps({"error": f"Unknown tool: {name}"})
 ```
 
 **Guidelines:**
 - Always return a JSON string (the model parses it)
 - Handle missing config gracefully (check env vars, return fallbacks)
 - Keep execution fast — the visitor is waiting
-- Don't throw exceptions; return error objects the model can communicate
+- Don't raise exceptions; return error objects the model can communicate
 
 ### Step 3: Update the chatbot instructions
 
@@ -315,9 +313,9 @@ Add a section to `src/data/chatbot-instructions.txt` telling the model when and 
 
 ### Step 4: Add tests
 
-Add test cases in `tests/server.test.ts`:
-- Verify the tool exists in the `TOOLS` array with the correct schema
-- Test `executeToolCall` with various argument combinations
+Add test cases in `tests/test_server.py`:
+- Verify the tool exists in the `TOOLS` list with the correct schema
+- Test `execute_tool_call` with various argument combinations
 - Test graceful degradation when config is missing
 
 ### Step 5: Document
@@ -326,57 +324,58 @@ Add a section to this file describing the tool's purpose, parameters, behavior, 
 
 ---
 
-## Scaling: When to Extract Tools from `server.js`
+## Scaling: When to Extract Tools from `app.py`
 
-With one tool, keeping everything inline in `server.js` is fine — it matches the project's convention of inline route handlers. Once you reach 3-5+ tools, extract them into a dedicated module:
+With one tool, keeping everything inline in `app.py` is fine — it matches the project's convention of inline route handlers. Once you reach 3-5+ tools, extract them into a dedicated module:
 
 ```
-src/
-  tools/
-    index.js              ← exports TOOLS array + executeToolCall
-    scheduleMeeting.js    ← schema + handler for this tool
-    searchResume.js       ← schema + handler for another tool
+tools/
+  __init__.py              ← exports TOOLS list + execute_tool_call
+  schedule_meeting.py      ← schema + handler for this tool
+  search_resume.py         ← schema + handler for another tool
 ```
 
 Each tool file exports its schema and handler:
 
-```js
-// tools/scheduleMeeting.js
-export const schema = {
-  type: 'function',
-  function: {
-    name: 'schedule_meeting',
-    description: '...',
-    parameters: { ... },
-  },
+```python
+# tools/schedule_meeting.py
+import json
+import os
+
+SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "schedule_meeting",
+        "description": "...",
+        "parameters": { ... },
+    },
 }
 
-export function handler(args) {
-  const schedulingUrl = process.env.SCHEDULING_URL
-  // ...
-  return JSON.stringify({ ... })
-}
+def handler(args):
+    scheduling_url = os.environ.get("SCHEDULING_URL")
+    # ...
+    return json.dumps({ ... })
 ```
 
-The index file collects them into a registry:
+The `__init__.py` collects them into a registry:
 
-```js
-// tools/index.js
-import * as scheduleMeeting from './scheduleMeeting.js'
-import * as searchResume from './searchResume.js'
+```python
+# tools/__init__.py
+from . import schedule_meeting, search_resume
 
-const registry = [scheduleMeeting, searchResume]
+_registry = [schedule_meeting, search_resume]
 
-export const TOOLS = registry.map(t => t.schema)
+TOOLS = [t.SCHEMA for t in _registry]
+_handlers = {t.SCHEMA["function"]["name"]: t.handler for t in _registry}
 
-export function executeToolCall(name, args) {
-  const tool = registry.find(t => t.schema.function.name === name)
-  if (!tool) return JSON.stringify({ error: `Unknown tool: ${name}` })
-  return tool.handler(args)
-}
+def execute_tool_call(name, args):
+    handler = _handlers.get(name)
+    if not handler:
+        return json.dumps({"error": f"Unknown tool: {name}"})
+    return handler(args)
 ```
 
-Then `server.js` just imports `TOOLS` and `executeToolCall` — the agentic loop stays in `server.js`, but tool definitions live in their own files. Adding a new tool means creating one file and adding one import line.
+Then `app.py` just imports `TOOLS` and `execute_tool_call` — the agentic loop stays in `app.py`, but tool definitions live in their own files.
 
 ---
 
@@ -399,21 +398,21 @@ The existing rate limits (20 requests/IP/hour server-side, 10 messages client-si
 |---------|----------|
 | `SCHEDULING_URL` not set | Tool returns fallback; model suggests email instead |
 | `OPENAI_API_KEY` not set | Returns 503 before tool loop is reached |
-| OpenAI API error during tool loop | Caught by try/catch; returns 500 |
+| OpenAI API error during tool loop | Caught by try/except; returns 500 |
 | Tool loop hits `MAX_TOOL_ROUNDS` | Returns generic "couldn't generate" message |
 | Database unavailable | Tool usage logging silently skipped |
 | Unknown tool name | Returns error JSON; model communicates gracefully |
 
 ---
 
-## Files Modified
+## Files
 
 | File | Change |
 |------|--------|
-| `server.js` | Added `TOOLS` array, `executeToolCall`, tool-calling loop in `/api/chat`, `tool_usage` table, `logToolUsage` function |
-| `src/data/chatbot-instructions.txt` | Added scheduling tool guidance section |
-| `src/components/ChatBot.tsx` | Added `Linkified` component for clickable URLs in chat bubbles |
-| `src/components/ChatBot.css` | Added `.chat-link` styles for assistant and user bubbles |
-| `tests/server.test.ts` | Added tests for `TOOLS` schema and `executeToolCall` function |
+| `app.py` | `TOOLS` list, `execute_tool_call`, tool-calling loop in `/api/chat`, `tool_usage` table |
+| `src/data/chatbot-instructions.txt` | Scheduling tool guidance section |
+| `src/components/ChatBot.tsx` | `Linkified` component for clickable URLs in chat bubbles |
+| `src/components/ChatBot.css` | `.chat-link` styles for assistant and user bubbles |
+| `tests/test_server.py` | Tests for `TOOLS` schema and `execute_tool_call` function |
 | `documentation/agentic-tool-use.md` | This file |
-| `documentation/chatbot-setup.md` | Added reference to this document |
+| `documentation/chatbot-setup.md` | Reference to this document |

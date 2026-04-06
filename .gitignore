@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 .venv
+__pycache__
+*.pyc
 *.local
 .env
 

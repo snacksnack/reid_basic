@@ -6,9 +6,9 @@ The resume site includes an AI-powered chatbot that answers questions about Reid
 
 **Architecture:**
 - **Frontend:** React component (`ChatBot.tsx`) — floating button in the bottom-right that opens a chat panel
-- **Backend:** Express server (`server.js`) with a `POST /api/chat` endpoint that proxies requests to OpenAI
-- **In production:** Express serves both the static site (`dist/`) and the chat API
-- **In development:** Vite dev server proxies `/api` requests to the Express backend
+- **Backend:** Flask server (`app.py`) with a `POST /api/chat` endpoint that proxies requests to OpenAI
+- **In production:** Gunicorn runs the Flask app, which serves both the static site (`dist/`) and the chat API
+- **In development:** Vite dev server proxies `/api` requests to the Flask backend
 
 ---
 
@@ -34,7 +34,12 @@ This file is gitignored and will not be committed.
 npm run dev:server
 ```
 
-Runs the Express server on port 3001 with file watching.
+Runs the Flask server on port 3001. Alternatively, activate your venv and run directly:
+
+```bash
+source .venv/bin/activate
+python app.py
+```
 
 ### 3. Start the Vite dev server
 
@@ -44,7 +49,7 @@ In a separate terminal:
 npm run dev
 ```
 
-Opens the site at `http://localhost:5173`. The Vite config proxies `/api` requests to the Express server on port 3001.
+Opens the site at `http://localhost:5173`. The Vite config proxies `/api` requests to the Flask server on port 3001.
 
 ### 4. Test the chatbot
 
@@ -54,42 +59,54 @@ Click the blue chat bubble in the bottom-right corner and ask a question like "W
 
 ## Heroku Deployment
 
-### Set the environment variable
+### Set the environment variables
 
 ```bash
-heroku config:set OPENAI_API_KEY=sk-your-actual-key
+heroku config:set OPENAI_API_KEY=sk-your-actual-key --app hihelloreid
+heroku config:set FLASK_ENV=production --app hihelloreid
 ```
 
 ### How it works
 
-- The `Procfile` tells Heroku to run `node server.js`
-- In production (`NODE_ENV=production`), Express serves static files from `dist/` and handles `/api/chat`
-- Heroku sets `PORT` automatically; the server uses it
+- The `Procfile` tells Heroku to run `gunicorn app:app --bind 0.0.0.0:$PORT`
+- In production (`FLASK_ENV=production`), Flask serves static files from `dist/` and handles `/api/chat`
+- Heroku sets `PORT` automatically; gunicorn binds to it
+
+### Buildpacks
+
+The app requires two Heroku buildpacks (order matters):
+
+```bash
+heroku buildpacks:clear --app hihelloreid
+heroku buildpacks:add heroku/nodejs --app hihelloreid
+heroku buildpacks:add heroku/python --app hihelloreid
+```
+
+Node.js runs first (installs npm deps, runs `npm run build` to create `dist/`), then Python runs (installs pip deps from `requirements.txt`).
 
 ### Deploy
 
 ```bash
-git push heroku chatbot_experiment:main
+git push heroku main
 ```
 
-Or merge into `main` and push as usual.
+Or push to `main` on GitHub — CI runs, and Heroku auto-deploys if tests pass.
 
 ---
 
-## Files Added / Modified
+## Files
 
 | File | What it does |
 |------|-------------|
-| `server.js` | Express server — serves static files + `/api/chat` endpoint |
+| `app.py` | Flask server — serves static files + `/api/chat` endpoint |
 | `src/components/ChatBot.tsx` | React chat widget (floating button + chat panel) |
 | `src/components/ChatBot.css` | Chat widget styles (responsive, hidden on print) |
-| `Procfile` | Heroku process definition (`node server.js`) |
-| `.env.example` | Documents required environment variables |
+| `Procfile` | Heroku process definition (`gunicorn app:app`) |
 | `.env` | Your actual API key (gitignored) |
-| `vite.config.ts` | Added dev proxy: `/api` → `localhost:3001` |
-| `package.json` | Added dependencies, updated `start` script, added `dev:server` |
-| `src/App.tsx` | Added `<ChatBot />` component |
-| `.gitignore` | Added `.env` |
+| `vite.config.ts` | Dev proxy: `/api` → `localhost:3001` |
+| `package.json` | Frontend dependencies and scripts |
+| `requirements.txt` | Python dependencies (Flask, OpenAI, etc.) |
+| `src/App.tsx` | Includes `<ChatBot />` component |
 
 ---
 
@@ -97,28 +114,27 @@ Or merge into `main` and push as usual.
 
 ### Model
 
-The chatbot uses `gpt-4o-mini` (cheap and fast). To change the model, edit `server.js`:
+The chatbot uses `gpt-4o-mini` (cheap and fast). To change the model, edit `app.py`:
 
-```js
-const completion = await openai.chat.completions.create({
-  model: 'gpt-4o-mini',  // change to 'gpt-4o' for higher quality
-  ...
-})
+```python
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",  # change to "gpt-4o" for higher quality
+    ...
+)
 ```
 
 ### Conversation limits
 
 - **Client-side message cap:** 10 user messages per conversation (controlled by `MAX_USER_MESSAGES` in `ChatBot.tsx`). After the 10th message, the bot delivers a humorous cutoff message and disables the input.
-- **Server-side context window:** Last 20 messages sent to OpenAI (controlled by `MAX_CONVERSATION_MESSAGES` in `server.js`). Older messages are silently trimmed to control token costs.
+- **Server-side context window:** Last 20 messages sent to OpenAI (controlled by `MAX_CONVERSATION_MESSAGES` in `app.py`). Older messages are silently trimmed to control token costs.
 - **Max response tokens:** 500 per reply (controlled by `max_tokens` in the API call)
 
 ### Rate limiting
 
-The `/api/chat` endpoint is protected by `express-rate-limit`:
+The `/api/chat` endpoint is protected by `flask-limiter`:
 
-- **20 requests per IP per hour** (controlled in `server.js`)
+- **20 requests per IP per hour** (controlled in `app.py`)
 - Returns a `429` status with `{ error: "Too many requests — please try again later." }` when exceeded
-- Uses standard `RateLimit-*` response headers so clients know their remaining quota
 - Resets after the 1-hour window expires
 
 This prevents scripts or bots from burning through OpenAI credits. A real user hitting the 10-message client-side cap will never reach the 20-request server limit.
@@ -273,18 +289,20 @@ For full details on the architecture, how the tool-calling loop works, the datab
 
 ### System prompt
 
-The system prompt in `server.js` contains the full resume text and instructions for the AI. If you update your resume content, update the system prompt to match.
+The system prompt in `app.py` is built from two text files at startup. If you update your resume content, run `npm run update:resume` — the chatbot picks up the new content on the next server restart.
 
 ---
 
 ## Nightly Email Digest
 
-A script (`scripts/chat-digest.mjs`) queries Postgres for the last 24 hours of chat activity and emails you a summary. If there were no chats, it skips the email.
+A script (`scripts/chat_digest.py`) queries Postgres for the last 24 hours of site activity and emails you a summary. If there were no activity, it skips the email.
 
 ### What the email contains
 
-- Number of conversations and total messages
-- Each conversation grouped by session, showing IP address, start time, and the full user/bot exchange
+- Page views with unique visitors and referrer breakdown
+- Downloads by format
+- Contact form submissions
+- Each chat conversation grouped by session, showing IP address, start time, and the full user/bot exchange
 
 ### Setup on Heroku
 
@@ -301,7 +319,7 @@ heroku addons:open scheduler --app hihelloreid
 ```
 
 3. **Add a job:**
-   - Command: `node scripts/chat-digest.mjs`
+   - Command: `python scripts/chat_digest.py`
    - Frequency: **Daily**
    - Time: Pick a time (e.g. 06:00 UTC = 2:00 AM ET)
 
@@ -315,14 +333,10 @@ heroku config:set DIGEST_EMAIL=your-email@example.com --app hihelloreid
 
 - **Email sending:** Uses the existing SendGrid SMTP credentials (`SENDGRID_USERNAME` / `SENDGRID_PASSWORD`) already configured on Heroku.
 
-### Test locally
-
-You can't test email locally without SendGrid credentials, but you can test the query by temporarily setting `DATABASE_URL` and `SENDGRID_USERNAME`/`SENDGRID_PASSWORD` in your `.env` file.
-
 ### Test on Heroku
 
 ```bash
-heroku run node scripts/chat-digest.mjs --app hihelloreid
+heroku run python scripts/chat_digest.py --app hihelloreid
 ```
 
 ---
@@ -354,36 +368,23 @@ A "Contact Reid" button in the toolbar opens a modal where visitors can submit t
 
 The `/api/contact` endpoint is rate-limited to **3 submissions per IP per hour** to prevent abuse.
 
-### Useful queries
-
-```sql
--- All contact submissions
-SELECT * FROM contact_submissions ORDER BY created_at DESC;
-
--- Submissions from today
-SELECT * FROM contact_submissions WHERE created_at >= CURRENT_DATE ORDER BY created_at;
-
--- Cross-reference with chatters
-SELECT DISTINCT cs.name, cs.email, cs.message, cs.created_at
-FROM contact_submissions cs
-JOIN chat_logs cl ON cs.ip_address = cl.ip_address
-ORDER BY cs.created_at DESC;
-```
-
 ### Components
 
 - **`ContactModal.tsx`** — React component with the form UI and success state
 - **`ContactModal.css`** — Styling (modal overlay, animations, form fields)
-- **`server.js`** — `POST /api/contact` endpoint with validation and rate limiting
+- **`app.py`** — `POST /api/contact` endpoint with validation and rate limiting
 
 ---
 
-## npm Scripts Reference
+## Script Reference
 
 | Command | What it does |
 |---------|-------------|
 | `npm run dev` | Start Vite dev server (frontend) |
-| `npm run dev:server` | Start Express server with file watching (backend) |
+| `npm run dev:server` | Start Flask dev server (backend) |
 | `npm run build` | TypeScript check + production build |
-| `npm run start` | Run production server (`node server.js`) |
+| `npm test` | Run frontend tests (vitest) |
+| `npm run test:server` | Run server tests (pytest) |
+| `npm run update:resume` | Generate `resume.ts` + `resume-prompt.txt` from PDF |
+| `npm run extract:pdf` | Extract plain text from PDF |
 | `npm run digest` | Run chat digest email manually |
