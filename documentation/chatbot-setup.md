@@ -269,13 +269,14 @@ The analysis is deliberately framed as an advocate — it focuses on strengths a
 - The `/match` trigger is handled entirely in the system prompt — no special code paths
 - Visitors will never see this feature unless they guess the trigger
 
-### Agentic tool use (schedule meeting)
+### Agentic tool use (schedule meeting & send contact)
 
-The chatbot supports **OpenAI function calling** — the LLM can invoke server-side tools during a conversation. Currently one tool is implemented:
+The chatbot supports **OpenAI function calling** — the LLM can invoke server-side tools during a conversation. Two tools are implemented:
 
 - **`schedule_meeting`** — When a visitor asks to schedule a call or meeting, the model calls this tool to retrieve a scheduling link (Calendly, Cal.com, etc.) and presents it naturally in the response.
+- **`send_contact`** — When a visitor wants Reid to receive a written message and has provided name, email, and message in chat, the model can submit the same payload as the Contact Reid form (shared backend path, shared rate limit). See **[Agentic Tool Use](agentic-tool-use.md)** for behavior, validation, and privacy notes.
 
-**Setup:** Set the `SCHEDULING_URL` environment variable to your booking page URL. If not set, the tool gracefully falls back to suggesting email.
+**Scheduling setup:** Set the `SCHEDULING_URL` environment variable to your booking page URL. If not set, the scheduling tool falls back to suggesting email.
 
 ```bash
 # Local
@@ -285,7 +286,7 @@ echo 'SCHEDULING_URL=https://calendly.com/your-link' >> .env
 heroku config:set SCHEDULING_URL=https://calendly.com/your-link --app hihelloreid
 ```
 
-For full details on the architecture, how the tool-calling loop works, the database table, and how to add new tools, see **[Agentic Tool Use](agentic-tool-use.md)**.
+For full details on the architecture, the tool-calling loop, `tool_usage` logging, and how to add new tools, see **[Agentic Tool Use](agentic-tool-use.md)**.
 
 ### System prompt
 
@@ -366,13 +367,13 @@ A "Contact Reid" button in the toolbar opens a modal where visitors can submit t
 
 ### Rate limiting
 
-The `/api/contact` endpoint is rate-limited to **3 submissions per IP per hour** to prevent abuse.
+Successful contact submissions are capped at **5 per client IP per rolling hour** (`MAX_CONTACT_SUBMISSIONS_PER_HOUR` in `app.py`), enforced by counting rows in `contact_submissions` (same limit whether the visitor uses the **Contact Reid** modal or the chatbot’s **`send_contact`** tool). Invalid requests do not consume quota. The API returns **429** with a JSON `error` when the limit is exceeded.
 
 ### Components
 
 - **`ContactModal.tsx`** — React component with the form UI and success state
 - **`ContactModal.css`** — Styling (modal overlay, animations, form fields)
-- **`app.py`** — `POST /api/contact` endpoint with validation and rate limiting
+- **`app.py`** — `POST /api/contact` and `submit_contact()` (shared with the `send_contact` chat tool)
 
 ---
 

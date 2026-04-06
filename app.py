@@ -64,6 +64,99 @@ def _db_execute(query, params=None):
         pool.putconn(conn)
 
 
+def _recent_contact_submissions_count(ip: str) -> int:
+    """Count contact rows for this IP in the rolling last hour (for rate limiting)."""
+    pool = _get_pool()
+    if not pool:
+        return 0
+    conn = pool.getconn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM contact_submissions "
+                "WHERE ip_address = %s AND created_at > NOW() - INTERVAL '1 hour'",
+                [ip],
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
+    except Exception as e:
+        logging.error("contact rate count error: %s", e)
+        return 0
+    finally:
+        pool.putconn(conn)
+
+
+MAX_CONTACT_SUBMISSIONS_PER_HOUR = 5
+
+
+def _send_contact_notification_email(
+    name: str, visitor_email: str, message: str, ip: str
+) -> None:
+    sg_user = os.environ.get("SENDGRID_USERNAME")
+    sg_pass = os.environ.get("SENDGRID_PASSWORD")
+    if not sg_user or not sg_pass:
+        return
+    recipient = os.environ.get("DIGEST_EMAIL", "hire.reid.collins@gmail.com")
+    body = (
+        f"New contact form submission\n\n"
+        f"Name: {name}\nEmail: {visitor_email}\nIP: {ip}\n\n{message}"
+    )
+    mime_msg = MIMEText(body)
+    mime_msg["Subject"] = f"Contact form: {name}"
+    mime_msg["From"] = "Resume Site <hire.reid.collins@gmail.com>"
+    mime_msg["To"] = recipient
+    mime_msg["Reply-To"] = visitor_email
+    try:
+        with smtplib.SMTP("smtp.sendgrid.net", 587) as server:
+            server.starttls()
+            server.login(sg_user, sg_pass)
+            server.send_message(mime_msg)
+    except Exception as e:
+        logging.error("Failed to send contact email: %s", e)
+
+
+def submit_contact(name, email, message, ip: str) -> dict:
+    """
+    Shared path for contact form POST and the send_contact chat tool.
+
+    Returns a dict: {"ok": True} or {"ok": False, "error": str, "message": str}.
+    error is one of: validation, rate_limited.
+    """
+    name = (name or "").strip()
+    email = (email or "").strip()
+    message = (message or "").strip()
+
+    if not name or not email or not message:
+        return {
+            "ok": False,
+            "error": "validation",
+            "message": "Name, email, and message are required.",
+        }
+
+    local = email.split("@")[-1] if "@" in email else ""
+    if "@" not in email or "." not in local:
+        return {
+            "ok": False,
+            "error": "validation",
+            "message": "A valid email address is required.",
+        }
+
+    if _recent_contact_submissions_count(ip) >= MAX_CONTACT_SUBMISSIONS_PER_HOUR:
+        return {
+            "ok": False,
+            "error": "rate_limited",
+            "message": "Too many submissions — please try again later.",
+        }
+
+    _db_execute(
+        "INSERT INTO contact_submissions (name, email, message, ip_address) "
+        "VALUES (%s, %s, %s, %s)",
+        [name, email, message, ip],
+    )
+    _send_contact_notification_email(name, email, message, ip)
+    return {"ok": True}
+
+
 def _init_db():
     pool = _get_pool()
     if not pool:
@@ -144,10 +237,39 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "send_contact",
+            "description": (
+                "Submit a message from the visitor to Reid (same as the Contact Reid form). "
+                "Use only after the visitor has explicitly provided their real name, email, "
+                "and the message they want to send. Never guess or invent email or name."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Visitor's name as they gave it.",
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Visitor's email address (for Reid to reply).",
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The message body the visitor wants Reid to receive.",
+                    },
+                },
+                "required": ["name", "email", "message"],
+            },
+        },
+    },
 ]
 
 
-def execute_tool_call(name, args):
+def execute_tool_call(name, args, *, client_ip="unknown"):
     if name == "schedule_meeting":
         scheduling_url = os.environ.get("SCHEDULING_URL")
         if not scheduling_url:
@@ -164,6 +286,27 @@ def execute_tool_call(name, args):
                 "available": True,
                 "scheduling_url": scheduling_url,
                 "topic": args.get("topic"),
+            }
+        )
+    if name == "send_contact":
+        result = submit_contact(
+            args.get("name"),
+            args.get("email"),
+            args.get("message"),
+            client_ip,
+        )
+        if result["ok"]:
+            return json.dumps(
+                {
+                    "ok": True,
+                    "message": "Submission was recorded. Confirm briefly with the visitor.",
+                }
+            )
+        return json.dumps(
+            {
+                "ok": False,
+                "error": result["error"],
+                "message": result["message"],
             }
         )
     return json.dumps({"error": f"Unknown tool: {name}"})
@@ -206,46 +349,16 @@ def pageview():
 
 
 @app.post("/api/contact")
-@limiter.limit("3 per hour")
 def contact():
     data = request.get_json(silent=True) or {}
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip()
-    message = (data.get("message") or "").strip()
-
-    if not name or not email or not message:
-        return jsonify({"error": "Name, email, and message are required."}), 400
-
     ip = request.remote_addr or "unknown"
-
-    _db_execute(
-        "INSERT INTO contact_submissions (name, email, message, ip_address) "
-        "VALUES (%s, %s, %s, %s)",
-        [name, email, message, ip],
+    result = submit_contact(
+        data.get("name"), data.get("email"), data.get("message"), ip
     )
-
-    sg_user = os.environ.get("SENDGRID_USERNAME")
-    sg_pass = os.environ.get("SENDGRID_PASSWORD")
-    if sg_user and sg_pass:
-        recipient = os.environ.get("DIGEST_EMAIL", "hire.reid.collins@gmail.com")
-        body = (
-            f"New contact form submission\n\n"
-            f"Name: {name}\nEmail: {email}\nIP: {ip}\n\n{message}"
-        )
-        mime_msg = MIMEText(body)
-        mime_msg["Subject"] = f"Contact form: {name}"
-        mime_msg["From"] = "Resume Site <hire.reid.collins@gmail.com>"
-        mime_msg["To"] = recipient
-        mime_msg["Reply-To"] = email
-        try:
-            with smtplib.SMTP("smtp.sendgrid.net", 587) as server:
-                server.starttls()
-                server.login(sg_user, sg_pass)
-                server.send_message(mime_msg)
-        except Exception as e:
-            logging.error("Failed to send contact email: %s", e)
-
-    return jsonify({"ok": True})
+    if result["ok"]:
+        return jsonify({"ok": True})
+    status_code = 429 if result["error"] == "rate_limited" else 400
+    return jsonify({"error": result["message"]}), status_code
 
 
 @app.post("/api/chat")
@@ -293,7 +406,9 @@ def chat():
                 api_messages.append(choice.message)
                 for tool_call in choice.message.tool_calls:
                     args = json.loads(tool_call.function.arguments or "{}")
-                    result = execute_tool_call(tool_call.function.name, args)
+                    result = execute_tool_call(
+                        tool_call.function.name, args, client_ip=ip
+                    )
                     api_messages.append(
                         {
                             "role": "tool",

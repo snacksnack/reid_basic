@@ -127,6 +127,16 @@ class TestNewTool:
     def test_returns_expected_result(self):
         result = json.loads(execute_tool_call("new_tool", {"arg": "value"}))
         assert result["key"] == "expected"
+
+    def test_ip_sensitive_tool(self):
+        result = json.loads(
+            execute_tool_call(
+                "send_contact",
+                {"name": "A", "email": "a@b.com", "message": "Hi"},
+                client_ip="203.0.113.10",
+            )
+        )
+        assert result["ok"] is True
 ```
 
 ### Frontend tests (TypeScript / vitest)

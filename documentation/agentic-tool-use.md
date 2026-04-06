@@ -11,7 +11,7 @@ This is an implementation of the **agentic tool use** design pattern: the model 
 The **chatbot is the agent**. Specifically, GPT-4o-mini with the system prompt. It receives a visitor's message, *reasons* about what to do, and *decides* whether to just respond with text or invoke a tool first.
 
 - **Agent** = the chatbot (the LLM with its system prompt and tool definitions)
-- **Tool** = a capability the agent can call, like `schedule_meeting`. The agent decides when to use it — not the visitor, not hardcoded logic.
+- **Tool** = a capability the agent can call, such as `schedule_meeting` or `send_contact`. The agent decides when to use it — not the visitor, not hardcoded logic.
 - **Agentic loop** = the `for` loop in `/api/chat` in `app.py`. The agent gets multiple turns to think: call a tool, get the result back, then formulate a final response.
 
 All of the agentic work lives in **`app.py`** — the tool schema, the execution handler, and the orchestration loop. The frontend (`ChatBot.tsx`) is completely unaware that tools are involved; it sends messages and receives a text reply, same as before.
@@ -51,7 +51,7 @@ Visitor sends message
 ┌──────────────────────────────────────┐
 │  OpenAI Chat Completions API         │
 │  model: gpt-4o-mini                  │
-│  tools: [schedule_meeting, ...]      │
+│  tools: [schedule_meeting, send_contact, ...] │
 │  messages: [system + conversation]   │
 └────────┬─────────────────────────────┘
          │
@@ -100,7 +100,7 @@ The flow:
    - **One or more tool calls** (`message.tool_calls` list) → continue to step 5
 5. **Server executes each tool call**:
    - Parses the `arguments` JSON from the agent's response
-   - Calls `execute_tool_call(name, args)` which runs the corresponding handler
+   - Calls `execute_tool_call(name, args, client_ip=ip)` — handlers that need the visitor's IP (e.g. `send_contact`) receive it via the keyword argument; the scheduler tool ignores it
    - Appends the agent's tool-call message and each tool result to `api_messages`
    - Logs the tool invocation to the `tool_usage` database table
 6. **Server calls the agent again** with the updated messages (now including tool results)
@@ -164,6 +164,53 @@ The LLM uses the result to craft a natural response — either presenting the sc
 >
 > **Assistant:** "Absolutely! Here's Reid's scheduling link: https://calendly.com/reid — pick whatever time works for you. If you want to share any details about the role beforehand, feel free to mention it when you book."
 
+### `send_contact`
+
+**Purpose:** Let a visitor send Reid a written message through the chat — the same outcome as submitting the **Contact Reid** modal (`POST /api/contact`).
+
+**When the LLM should call it:**
+
+- The visitor asks to email Reid, leave a message, or “pass along” text without booking a call (or in addition to scheduling).
+- The visitor has **explicitly** provided all three: **name**, **email**, and **message** in the conversation. If anything is missing, the agent should ask — never fabricate or guess contact details.
+
+**Parameters (all required in the tool schema):**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `name` | string | Visitor’s name as they stated it |
+| `email` | string | Visitor’s real email (must look valid: contains `@`, domain with `.`) |
+| `message` | string | Full body of what they want Reid to read |
+
+**Shared implementation (`submit_contact` in `app.py`):**
+
+Both the HTTP contact route and the `send_contact` tool call the same function:
+
+1. **Validation** — non-empty `name`, `email`, `message`; lightweight email shape check.
+2. **Rate limit** — at most **5 successful submissions per client IP per rolling hour** (`MAX_CONTACT_SUBMISSIONS_PER_HOUR` in `app.py`), counted as rows in `contact_submissions` with a matching `ip_address`. This cap applies **together** for the modal and for chat — a visitor cannot bypass the limit by switching channels.
+3. **Persistence** — `INSERT` into `contact_submissions` (best-effort if DB is down; same behavior as before).
+4. **Email** — if `SENDGRID_USERNAME` / `SENDGRID_PASSWORD` are set, sends the same style of notification as the form (reply-to set to the visitor’s email).
+
+**Tool result JSON (what the model sees):**
+
+| Outcome | Payload shape |
+|---------|----------------|
+| Success | `{ "ok": true, "message": "…" }` — agent should confirm the message was sent |
+| Validation failure | `{ "ok": false, "error": "validation", "message": "…" }` |
+| Rate limited | `{ "ok": false, "error": "rate_limited", "message": "Too many submissions — …" }` |
+
+The system prompt instructs the agent **not** to claim the message was sent unless `ok` is `true`.
+
+**Privacy / safety notes:**
+
+- Visitor PII (`name`, `email`, `message`) is passed in the tool call arguments and logged to `tool_usage` (`tool_args`, `tool_result`) like other tools — be aware when querying analytics.
+- The agent must not call the tool until it has real values from the user; instructions in `chatbot-instructions.txt` reinforce this.
+
+**Example exchange:**
+
+> **Visitor:** “I don’t want to use Calendly. Can you ask Reid to email me? I’m Jane Doe, jane@company.com — we’re hiring for a TPM and I’d love to connect.”
+>
+> **Assistant:** *(calls `send_contact` with those details)* → “All set — I’ve sent that to Reid. He can reply directly to jane@company.com.”
+
 ---
 
 ## Configuration
@@ -173,6 +220,9 @@ The LLM uses the result to craft a natural response — either presenting the sc
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SCHEDULING_URL` | No | Full URL to a scheduling page (e.g. Calendly, Cal.com, or any booking link). If not set, the tool gracefully falls back to suggesting email contact. |
+| SendGrid (`SENDGRID_USERNAME`, `SENDGRID_PASSWORD`) | No | Same as the contact form — if omitted, submissions are still stored when `DATABASE_URL` is set, but no immediate email is sent. |
+
+`send_contact` does not introduce new environment variables.
 
 **Set locally** (`.env`):
 ```
@@ -230,9 +280,18 @@ FROM tool_usage tu
 JOIN chat_logs cl ON tu.session_id = cl.session_id AND cl.role = 'user'
 WHERE tu.tool_name = 'schedule_meeting'
 ORDER BY tu.created_at DESC;
+
+-- Chat-originated contact submissions (tool_args include name/email — treat as PII)
+SELECT session_id, tool_args->>'name' AS name, tool_args->>'email' AS email,
+       tool_result, created_at
+FROM tool_usage
+WHERE tool_name = 'send_contact'
+ORDER BY created_at DESC;
 ```
 
 **Local development:** Logging is skipped when `DATABASE_URL` is not set.
+
+**Note:** Rows for `send_contact` store visitor name, email, and message in `tool_args` (and a redacted-style summary in `tool_result`). Prefer `contact_submissions` as the source of truth for outreach; use `tool_usage` for debugging agent behavior and session-level analytics.
 
 ---
 
@@ -287,8 +346,10 @@ Add an entry to the `TOOLS` list in `app.py`. Follow the [OpenAI function callin
 
 ### Step 2: Add the handler to `execute_tool_call`
 
+Handlers run server-side during the chat request. The signature includes an optional **`client_ip`** (the Flask `request.remote_addr` passed from `chat()`). Use it for rate limits, audit logs, or geo features; schedule-style tools can ignore it.
+
 ```python
-def execute_tool_call(name, args):
+def execute_tool_call(name, args, *, client_ip="unknown"):
     if name == "schedule_meeting":
         ...
 
@@ -351,8 +412,9 @@ SCHEMA = {
     },
 }
 
-def handler(args):
+def handler(args, *, client_ip="unknown"):
     scheduling_url = os.environ.get("SCHEDULING_URL")
+    # client_ip unused for this tool
     # ...
     return json.dumps({ ... })
 ```
@@ -368,14 +430,14 @@ _registry = [schedule_meeting, search_resume]
 TOOLS = [t.SCHEMA for t in _registry]
 _handlers = {t.SCHEMA["function"]["name"]: t.handler for t in _registry}
 
-def execute_tool_call(name, args):
+def execute_tool_call(name, args, *, client_ip="unknown"):
     handler = _handlers.get(name)
     if not handler:
         return json.dumps({"error": f"Unknown tool: {name}"})
-    return handler(args)
+    return handler(args, client_ip=client_ip)
 ```
 
-Then `app.py` just imports `TOOLS` and `execute_tool_call` — the agentic loop stays in `app.py`, but tool definitions live in their own files.
+Then `app.py` imports `TOOLS` and `execute_tool_call` — the chat route passes `client_ip=request.remote_addr` so tools like `send_contact` can enforce per-IP limits consistently with HTTP routes.
 
 ---
 
@@ -397,10 +459,12 @@ The existing rate limits (20 requests/IP/hour server-side, 10 messages client-si
 | Failure | Behavior |
 |---------|----------|
 | `SCHEDULING_URL` not set | Tool returns fallback; model suggests email instead |
+| `send_contact` validation fails | Tool returns `ok: false`, `error: validation`; model explains |
+| `send_contact` rate limit (shared with form) | Tool returns `ok: false`, `error: rate_limited` |
 | `OPENAI_API_KEY` not set | Returns 503 before tool loop is reached |
 | OpenAI API error during tool loop | Caught by try/except; returns 500 |
 | Tool loop hits `MAX_TOOL_ROUNDS` | Returns generic "couldn't generate" message |
-| Database unavailable | Tool usage logging silently skipped |
+| Database unavailable | Inserts and `tool_usage` logging best-effort; may still return `ok: true` for contact if email succeeds |
 | Unknown tool name | Returns error JSON; model communicates gracefully |
 
 ---
@@ -409,8 +473,8 @@ The existing rate limits (20 requests/IP/hour server-side, 10 messages client-si
 
 | File | Change |
 |------|--------|
-| `app.py` | `TOOLS` list, `execute_tool_call`, tool-calling loop in `/api/chat`, `tool_usage` table |
-| `src/data/chatbot-instructions.txt` | Scheduling tool guidance section |
+| `app.py` | `TOOLS` list, `execute_tool_call(..., client_ip=)`, `submit_contact` (shared with `POST /api/contact`), tool-calling loop in `/api/chat`, `tool_usage` table |
+| `src/data/chatbot-instructions.txt` | Scheduling and `send_contact` tool guidance |
 | `src/components/ChatBot.tsx` | `Linkified` component for clickable URLs in chat bubbles |
 | `src/components/ChatBot.css` | `.chat-link` styles for assistant and user bubbles |
 | `tests/test_server.py` | Tests for `TOOLS` schema and `execute_tool_call` function |

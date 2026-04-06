@@ -71,6 +71,20 @@ class TestToolsDefinition:
         assert tool["type"] == "function"
         assert "topic" in tool["function"]["parameters"]["properties"]
 
+    def test_send_contact_schema(self):
+        tool = next(
+            (t for t in TOOLS if t["function"]["name"] == "send_contact"), None
+        )
+        assert tool is not None
+        assert tool["type"] == "function"
+        props = tool["function"]["parameters"]["properties"]
+        assert set(tool["function"]["parameters"]["required"]) == {
+            "name",
+            "email",
+            "message",
+        }
+        assert set(props.keys()) == {"name", "email", "message"}
+
 
 class TestExecuteToolCall:
     def test_returns_scheduling_url_when_set(self):
@@ -92,3 +106,40 @@ class TestExecuteToolCall:
     def test_handles_unknown_tool(self):
         result = json.loads(execute_tool_call("unknown_tool", {}))
         assert "unknown tool" in result["error"].lower()
+
+    def test_send_contact_rejects_empty_fields(self):
+        result = json.loads(
+            execute_tool_call(
+                "send_contact",
+                {"name": "", "email": "a@b.com", "message": "hi"},
+                client_ip="203.0.113.50",
+            )
+        )
+        assert result["ok"] is False
+        assert result["error"] == "validation"
+
+    def test_send_contact_rejects_invalid_email(self):
+        result = json.loads(
+            execute_tool_call(
+                "send_contact",
+                {"name": "Test", "email": "not-an-email", "message": "Hello"},
+                client_ip="203.0.113.51",
+            )
+        )
+        assert result["ok"] is False
+        assert result["error"] == "validation"
+        assert "email" in result["message"].lower()
+
+    def test_send_contact_accepts_valid_payload(self):
+        result = json.loads(
+            execute_tool_call(
+                "send_contact",
+                {
+                    "name": "Tool Test",
+                    "email": "tooltest@example.com",
+                    "message": "Sent via execute_tool_call test",
+                },
+                client_ip="203.0.113.52",
+            )
+        )
+        assert result["ok"] is True
