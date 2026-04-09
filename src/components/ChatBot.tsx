@@ -90,10 +90,11 @@ export default function ChatBot() {
     setIsLoading(true)
 
     try {
+      // Send only the new message — the server owns the conversation history.
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updated, sessionId }),
+        body: JSON.stringify({ message: text, sessionId }),
       })
 
       if (!res.ok) throw new Error('request failed')

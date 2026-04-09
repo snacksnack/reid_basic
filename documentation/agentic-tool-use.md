@@ -79,7 +79,7 @@ Visitor sends message
 Key points:
 - The **tool-calling loop runs entirely server-side**. The frontend sends messages and receives a text reply — it doesn't know tools were involved.
 - The loop is capped at **3 rounds** (`MAX_TOOL_ROUNDS`) to prevent runaway costs or infinite loops.
-- Tool calls and results are **ephemeral** — they exist only during request processing. The frontend's conversation history contains only `user` and `assistant` messages.
+- Tool calls and results are **persisted server-side** — every message in the sequence (user, assistant tool-call, tool result, assistant reply) is saved to `chat_logs`. The frontend only receives the final text reply.
 
 ---
 
@@ -92,8 +92,8 @@ Three actors are involved:
 
 The flow:
 
-1. **Frontend sends** `POST /api/chat` with `{ messages, sessionId }`
-2. **Server builds** the API message array: `[system_prompt, ...last_20_messages]`
+1. **Frontend sends** `POST /api/chat` with `{ message, sessionId }` — just the new user message; the server owns the history
+2. **Server loads** the conversation history from Postgres and builds the API message array: `[system_prompt, ...last_20_messages]`
 3. **Server calls the agent (OpenAI)** with the `tools` parameter containing all tool schemas
 4. **Agent responds** with either:
    - **A text message** (`finish_reason: 'stop'`) → return it to the frontend

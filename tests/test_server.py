@@ -48,13 +48,18 @@ class TestContact:
 
 
 class TestChat:
-    def test_rejects_empty_messages(self, client):
-        res = client.post("/api/chat", json={"messages": []})
-        assert res.status_code == 400
-        assert "messages" in res.json["error"].lower()
-
-    def test_rejects_missing_messages(self, client):
+    def test_rejects_missing_message(self, client):
         res = client.post("/api/chat", json={})
+        assert res.status_code == 400
+        assert "message" in res.json["error"].lower()
+
+    def test_rejects_empty_message_string(self, client):
+        res = client.post("/api/chat", json={"message": "   "})
+        assert res.status_code == 400
+        assert "message" in res.json["error"].lower()
+
+    def test_rejects_non_string_message(self, client):
+        res = client.post("/api/chat", json={"message": []})
         assert res.status_code == 400
 
 

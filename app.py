@@ -186,6 +186,8 @@ def _init_db():
                     ip_address TEXT, tool_name TEXT NOT NULL,
                     tool_args JSONB, tool_result TEXT,
                     created_at TIMESTAMPTZ DEFAULT NOW())""",
+                # Migration: add raw_message column if it doesn't exist yet
+                "ALTER TABLE chat_logs ADD COLUMN IF NOT EXISTS raw_message JSONB",
             ]:
                 cur.execute(ddl)
         conn.commit()
@@ -198,6 +200,50 @@ def _init_db():
 
 
 _init_db()
+
+
+def _load_session_history(session_id: str) -> list:
+    """Return all chat messages for a session, ordered oldest-first.
+
+    Each row's raw_message column stores the complete OpenAI message dict
+    (including tool_calls / tool_call_id fields), so the full sequence can be
+    replayed faithfully without relying on the client.
+    """
+    pool = _get_pool()
+    if not pool:
+        return []
+    conn = pool.getconn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT raw_message FROM chat_logs "
+                "WHERE session_id = %s AND raw_message IS NOT NULL "
+                "ORDER BY created_at ASC",
+                [session_id],
+            )
+            return [row[0] for row in cur.fetchall()]
+    except Exception as e:
+        logging.error("load session history error: %s", e)
+        return []
+    finally:
+        pool.putconn(conn)
+
+
+def _save_message(session_id: str, ip: str, message: dict) -> None:
+    """Persist a single OpenAI message dict to chat_logs.
+
+    Stores the raw dict in raw_message (used for history reconstruction) and
+    also extracts role/content for human-readable querying.  content is stored
+    as an empty string for assistant tool-call messages where content is None.
+    """
+    role = message.get("role", "")
+    content = message.get("content") or ""
+    _db_execute(
+        "INSERT INTO chat_logs (session_id, ip_address, role, content, raw_message) "
+        "VALUES (%s, %s, %s, %s, %s)",
+        [session_id, ip, role, content, json.dumps(message)],
+    )
+
 
 # ---------------------------------------------------------------------------
 # System prompt
@@ -366,28 +412,27 @@ def contact():
 def chat():
     try:
         data = request.get_json(silent=True) or {}
-        messages = data.get("messages")
+        message = data.get("message")
         session_id = data.get("sessionId", "no-session")
 
-        if not isinstance(messages, list) or len(messages) == 0:
-            return jsonify({"error": "messages array is required"}), 400
+        if not message or not isinstance(message, str) or not message.strip():
+            return jsonify({"error": "message is required"}), 400
 
         if not openai_client:
             return jsonify({"error": "Chat is not configured"}), 503
 
         ip = request.remote_addr or "unknown"
 
-        last_user_msg = next(
-            (m for m in reversed(messages) if m.get("role") == "user"), None
-        )
-        if last_user_msg:
-            _db_execute(
-                "INSERT INTO chat_logs (session_id, ip_address, role, content) "
-                "VALUES (%s, %s, %s, %s)",
-                [session_id, ip, "user", last_user_msg["content"]],
-            )
+        # Persist the user's message first, then load the full history from the
+        # database.  The server — not the client — is the source of truth for
+        # the conversation.  This prevents a caller from injecting fake prior
+        # turns (e.g. fabricated assistant messages or tool results) into the
+        # context that the LLM sees.
+        user_message = {"role": "user", "content": message.strip()}
+        _save_message(session_id, ip, user_message)
 
-        trimmed = messages[-MAX_CONVERSATION_MESSAGES:]
+        history = _load_session_history(session_id)
+        trimmed = history[-MAX_CONVERSATION_MESSAGES:]
         api_messages = [{"role": "system", "content": SYSTEM_PROMPT}, *trimmed]
 
         reply = None
@@ -403,19 +448,41 @@ def chat():
             choice = completion.choices[0]
 
             if choice.message.tool_calls:
-                api_messages.append(choice.message)
+                # Serialize the assistant's tool-call message to a plain dict so
+                # it can be stored and replayed.  The OpenAI SDK object is not
+                # directly JSON-serialisable.
+                tool_calls_data = [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        },
+                    }
+                    for tc in choice.message.tool_calls
+                ]
+                assistant_tool_msg = {
+                    "role": "assistant",
+                    "content": choice.message.content,
+                    "tool_calls": tool_calls_data,
+                }
+                api_messages.append(assistant_tool_msg)
+                _save_message(session_id, ip, assistant_tool_msg)
+
                 for tool_call in choice.message.tool_calls:
                     args = json.loads(tool_call.function.arguments or "{}")
                     result = execute_tool_call(
                         tool_call.function.name, args, client_ip=ip
                     )
-                    api_messages.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": tool_call.id,
-                            "content": result,
-                        }
-                    )
+                    tool_result_msg = {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result,
+                    }
+                    api_messages.append(tool_result_msg)
+                    _save_message(session_id, ip, tool_result_msg)
+
                     _db_execute(
                         "INSERT INTO tool_usage "
                         "(session_id, ip_address, tool_name, tool_args, tool_result) "
@@ -436,11 +503,7 @@ def chat():
         if not reply:
             reply = "Sorry, I couldn't generate a response."
 
-        _db_execute(
-            "INSERT INTO chat_logs (session_id, ip_address, role, content) "
-            "VALUES (%s, %s, %s, %s)",
-            [session_id, ip, "assistant", reply],
-        )
+        _save_message(session_id, ip, {"role": "assistant", "content": reply})
 
         return jsonify({"reply": reply})
 
