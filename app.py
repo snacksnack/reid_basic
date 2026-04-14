@@ -246,12 +246,209 @@ def _save_message(session_id: str, ip: str, message: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# System prompt
+# System prompt (static instructions only — resume content retrieved via RAG)
 # ---------------------------------------------------------------------------
 
 _instructions_path = BASE_DIR / "src" / "data" / "chatbot-instructions.txt"
 _resume_path = BASE_DIR / "src" / "data" / "resume-prompt.txt"
-SYSTEM_PROMPT = f"{_instructions_path.read_text()}\n\n---\n\n{_resume_path.read_text()}"
+_instructions_text = _instructions_path.read_text()
+
+# ---------------------------------------------------------------------------
+# RAG: resume chunking, embedding, and retrieval
+# ---------------------------------------------------------------------------
+
+_resume_collection = None
+_resume_chunks_list: list[str] = []
+
+
+def _chunk_resume(text: str) -> list[dict]:
+    """
+    Split the resume into self-contained semantic chunks for vector indexing.
+
+    Strategy: paragraph-based splitting on double newlines, with special
+    handling for employer sub-sections.  Each sub-section chunk is prefixed
+    with the parent employer line so it reads correctly in isolation — a
+    property called "self-containedness" that matters for retrieval quality:
+    a chunk like "Program Leadership & Delivery: ..." is ambiguous without
+    knowing it belongs to Marigold 2021–2026.
+
+    Returns a list of dicts with "text" and "metadata" keys.  The metadata
+    is stored in ChromaDB alongside the vector and can be used for filtered
+    retrieval or debugging (e.g., "show only experience chunks").
+    """
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    chunks: list[dict] = []
+    current_employer: str | None = None
+
+    # Bare section headers carry no retrievable facts on their own.
+    BARE_MARKERS = {"PROFESSIONAL EXPERIENCE"}
+
+    for para in paragraphs:
+        lines = para.split("\n")
+        first_line = lines[0]
+
+        # Skip bare structural markers.
+        if para in BARE_MARKERS:
+            continue
+
+        # Standalone employer header: a single line containing " — " and year
+        # digits (e.g. "Marigold — Senior TPM — 2021–2026").  We track it as
+        # context for the sub-sections that follow but do not index it alone
+        # because it contains no searchable facts by itself.
+        if (
+            len(lines) == 1
+            and " — " in first_line
+            and any(c.isdigit() for c in first_line)
+        ):
+            current_employer = first_line
+            continue
+
+        # Sub-section under an employer (e.g. "Program Leadership & Delivery:").
+        # Prefix with the employer line so the chunk is fully self-contained.
+        if first_line.endswith(":") and current_employer:
+            employer_name = current_employer.split(" — ")[0].strip()
+            chunks.append(
+                {
+                    "text": f"{current_employer}\n\n{para}",
+                    "metadata": {
+                        "section": "experience",
+                        "employer": employer_name,
+                        "subsection": first_line.rstrip(":"),
+                    },
+                }
+            )
+            continue
+
+        # Employer block with inline content (employer line + bullets, no
+        # sub-section headers).  Example: "Cheetah Digital — TPM — 2015–2021
+        # \n• Led Agile delivery..."
+        if " — " in first_line and any(c.isdigit() for c in first_line) and len(lines) > 1:
+            current_employer = first_line
+            employer_name = first_line.split(" — ")[0].strip()
+            chunks.append(
+                {
+                    "text": para,
+                    "metadata": {"section": "experience", "employer": employer_name},
+                }
+            )
+            continue
+
+        # Named sections (SUMMARY, TECHNICAL SKILLS, etc.) and the contact
+        # header block fall through to here.
+        SECTION_LABELS = {
+            "SUMMARY": "summary",
+            "TECHNICAL SKILLS": "skills",
+            "EDUCATION": "education",
+            "CERTIFICATIONS": "certifications",
+        }
+        section = SECTION_LABELS.get(first_line, "contact" if not chunks else "other")
+
+        # Merge CERTIFICATIONS into the preceding EDUCATION chunk rather than
+        # indexing it alone.  Both sections are very short (1–2 lines each),
+        # which gives the embedder little to work with.  A combined chunk has
+        # richer signal and ensures questions about either topic retrieve it.
+        if section == "certifications" and chunks and chunks[-1]["metadata"]["section"] == "education":
+            chunks[-1]["text"] += f"\n\n{para}"
+            chunks[-1]["metadata"]["section"] = "education_and_certifications"
+        else:
+            chunks.append({"text": para, "metadata": {"section": section}})
+
+    return chunks
+
+
+def _build_resume_index() -> None:
+    """
+    Embed all resume chunks into ChromaDB at application startup.
+
+    ChromaDB is initialised as an ephemeral (in-memory) client because the
+    deployment environment (Heroku) has an ephemeral filesystem — any data
+    written to disk is lost on dyno restart anyway.  In a production
+    environment with durable storage you would use
+    chromadb.PersistentClient(path=...) or an HTTP client pointed at a hosted
+    vector DB (Pinecone, Weaviate, Qdrant, etc.), and skip re-embedding if the
+    collection already contains the current chunks.
+
+    The OpenAIEmbeddingFunction wrapper handles calling the embeddings API
+    transparently: ChromaDB invokes it automatically when documents are added
+    or queried, so we never call the embeddings endpoint directly.
+    """
+    global _resume_collection, _resume_chunks_list
+
+    if not openai_client:
+        logging.warning(
+            "RAG index skipped: OPENAI_API_KEY not set — "
+            "falling back to full resume text in system prompt"
+        )
+        return
+
+    try:
+        import chromadb
+        from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+
+        chunk_dicts = _chunk_resume(_resume_path.read_text())
+        _resume_chunks_list = [c["text"] for c in chunk_dicts]
+
+        embedding_fn = OpenAIEmbeddingFunction(
+            api_key=os.environ["OPENAI_API_KEY"],
+            model_name="text-embedding-3-small",
+        )
+
+        chroma_client = chromadb.EphemeralClient()
+        _resume_collection = chroma_client.create_collection(
+            name="resume",
+            embedding_function=embedding_fn,
+            # Cosine distance is standard for text embeddings.  The default
+            # ChromaDB distance is L2 (Euclidean), which penalises magnitude
+            # differences that are not meaningful for normalised dense vectors.
+            metadata={"hnsw:space": "cosine"},
+        )
+
+        _resume_collection.add(
+            documents=_resume_chunks_list,
+            metadatas=[c["metadata"] for c in chunk_dicts],
+            ids=[f"chunk_{i}" for i in range(len(chunk_dicts))],
+        )
+
+        logging.info("RAG index ready: %d chunks indexed", len(chunk_dicts))
+
+    except Exception as e:
+        logging.error(
+            "Failed to build RAG index: %s — "
+            "falling back to full resume text in system prompt",
+            e,
+        )
+        _resume_collection = None
+
+
+def _retrieve_context(query: str, n_results: int = 3) -> str:
+    """
+    Query the vector index for the top-n most relevant resume chunks.
+
+    ChromaDB embeds the query text using the same OpenAIEmbeddingFunction
+    registered on the collection, computes cosine similarity against all
+    stored chunk vectors via its HNSW index, and returns the closest matches.
+
+    Falls back to the full resume text if the index is unavailable (no API
+    key in local dev, or if _build_resume_index raised an exception).
+    """
+    if _resume_collection is None:
+        return _resume_path.read_text()
+
+    try:
+        n = min(n_results, len(_resume_chunks_list))
+        results = _resume_collection.query(
+            query_texts=[query],
+            n_results=n,
+        )
+        # results["documents"] is a list-of-lists — one inner list per
+        # query_text submitted.  We always submit exactly one query.
+        return "\n\n---\n\n".join(results["documents"][0])
+    except Exception as e:
+        logging.error("RAG retrieval error: %s — falling back to full resume", e)
+        return _resume_path.read_text()
+
+
+_build_resume_index()
 
 MAX_CONVERSATION_MESSAGES = 20
 MAX_TOOL_ROUNDS = 3
@@ -432,8 +629,53 @@ def chat():
         _save_message(session_id, ip, user_message)
 
         history = _load_session_history(session_id)
+        # Guard against DB unavailability: _save_message() is best-effort and
+        # may be a no-op if there is no database connection, in which case
+        # _load_session_history() returns [].  Ensure the current user message
+        # is always present in the messages sent to the model — without it the
+        # model receives only a system prompt and generates a default greeting
+        # rather than responding to the actual question.
+        last = history[-1] if history else {}
+        if not (last.get("role") == "user" and last.get("content") == user_message["content"]):
+            history = history + [user_message]
         trimmed = history[-MAX_CONVERSATION_MESSAGES:]
-        api_messages = [{"role": "system", "content": SYSTEM_PROMPT}, *trimmed]
+
+        # Determine retrieval parameters.  The /match command receives a full
+        # job description as its query body — that is naturally rich for
+        # semantic search, so we retrieve all chunks to guarantee full resume
+        # coverage.  For ordinary conversational messages, top-3 is enough:
+        # most questions target one area of the resume (e.g. AWS experience,
+        # skills, a specific employer) and returning more chunks adds noise.
+        raw_query = message.strip()
+        if raw_query.lower().startswith("/match"):
+            # Strip the "/match " prefix so the job description alone is the
+            # embedding query; fall back to the full message if no description
+            # was provided yet (the chatbot will prompt for it).
+            retrieval_query = raw_query[6:].strip() or raw_query
+            n_results = len(_resume_chunks_list) if _resume_chunks_list else 10
+        else:
+            # Short or pronoun-heavy follow-ups like "where is that?" embed
+            # poorly and retrieve irrelevant chunks.  When the query is fewer
+            # than 5 words, append the most recent assistant message as context
+            # so the retrieval query carries enough semantic signal.
+            prior_assistant = next(
+                (m.get("content", "") for m in reversed(trimmed) if m.get("role") == "assistant"),
+                "",
+            )
+            if len(raw_query.split()) < 5 and prior_assistant:
+                retrieval_query = f"{prior_assistant} {raw_query}"
+            else:
+                retrieval_query = raw_query
+            n_results = 4
+
+        context = _retrieve_context(retrieval_query, n_results=n_results)
+
+        system_content = (
+            f"{_instructions_text}\n\n"
+            f"---\n\n"
+            f"Relevant resume context (retrieved for this query):\n\n{context}"
+        )
+        api_messages = [{"role": "system", "content": system_content}, *trimmed]
 
         reply = None
         for _ in range(MAX_TOOL_ROUNDS):
