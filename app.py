@@ -1,7 +1,9 @@
+import hashlib
 import json
 import logging
 import os
 import smtplib
+import threading
 from email.mime.text import MIMEText
 from pathlib import Path
 
@@ -267,6 +269,7 @@ _instructions_text = _instructions_path.read_text()
 
 _resume_collection = None
 _resume_chunks_list: list[str] = []
+_resume_hash: str = ""
 
 
 def _chunk_resume(text: str) -> list[dict]:
@@ -380,7 +383,7 @@ def _build_resume_index() -> None:
     transparently: ChromaDB invokes it automatically when documents are added
     or queried, so we never call the embeddings endpoint directly.
     """
-    global _resume_collection, _resume_chunks_list
+    global _resume_collection, _resume_chunks_list, _resume_hash
 
     if not openai_client:
         logging.warning(
@@ -393,7 +396,8 @@ def _build_resume_index() -> None:
         import chromadb
         from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 
-        chunk_dicts = _chunk_resume(_resume_path.read_text())
+        resume_bytes = _resume_path.read_bytes()
+        chunk_dicts = _chunk_resume(resume_bytes.decode())
         _resume_chunks_list = [c["text"] for c in chunk_dicts]
 
         embedding_fn = OpenAIEmbeddingFunction(
@@ -417,6 +421,7 @@ def _build_resume_index() -> None:
             ids=[f"chunk_{i}" for i in range(len(chunk_dicts))],
         )
 
+        _resume_hash = hashlib.sha256(resume_bytes).hexdigest()
         logging.info("RAG index ready: %d chunks indexed", len(chunk_dicts))
 
     except Exception as e:
@@ -473,6 +478,39 @@ def _retrieve_context(query: str, n_results: int = 3) -> str:
 
 
 _build_resume_index()
+
+
+def _watch_resume(interval: int = 60) -> None:
+    """
+    Background thread: check whether resume-prompt.txt has changed every
+    `interval` seconds.  If the SHA-256 hash of the file differs from the
+    hash stored when the index was last built, rebuild the index automatically.
+
+    This is the hash-based cache invalidation pattern.  A hash uniquely
+    represents the file *content* — any edit, however small, produces a
+    completely different fingerprint.  Comparing hashes at two points in time
+    tells us conclusively whether the file changed without reading the whole
+    file into memory for a diff.
+
+    In production (Heroku), the dyno restarts on every deploy, so the index
+    is always rebuilt from the latest resume automatically.  This watcher is
+    primarily useful in local development: edit resume-prompt.txt, and the
+    running Flask server picks up the change within 60 seconds — no restart
+    required.
+    """
+    while True:
+        threading.Event().wait(interval)
+        try:
+            current_hash = hashlib.sha256(_resume_path.read_bytes()).hexdigest()
+            if current_hash != _resume_hash:
+                logging.info("resume-prompt.txt changed — rebuilding RAG index")
+                _build_resume_index()
+        except Exception as e:
+            logging.error("Resume watcher error: %s", e)
+
+
+_watcher = threading.Thread(target=_watch_resume, daemon=True)
+_watcher.start()
 
 MAX_CONVERSATION_MESSAGES = 20
 MAX_TOOL_ROUNDS = 3

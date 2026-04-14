@@ -78,7 +78,7 @@ Program Leadership & Delivery:
 
 Now the chunk is fully self-contained. **Self-containedness** is one of the most important properties of a well-chunked corpus — a retrieved chunk must make sense in isolation, without assuming the model has seen the surrounding document.
 
-### Resulting chunks (11 total)
+### Resulting chunks (10 total)
 
 | ID | Section | Content |
 |----|---------|---------|
@@ -91,8 +91,9 @@ Now the chunk is fully self-contained. **Self-containedness** is one of the most
 | chunk_6 | experience / Cheetah Digital | All bullets (no sub-sections) |
 | chunk_7 | experience / CheetahMail | All bullets (no sub-sections) |
 | chunk_8 | skills | Technical skills by category |
-| chunk_9 | education | Degree and institution |
-| chunk_10 | certifications | CSM certification |
+| chunk_9 | education_and_certifications | Degree, institution, and CSM certification |
+
+Education and certifications are merged into a single chunk. Each section is only 1–2 lines, which gives the embedding model little to work with in isolation. A combined chunk has richer semantic signal and ensures a question about either topic retrieves it reliably.
 
 ### Metadata
 
@@ -144,7 +145,7 @@ The application uses `EphemeralClient`, which keeps all data in memory. There is
 | `chromadb.HttpClient(host=..., port=...)` | Dedicated ChromaDB server (self-hosted or ChromaDB Cloud) |
 | Pinecone / Weaviate / Qdrant | Managed, hosted vector DB — no infrastructure to run, scales independently of the app server |
 
-For a production system where re-embedding on every startup is expensive (large corpus, expensive model), you would use a persistent or hosted vector DB and implement a **cache invalidation strategy**: store a hash of the source documents alongside the index, and skip re-embedding on startup if the hash matches.
+For a production system where re-embedding on every startup is expensive (large corpus, expensive model), you would use a persistent or hosted vector DB and implement a **cache invalidation strategy**: store a hash of the source documents alongside the index, and skip re-embedding on startup if the hash matches. This application implements hash-based change detection in the background watcher — see `documentation/automatic-reindexing.md`.
 
 ### Distance metric: cosine similarity
 
@@ -269,7 +270,7 @@ This implementation is deliberately simplified. Here is what would change at pro
 | Query strategy | Raw user message | Query rewriting or HyDE for large corpora |
 | Retrieval precision | Top-k semantic only | Hybrid search (BM25 + semantic) + reranker |
 | Observability | Logs only | Log retrieval scores, chunk IDs, latency per request |
-| Index updates | Manual restart required | Event-driven re-indexing when resume changes |
+| Index updates | Background watcher re-indexes on file change (60s poll) | Same pattern; swap polling for filesystem event or webhook trigger |
 | Embedding model | text-embedding-3-small | Evaluate on retrieval benchmarks before choosing |
 
 **Hybrid search** (combining keyword BM25 with semantic vector search) is the most common production upgrade from pure semantic RAG. It handles cases where the user query contains specific terms (names, acronyms, version numbers) that semantic similarity handles poorly but exact keyword matching handles well. ChromaDB does not natively support hybrid search; systems like Weaviate, Elasticsearch, or Qdrant do.
