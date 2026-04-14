@@ -275,3 +275,39 @@ This implementation is deliberately simplified. Here is what would change at pro
 **Hybrid search** (combining keyword BM25 with semantic vector search) is the most common production upgrade from pure semantic RAG. It handles cases where the user query contains specific terms (names, acronyms, version numbers) that semantic similarity handles poorly but exact keyword matching handles well. ChromaDB does not natively support hybrid search; systems like Weaviate, Elasticsearch, or Qdrant do.
 
 **Reranking** adds a second-pass relevance model (e.g., a cross-encoder) that rescores the top-k candidates from the vector search before returning them to the LLM. This is typically used when k is large (top-50 from vector search, reranked to top-5 for the prompt).
+
+---
+
+## Observability and Exploration
+
+### Retrieval logging
+
+Every chat request logs one line per retrieved chunk to stdout. In production, stream logs with:
+
+```bash
+heroku logs --tail --app hihelloreid
+```
+
+Each line shows chunk number, section, employer, cosine distance, and the query. Lower distance means more similar. Example:
+
+```
+RAG retrieved chunk 1/4 — section=experience employer=Marigold (acquired by Zeta Global) distance=0.2341 query='AWS experience'
+RAG retrieved chunk 2/4 — section=skills employer=— distance=0.2891 query='AWS experience'
+```
+
+### Local index explorer
+
+`scripts/explore_rag.py` builds the index locally and lets you inspect chunks and query results interactively. Requires `OPENAI_API_KEY` in `.env`.
+
+```bash
+# List all chunks and their metadata
+python scripts/explore_rag.py --list-chunks
+
+# Query the index and see what gets retrieved
+python scripts/explore_rag.py --query "AWS experience"
+
+# Interactive mode — query repeatedly
+python scripts/explore_rag.py
+```
+
+This is useful for diagnosing retrieval quality — if a question isn't being answered well, run the query through the script to see which chunks are returned and whether the right content is present.

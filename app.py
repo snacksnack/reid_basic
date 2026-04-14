@@ -439,10 +439,26 @@ def _retrieve_context(query: str, n_results: int = 3) -> str:
         results = _resume_collection.query(
             query_texts=[query],
             n_results=n,
+            include=["documents", "metadatas", "distances"],
         )
         # results["documents"] is a list-of-lists — one inner list per
         # query_text submitted.  We always submit exactly one query.
-        return "\n\n---\n\n".join(results["documents"][0])
+        chunks = results["documents"][0]
+        metadatas = results["metadatas"][0]
+        distances = results["distances"][0]
+
+        for i, (meta, dist) in enumerate(zip(metadatas, distances)):
+            logging.info(
+                "RAG retrieved chunk %d/%d — section=%s employer=%s distance=%.4f query=%r",
+                i + 1,
+                n,
+                meta.get("section", "?"),
+                meta.get("employer", "—"),
+                dist,
+                query[:60],
+            )
+
+        return "\n\n---\n\n".join(chunks)
     except Exception as e:
         logging.error("RAG retrieval error: %s — falling back to full resume", e)
         return _resume_path.read_text()
