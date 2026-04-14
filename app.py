@@ -188,6 +188,14 @@ def _init_db():
                     created_at TIMESTAMPTZ DEFAULT NOW())""",
                 # Migration: add raw_message column if it doesn't exist yet
                 "ALTER TABLE chat_logs ADD COLUMN IF NOT EXISTS raw_message JSONB",
+                # Session summaries — written by scripts/summarize_sessions.py
+                """CREATE TABLE IF NOT EXISTS chat_summaries (
+                    id SERIAL PRIMARY KEY,
+                    session_id TEXT NOT NULL UNIQUE,
+                    ip_address TEXT,
+                    summary TEXT NOT NULL,
+                    user_message_count INT,
+                    created_at TIMESTAMPTZ DEFAULT NOW())""",
             ]:
                 cur.execute(ddl)
         conn.commit()
