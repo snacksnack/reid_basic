@@ -15,7 +15,7 @@ const resume: ResumeData = {
     { category: 'AWS', items: ['ECS/Fargate', 'Lambda', 'SQS', 'EventBridge', 'SageMaker', 'S3', 'Athena'] },
     { category: 'Data', items: ['MySQL', 'PostgreSQL', 'ClickHouse', 'Hive', 'DynamoDB'] },
     { category: 'Observability', items: ['Prometheus', 'Grafana', 'distributed tracing', 'structured logging'] },
-    { category: 'Tools', items: ['Git', 'Bitbucket', 'Jira', 'Confluence', 'Swagger/OpenAPI', 'Docker', 'GitHub Copilot', 'Cursor'] },
+    { category: 'Tools', items: ['Git (Bitbucket)', 'Jira', 'Confluence', 'Swagger/OpenAPI', 'Docker', 'GitHub Copilot', 'Cursor'] },
     { category: 'Certifications', items: ['Certified Scrum Master (CSM)'] },
   ],
   experience: [
@@ -34,6 +34,14 @@ const resume: ResumeData = {
           ],
         },
         {
+          heading: 'Machine Learning / Data Platform',
+          items: [
+            'Led onboarding of 100+ clients to ML platform over two quarters, designing ingestion pipelines using ClickHouse S3 integration and EventBridge to process multi-terabyte datasets (10–50GB per client)',
+            'Partnered with Analytics to deliver nightly pipelines using Athena and S3, defining ClickHouse queries, implementing client-driven export controls via flag files, enabling cross-team S3 access via AWS SAM, and building monitoring to ensure reliable ingestion',
+            'Contributed to delivery of Propensity-to-Purchase and Discount Optimization models via a serverless ML platform (Lambda, SQS, EventBridge, SageMaker), coding a data assessment layer and partnering across teams to source higher-quality purchase data from distributed systems (ClickHouse, Hive)',
+          ],
+        },
+        {
           heading: 'Platform & Backend Systems',
           items: [
             'Developed a containerized API proxy and token management system on AWS ECS/Fargate, improving authentication reliability and service scalability in a high throughput system',
@@ -41,14 +49,6 @@ const resume: ResumeData = {
             'Coordinated migration of image caching infrastructure from Akamai to Cloudflare, updating image caching code base, partnering with clients to install updated domain certs',
             'Developed backend services for authentication, campaign data, service health, and DynamoDB integrations in high-throughput systems',
             'Defined API contracts using Swagger/OpenAPI to support cross-team and client integrations',
-          ],
-        },
-        {
-          heading: 'Machine Learning / Data Platform',
-          items: [
-            'Led onboarding of 100+ clients to ML platform over two quarters, designing ingestion pipelines using ClickHouse S3 integration and EventBridge to process multi-terabyte datasets (10–50GB per client)',
-            'Partnered with Analytics to deliver nightly pipelines using Athena and S3, defining ClickHouse queries, implementing client-driven export controls via flag files, enabling cross-team S3 access via AWS SAM, and building monitoring to ensure reliable ingestion',
-            'Contributed to delivery of Propensity-to-Purchase and Discount Optimization models via a serverless ML platform (Lambda, SQS, EventBridge, SageMaker), coding a data assessment layer and partnering across teams to source higher-quality purchase data from distributed systems (ClickHouse, Hive)',
           ],
         },
         {
@@ -73,18 +73,19 @@ const resume: ResumeData = {
     },
     {
       company: 'CheetahMail / Experian',
-      role: 'Software Developer',
+      role: 'Software Developer / Client Solutions Team',
       period: '2008 — 2015',
       achievements: [
         'Scrum master and developer for Cheetahmail development team',
-        'Improved reporting performance by implementing bulk data loading solutions using SQL*Loader for high-volume datasets',
+        'Design and implement remarketing campaigns for clients. Build automated import processes that client feeds from Coremetrics, Google Analytics, and Omniture to capture abandoned cart users.',
         'Built ETL pipelines for client data ingestion (text/XML) into BerkeleyDB/CDB systems and supported API integrations',
+        'Integrated client imports/exports. Work closely with clients to design and implement customized solutions, aggregating campaign data to synch with client or 3rd party DB',
       ],
     },
   ],
   education: [
     {
-      school: 'Tulane University',
+      school: 'Tulane University - 1998',
       degree: 'Bachelor of Arts, International Relations',
       period: '',
     },

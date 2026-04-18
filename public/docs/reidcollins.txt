@@ -1,5 +1,86 @@
-Reid Collins Brooklyn, NY | hire.reid.collins@gmail.com | hihellloreid.com | linkedin.com/in/reidcollins Open to Senior Technical Program Manager, Pla @ orm, and Infrastructure roles SUMMARY Senior Technical Program Manager / Backend Engineer with a hybrid background in so G ware engineering and program leadership. Proven track record of driving large-scale pla @ orm migra J ons, leading cross-func J onal ini J a J ves, and delivering produc J on systems on AWS. PROFESSIONAL EXPERIENCE Marigold (acquired by Zeta Global) Senior Technical Program Manager / Backend Engineer 2021 – 2026 Program Leadership & Delivery • Led delivery of mul J ple cross-func J onal ini J a J ves spanning engineering, SRE, and product teams, ensuring alignment, execu J on, and on- J me delivery • Led migra J on from Phabricator to Bitbucket across engineering, SRE, and client development teams (3 repositories), de fi ning migra J on strategy, redesigning branching models, enabling automated commits via bot/service accounts, and improving code review quality and reducing produc J on issues • Directed migra J on from on-prem Jira to Jira Cloud across 20 projects and 15 teams, rede fi ning work fl ows for cloud constraints and incompa J ble plugins, establishing J cket migra J on cuto ff s, and managing external contractors within budget • Established and enforced team execu J on processes (sprint planning, backlog grooming, retrospec J ves), improving delivery consistency and visibility in a Kanban environment Pla K orm & Backend Systems • Developed a containerized API proxy and token management system on AWS ECS/Fargate, improving authen J ca J on reliability and service scalability in a high throughput system • Drove migra J on from Oracle to MySQL, including schema redesign, data migra J on strategy, and implemen J ng code changes to eliminate legacy database dependencies • Coordinated migra J on of image caching infrastructure from Akamai to Cloud fl are, upda J ng image caching code base, partnering with clients to install updated domain certs • Developed backend services for authen J ca J on, campaign data, service health, and DynamoDB integra J ons in high-throughput systems • De fi ned API contracts using Swagger/OpenAPI to support cross-team and client integra J ons Machine Learning / Data Pla K orm • Led onboarding of 100+ clients to ML pla @ orm over two quarters, designing inges J on pipelines using ClickHouse S3 integra J on and EventBridge to process mul J -terabyte datasets (10–50GB per client) • Partnered with Analy J cs to deliver nightly pipelines using Athena and S3, de fi ning ClickHouse queries, implemen J ng client-driven export controls via fl ag fi les, enabling cross- team S3 access via AWS SAM, and building monitoring to ensure reliable inges J on
+Reid Collins
+Brooklyn, NY | hire.reid.collins@gmail.com | hihelloreid.com | linkedin.com/in/reidcollins
+Open to Senior Technical Program Manager, Pla@orm, and Infrastructure roles
+SUMMARY
+Senior Technical Program Manager / Backend Engineer with a hybrid background in soGware
+engineering and program leadership. Proven track record of driving large-scale pla@orm
+migraJons, leading cross-funcJonal iniJaJves, and delivering producJon systems on AWS.
+PROFESSIONAL EXPERIENCE
+Marigold (acquired by Zeta Global)
+Senior Technical Program Manager / Backend Engineer
+2021 – 2026
+Program Leadership & Delivery
+• Led delivery of mulJple cross-funcJonal iniJaJves spanning engineering, SRE, and product
+teams, ensuring alignment, execuJon, and on-Jme delivery
+• Led migraJon from Phabricator to Bitbucket across engineering, SRE, and client
+development teams (3 repositories), defining migraJon strategy, redesigning branching
+models, enabling automated commits via bot/service accounts, and improving code review
+quality and reducing producJon issues
+• Directed migraJon from on-prem Jira to Jira Cloud across 20 projects and 15 teams,
+redefining workflows for cloud constraints and incompaJble plugins, establishing Jcket
+migraJon cutoffs, and managing external contractors within budget
+• Established and enforced team execuJon processes (sprint planning, backlog grooming,
+retrospecJves), improving delivery consistency and visibility in a Kanban environment
+Machine Learning / Data PlaLorm
+• Led onboarding of 100+ clients to ML pla@orm over two quarters, designing ingesJon
+pipelines using ClickHouse S3 integraJon and EventBridge to process mulJ-terabyte datasets
+(10–50GB per client)
+• Partnered with AnalyJcs to deliver nightly pipelines using Athena and S3, defining
+ClickHouse queries, implemenJng client-driven export controls via flag files, enabling cross-
+team S3 access via AWS SAM, and building monitoring to ensure reliable ingesJon
+• Contributed to delivery of Propensity-to-Purchase and Discount OpJmizaJon models via a
+serverless ML pla@orm (Lambda, SQS, EventBridge, SageMaker), coding a data assessment
+layer and partnering across teams to source higher-quality purchase data from distributed
+systems (ClickHouse, Hive)
+PlaLorm & Backend Systems
+• Developed a containerized API proxy and token management system on AWS ECS/Fargate,
+improving authenJcaJon reliability and service scalability in a high throughput system
+• Drove migraJon from Oracle to MySQL, including schema redesign, data migraJon strategy,
+and implemenJng code changes to eliminate legacy database dependencies
 
 --- PAGE BREAK ---
 
-• Contributed to delivery of Propensity-to-Purchase and Discount Op J miza J on models via a serverless ML pla @ orm (Lambda, SQS, EventBridge, SageMaker), coding a data assessment layer and partnering across teams to source higher-quality purchase data from distributed systems (ClickHouse, Hive) Observability & Reliability • Led development of a custom observability framework (structured logging, distributed tracing, Prometheus, Grafana) for high-throughput, J me-sensi J ve systems processing thousands of event based messages per minute • Improved system reliability and visibility across clients by enabling real- J me monitoring, aler J ng, and faster issue detec J on and resolu J on Cheetah Digital Technical Program Manager / So G ware Developer 2015 – 2021 • Led Agile delivery processes as Scrum Master across mul J ple engineering teams, improving planning accuracy and execu J on consistency • Coordinated cross-func J onal e ff orts between engineering, SRE, and release teams to deliver pla @ orm enhancements • Contributed to backend services and data processing systems suppor J ng high-volume client workloads • Partnered directly with clients to support integra J ons, troubleshoot issues, and ensure successful delivery CheetahMail / Experian So G ware Developer 2008 – 2015 • Scrum master and developer for Cheetahmail development team • Improved repor J ng performance by implemen J ng bulk data loading solu J ons using SQL*Loader for high-volume datasets • Built ETL pipelines for client data inges J on (text/XML) into BerkeleyDB/CDB systems and supported API integra J ons • TECHNICAL SKILLS & EDUCATION Languages: Python, Perl, Ruby, Bash AWS: ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB Observability: Prometheus, Grafana, distributed tracing, structured logging Tools: Git, Bitbucket, Jira, Con fl uence, Swagger/OpenAPI, Docker, GitHub Copilot, Cursor Educa J on: Bachelor of Arts, Interna J onal Rela J ons — Tulane University Cer J fi ca J ons: Cer J fi ed Scrum Master (CSM)
+• Coordinated migraJon of image caching infrastructure from Akamai to Cloudflare, updaJng
+image caching code base, partnering with clients to install updated domain certs
+• Developed backend services for authenJcaJon, campaign data, service health, and
+DynamoDB integraJons in high-throughput systems
+• Defined API contracts using Swagger/OpenAPI to support cross-team and client integraJons
+Observability & Reliability
+• Led development of a custom observability framework (structured logging, distributed
+tracing, Prometheus, Grafana) for high-throughput, Jme-sensiJve systems processing
+thousands of event based messages per minute
+• Improved system reliability and visibility across clients by enabling real-Jme monitoring,
+alerJng, and faster issue detecJon and resoluJon
+Cheetah Digital
+Technical Program Manager / SoGware Developer
+2015 – 2021
+• Led Agile delivery processes as Scrum Master across mulJple engineering teams, improving
+planning accuracy and execuJon consistency
+• Coordinated cross-funcJonal efforts between engineering, SRE, and release teams to deliver
+pla@orm enhancements
+• Contributed to backend services and data processing systems supporJng high-volume client
+workloads
+• Partnered directly with clients to support integraJons, troubleshoot issues, and ensure
+successful delivery
+CheetahMail / Experian
+SoGware Developer / Client SoluJons Team
+2008 – 2015
+• Scrum master and developer for Cheetahmail development team
+• Design and implement remarkeJng campaigns for clients. Build automated import processes
+that client feeds from Coremetrics, Google AnalyJcs, and Omniture to capture abandoned
+cart users.
+• Built ETL pipelines for client data ingesJon (text/XML) into BerkeleyDB/CDB systems and
+supported API integraJons
+• Integrated client imports/exports. Work closely with clients to design and implement
+customized soluJons, aggregaJng campaign data to synch with client or 3rd party DB
+TECHNICAL SKILLS & EDUCATION
+Languages: Python, Perl, Ruby, Bash
+AWS: ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena
+Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB
+Observability: Prometheus, Grafana, distributed tracing, structured logging
+Tools: Git (Bitbucket), Jira, Confluence, Swagger/OpenAPI, Docker, GitHub Copilot, Cursor
+EducaJon: Bachelor of Arts, InternaJonal RelaJons — Tulane University - 1998
+
+--- PAGE BREAK ---
+
+CerJficaJons: CerJfied Scrum Master (CSM)
