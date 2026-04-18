@@ -2,15 +2,15 @@
 
 ## Overview
 
-The chatbot uses **OpenAI function calling** (also called "tool use") to take actions on behalf of visitors. Instead of only generating text responses, the LLM can invoke server-side tools, receive structured results, and incorporate those results into its reply.
+The chatbot uses **Anthropic tool use** to take actions on behalf of visitors. Instead of only generating text responses, the LLM can invoke server-side tools, receive structured results, and incorporate those results into its reply.
 
 This is an implementation of the **agentic tool use** design pattern: the model autonomously decides when a tool is needed, calls it, interprets the result, and responds — all within a single user-visible request/response cycle.
 
 ### What is the "agent" here?
 
-The **chatbot is the agent**. Specifically, GPT-4o-mini with the system prompt. It receives a visitor's message, *reasons* about what to do, and *decides* whether to just respond with text or invoke a tool first.
+The **chatbot is the agent**. Specifically, Claude Haiku 4.5 with the system prompt. It receives a visitor's message, *reasons* about what to do, and *decides* whether to just respond with text or invoke a tool first.
 
-- **Agent** = the chatbot (the LLM with its system prompt and tool definitions)
+- **Agent** = the chatbot (Claude Haiku 4.5 with its system prompt and tool definitions)
 - **Tool** = a capability the agent can call, such as `schedule_meeting` or `send_contact`. The agent decides when to use it — not the visitor, not hardcoded logic.
 - **Agentic loop** = the `for` loop in `/api/chat` in `app.py`. The agent gets multiple turns to think: call a tool, get the result back, then formulate a final response.
 
@@ -36,6 +36,46 @@ Tool use makes the chatbot genuinely interactive — it can *do things*, not jus
 
 ---
 
+## OpenAI vs Anthropic: message roles and content blocks
+
+If you are new to LLM APIs, it helps to know that **OpenAI** and **Anthropic** describe the same ideas with **different shapes**. The chatbot uses **Anthropic** today, but tutorials and older docs often show **OpenAI** — so it is easy to mix them up.
+
+### Message roles (who is speaking)
+
+| Role | OpenAI Chat Completions | Anthropic Messages API |
+|------|-------------------------|-------------------------|
+| Instructions / policy | **`system`** — a normal message in the `messages` array, usually first | **`system`** — **not** inside `messages`. You pass a separate `system=` argument on the API call (or system blocks). Our app builds one string: instructions + RAG context. |
+| Visitor / human | **`user`** | **`user`** |
+| Model reply | **`assistant`** | **`assistant`** |
+| Tool output | **`tool`** — its own role, linked with `tool_call_id` | **No `tool` role.** Tool outputs go in a **`user`** message as **`tool_result`** content blocks (see below). |
+
+So the biggest mental shift: **Anthropic does not have a `tool` role.** After your server runs a tool, you send the result back by appending a **`user`** turn whose `content` is a list that includes `tool_result` entries — not a separate `tool` message.
+
+### Content blocks (what is inside a message)
+
+Anthropic often represents `content` as a **list of blocks**, not only a plain string:
+
+| Block type | Meaning |
+|------------|---------|
+| **`text`** | Normal language from the model or from you: `{ "type": "text", "text": "Hello" }`. |
+| **`tool_use`** | The model chose to call a tool: id, name (e.g. `schedule_meeting`), and **`input`** (arguments as a structured object). This is Anthropic’s equivalent of OpenAI’s `tool_calls` / function call. |
+| **`tool_result`** | Your server’s answer to a `tool_use`: **`tool_use_id`** must match the id from the model’s `tool_use` block, and **`content`** is usually a string (often JSON) your Python code returned from `execute_tool_call`. |
+
+A single **`assistant`** message can mix **`text`** and **`tool_use`** blocks (e.g. a short sentence plus a tool call). After tools run, you typically send **one** **`user`** message whose `content` is an array of **`tool_result`** blocks (one per tool that ran in that round).
+
+OpenAI’s Chat Completions API uses a flatter style: assistant messages carry **`tool_calls`** with stringified JSON **`arguments`**, and tool outputs use **`role: "tool"`**. Same agentic idea — different wire format.
+
+### Quick mapping (same turn, two APIs)
+
+| Idea | OpenAI | Anthropic |
+|------|--------|-----------|
+| Model asks to run a tool | `assistant` + `tool_calls[]` | `assistant` + `content` includes `tool_use` blocks |
+| Server returns tool output | `tool` message + `tool_call_id` | `user` message + `content` includes `tool_result` blocks |
+
+Further reading: [Anthropic — Tool use](https://docs.anthropic.com/en/docs/tool-use-examples).
+
+---
+
 ## Architecture
 
 ```
@@ -49,22 +89,23 @@ Visitor sends message
          │
          ▼
 ┌──────────────────────────────────────┐
-│  OpenAI Chat Completions API         │
-│  model: gpt-4o-mini                  │
+│  Anthropic Messages API              │
+│  model: claude-haiku-4-5-20251001    │
 │  tools: [schedule_meeting, send_contact, ...] │
-│  messages: [system + conversation]   │
+│  messages: [conversation]            │
+│  system: [system prompt]             │
 └────────┬─────────────────────────────┘
          │
          ▼
     ┌────────────┐       YES        ┌──────────────────┐
-    │ tool_calls │ ───────────────► │ execute_tool_call │
-    │ in reply?  │                  │ (server-side)     │
+    │ tool_use   │ ───────────────► │ execute_tool_call │
+    │ blocks?    │                  │ (server-side)     │
     └────┬───────┘                  └────────┬─────────┘
          │ NO                                │
-         │                                   │ result appended
+         │                                   │ tool_result blocks
          │                           ┌───────▼──────────┐
-         │                           │ Call OpenAI again │
-         │                           │ with tool result  │
+         │                           │ Call Anthropic   │
+         │                           │ again (user msg) │
          │                           └───────┬──────────┘
          │                                   │
          │◄──────────────────────────────────┘
@@ -79,7 +120,7 @@ Visitor sends message
 Key points:
 - The **tool-calling loop runs entirely server-side**. The frontend sends messages and receives a text reply — it doesn't know tools were involved.
 - The loop is capped at **3 rounds** (`MAX_TOOL_ROUNDS`) to prevent runaway costs or infinite loops.
-- Tool calls and results are **persisted server-side** — every message in the sequence (user, assistant tool-call, tool result, assistant reply) is saved to `chat_logs`. The frontend only receives the final text reply.
+- Tool rounds are **persisted server-side** — assistant messages with `tool_use` blocks, then user messages with `tool_result` blocks, then the final assistant text reply — all saved to `chat_logs`. The frontend only receives the final `{ reply }`.
 
 ---
 
@@ -88,44 +129,45 @@ Key points:
 Three actors are involved:
 - **Frontend** = the visitor's browser running `ChatBot.tsx` — sends the HTTP request
 - **Server** = `app.py` (Flask) — receives the request, orchestrates the loop
-- **Agent** = the LLM (GPT-4o-mini) — called by the server, decides whether to use tools
+- **Agent** = the LLM (Claude Haiku 4.5) — called by the server, decides whether to use tools
 
 The flow:
 
 1. **Frontend sends** `POST /api/chat` with `{ message, sessionId }` — just the new user message; the server owns the history
-2. **Server loads** the conversation history from Postgres and builds the API message array: `[system_prompt, ...last_20_messages]`
-3. **Server calls the agent (OpenAI)** with the `tools` parameter containing all tool schemas
+2. **Server loads** the conversation history from Postgres (Anthropic-shaped messages) and builds **two** things: `system=` (instructions + RAG) and `messages=` (last 20 turns — **no** system message inside this list)
+3. **Server calls the agent (Anthropic)** with `tools=` (schemas) plus `system=` and `messages=`
 4. **Agent responds** with either:
-   - **A text message** (`finish_reason: 'stop'`) → return it to the frontend
-   - **One or more tool calls** (`message.tool_calls` list) → continue to step 5
+   - **Text only** — `content` has `text` blocks → extract and return to the frontend
+   - **Tool use** — `content` includes `tool_use` blocks → continue to step 5
 5. **Server executes each tool call**:
-   - Parses the `arguments` JSON from the agent's response
+   - Reads **`input`** from each `tool_use` block (already a dict in the Python SDK — not a JSON string like OpenAI’s `function.arguments`)
    - Calls `execute_tool_call(name, args, client_ip=ip)` — handlers that need the visitor's IP (e.g. `send_contact`) receive it via the keyword argument; the scheduler tool ignores it
-   - Appends the agent's tool-call message and each tool result to `api_messages`
+   - Appends an **`assistant`** message (with `tool_use` blocks) and a **`user`** message (with `tool_result` blocks) to `api_messages`, and persists them to `chat_logs`
    - Logs the tool invocation to the `tool_usage` database table
-6. **Server calls the agent again** with the updated messages (now including tool results)
+6. **Server calls the agent again** with the updated messages (tool results sent as a `user` message with `tool_result` content blocks)
 7. **Repeat** from step 4, up to `MAX_TOOL_ROUNDS` times
 8. **Return** the final text reply to the frontend
 
 ### Example: what the messages look like during a tool call
 
 ```
-Round 1 → OpenAI:
-  [system, ...conversation, { role: "user", content: "Can I schedule a call with Reid?" }]
+Round 1 → Anthropic:
+  system: "...(instructions + RAG context)..."
+  messages: [...conversation, { role: "user", content: "Can I schedule a call with Reid?" }]
 
-Round 1 ← OpenAI:
-  { tool_calls: [{ id: "call_abc", function: { name: "schedule_meeting", arguments: '{"topic":"discuss role"}' } }] }
+Round 1 ← Anthropic:
+  content: [{ type: "tool_use", id: "toolu_abc", name: "schedule_meeting", input: { "topic": "discuss role" } }]
 
 Server executes: execute_tool_call("schedule_meeting", { "topic": "discuss role" })
   → '{"available":true,"scheduling_url":"https://calendly.com/reid","topic":"discuss role"}'
 
-Round 2 → OpenAI:
+Round 2 → Anthropic:
   [...previous messages,
-   { role: "assistant", tool_calls: [...] },
-   { role: "tool", tool_call_id: "call_abc", content: '{"available":true,...}' }]
+   { role: "assistant", content: [{ type: "tool_use", ... }] },
+   { role: "user", content: [{ type: "tool_result", tool_use_id: "toolu_abc", content: '{"available":true,...}' }] }]
 
-Round 2 ← OpenAI:
-  { content: "Sure! Here's Reid's scheduling link: https://calendly.com/reid — pick a time that works for you." }
+Round 2 ← Anthropic:
+  content: [{ type: "text", text: "Sure! Here's Reid's scheduling link: https://calendly.com/reid — pick a time that works for you." }]
 
 → Returned to client as { reply: "Sure! Here's Reid's scheduling link: ..." }
 ```
@@ -239,7 +281,7 @@ heroku config:set SCHEDULING_URL=https://calendly.com/your-link --app hihellorei
 | Constant | Default | Description |
 |----------|---------|-------------|
 | `MAX_TOOL_ROUNDS` | 3 | Maximum iterations of the tool-calling loop per request. Prevents runaway API calls if the model keeps requesting tools. |
-| `TOOLS` | List | OpenAI function schemas. Imported by tests. |
+| `TOOLS` | List | Anthropic tool schemas. Imported by tests. |
 
 ---
 
@@ -317,24 +359,21 @@ Adding a tool to the chatbot involves these steps:
 
 ### Step 1: Define the tool schema
 
-Add an entry to the `TOOLS` list in `app.py`. Follow the [OpenAI function calling spec](https://platform.openai.com/docs/guides/function-calling):
+Add an entry to the `TOOLS` list in `app.py`. Follow the [Anthropic tool use spec](https://docs.anthropic.com/en/docs/tool-use-examples):
 
 ```python
 {
-    "type": "function",
-    "function": {
-        "name": "your_tool_name",
-        "description": "When to call this tool — be specific so the model invokes it correctly.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "param1": {
-                    "type": "string",
-                    "description": "What this parameter represents",
-                },
+    "name": "your_tool_name",
+    "description": "When to call this tool — be specific so the model invokes it correctly.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "param1": {
+                "type": "string",
+                "description": "What this parameter represents",
             },
-            "required": ["param1"],
         },
+        "required": ["param1"],
     },
 }
 ```
@@ -404,12 +443,9 @@ import json
 import os
 
 SCHEMA = {
-    "type": "function",
-    "function": {
-        "name": "schedule_meeting",
-        "description": "...",
-        "parameters": { ... },
-    },
+    "name": "schedule_meeting",
+    "description": "...",
+    "input_schema": { ... },
 }
 
 def handler(args, *, client_ip="unknown"):
@@ -428,7 +464,7 @@ from . import schedule_meeting, search_resume
 _registry = [schedule_meeting, search_resume]
 
 TOOLS = [t.SCHEMA for t in _registry]
-_handlers = {t.SCHEMA["function"]["name"]: t.handler for t in _registry}
+_handlers = {t.SCHEMA["name"]: t.handler for t in _registry}
 
 def execute_tool_call(name, args, *, client_ip="unknown"):
     handler = _handlers.get(name)
@@ -443,12 +479,12 @@ Then `app.py` imports `TOOLS` and `execute_tool_call` — the chat route passes 
 
 ## Cost Considerations
 
-Each tool-calling round is an additional OpenAI API call. For a single tool invocation:
+Each tool-calling round is an additional Anthropic API call. For a single tool invocation:
 - **Round 1:** User message → model decides to call tool (~200-400 tokens)
 - **Round 2:** Tool result → model generates final response (~300-600 tokens)
 - **Total:** ~2x the cost of a non-tool response
 
-With `gpt-4o-mini` pricing, this is negligible (fractions of a cent per exchange). The `MAX_TOOL_ROUNDS = 3` cap ensures at most 4 API calls per user message in pathological cases.
+With Claude Haiku 4.5 pricing ($1/$5 per 1M input/output tokens), this is negligible (fractions of a cent per exchange). The `MAX_TOOL_ROUNDS = 3` cap ensures at most 4 API calls per user message in pathological cases.
 
 The existing rate limits (20 requests/IP/hour server-side, 10 messages client-side) remain unchanged and provide the same cost protection.
 
@@ -461,8 +497,8 @@ The existing rate limits (20 requests/IP/hour server-side, 10 messages client-si
 | `SCHEDULING_URL` not set | Tool returns fallback; model suggests email instead |
 | `send_contact` validation fails | Tool returns `ok: false`, `error: validation`; model explains |
 | `send_contact` rate limit (shared with form) | Tool returns `ok: false`, `error: rate_limited` |
-| `OPENAI_API_KEY` not set | Returns 503 before tool loop is reached |
-| OpenAI API error during tool loop | Caught by try/except; returns 500 |
+| `ANTHROPIC_API_KEY` not set | Returns 503 before tool loop is reached |
+| Anthropic API error during tool loop | Caught by try/except; returns 500 |
 | Tool loop hits `MAX_TOOL_ROUNDS` | Returns generic "couldn't generate" message |
 | Database unavailable | Inserts and `tool_usage` logging best-effort; may still return `ok: true` for contact if email succeeds |
 | Unknown tool name | Returns error JSON; model communicates gracefully |

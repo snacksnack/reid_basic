@@ -7,6 +7,7 @@ import threading
 from email.mime.text import MIMEText
 from pathlib import Path
 
+import anthropic
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
@@ -29,6 +30,7 @@ if not IS_PRODUCTION:
 
 limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_limits=[])
 
+anthropic_client = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
 openai_client = OpenAI() if os.environ.get("OPENAI_API_KEY") else None
 
 # ---------------------------------------------------------------------------
@@ -215,9 +217,9 @@ _init_db()
 def _load_session_history(session_id: str) -> list:
     """Return all chat messages for a session, ordered oldest-first.
 
-    Each row's raw_message column stores the complete OpenAI message dict
-    (including tool_calls / tool_call_id fields), so the full sequence can be
-    replayed faithfully without relying on the client.
+    Each row's raw_message column stores the complete Anthropic message dict
+    (user/assistant with content blocks), so the full sequence can be replayed
+    faithfully without relying on the client.
     """
     pool = _get_pool()
     if not pool:
@@ -240,14 +242,16 @@ def _load_session_history(session_id: str) -> list:
 
 
 def _save_message(session_id: str, ip: str, message: dict) -> None:
-    """Persist a single OpenAI message dict to chat_logs.
+    """Persist a single Anthropic message dict to chat_logs.
 
     Stores the raw dict in raw_message (used for history reconstruction) and
     also extracts role/content for human-readable querying.  content is stored
-    as an empty string for assistant tool-call messages where content is None.
+    as an empty string when it is a list of content blocks (tool use rounds).
     """
     role = message.get("role", "")
     content = message.get("content") or ""
+    if not isinstance(content, str):
+        content = ""
     _db_execute(
         "INSERT INTO chat_logs (session_id, ip_address, role, content, raw_message) "
         "VALUES (%s, %s, %s, %s, %s)",
@@ -521,54 +525,48 @@ MAX_TOOL_ROUNDS = 3
 
 TOOLS = [
     {
-        "type": "function",
-        "function": {
-            "name": "schedule_meeting",
-            "description": (
-                "Get a scheduling link for the visitor to book a meeting with Reid Collins. "
-                "Use when someone wants to schedule a call, meeting, or interview with Reid."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "topic": {
-                        "type": "string",
-                        "description": (
-                            "What the visitor wants to discuss "
-                            '(e.g., "engineering role at Acme Corp", "contract opportunity")'
-                        ),
-                    },
+        "name": "schedule_meeting",
+        "description": (
+            "Get a scheduling link for the visitor to book a meeting with Reid Collins. "
+            "Use when someone wants to schedule a call, meeting, or interview with Reid."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "description": (
+                        "What the visitor wants to discuss "
+                        '(e.g., "engineering role at Acme Corp", "contract opportunity")'
+                    ),
                 },
             },
         },
     },
     {
-        "type": "function",
-        "function": {
-            "name": "send_contact",
-            "description": (
-                "Submit a message from the visitor to Reid (same as the Contact Reid form). "
-                "Use only after the visitor has explicitly provided their real name, email, "
-                "and the message they want to send. Never guess or invent email or name."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Visitor's name as they gave it.",
-                    },
-                    "email": {
-                        "type": "string",
-                        "description": "Visitor's email address (for Reid to reply).",
-                    },
-                    "message": {
-                        "type": "string",
-                        "description": "The message body the visitor wants Reid to receive.",
-                    },
+        "name": "send_contact",
+        "description": (
+            "Submit a message from the visitor to Reid (same as the Contact Reid form). "
+            "Use only after the visitor has explicitly provided their real name, email, "
+            "and the message they want to send. Never guess or invent email or name."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Visitor's name as they gave it.",
                 },
-                "required": ["name", "email", "message"],
+                "email": {
+                    "type": "string",
+                    "description": "Visitor's email address (for Reid to reply).",
+                },
+                "message": {
+                    "type": "string",
+                    "description": "The message body the visitor wants Reid to receive.",
+                },
             },
+            "required": ["name", "email", "message"],
         },
     },
 ]
@@ -677,7 +675,7 @@ def chat():
         if not message or not isinstance(message, str) or not message.strip():
             return jsonify({"error": "message is required"}), 400
 
-        if not openai_client:
+        if not anthropic_client:
             return jsonify({"error": "Chat is not configured"}), 503
 
         ip = request.remote_addr or "unknown"
@@ -710,18 +708,12 @@ def chat():
         # skills, a specific employer) and returning more chunks adds noise.
         raw_query = message.strip()
         if raw_query.lower().startswith("/match"):
-            # Strip the "/match " prefix so the job description alone is the
-            # embedding query; fall back to the full message if no description
-            # was provided yet (the chatbot will prompt for it).
             retrieval_query = raw_query[6:].strip() or raw_query
             n_results = len(_resume_chunks_list) if _resume_chunks_list else 10
         else:
-            # Short or pronoun-heavy follow-ups like "where is that?" embed
-            # poorly and retrieve irrelevant chunks.  When the query is fewer
-            # than 5 words, append the most recent assistant message as context
-            # so the retrieval query carries enough semantic signal.
             prior_assistant = next(
-                (m.get("content", "") for m in reversed(trimmed) if m.get("role") == "assistant"),
+                (m.get("content", "") for m in reversed(trimmed)
+                 if m.get("role") == "assistant" and isinstance(m.get("content"), str)),
                 "",
             )
             if len(raw_query.split()) < 5 and prior_assistant:
@@ -737,71 +729,64 @@ def chat():
             f"---\n\n"
             f"Relevant resume context (retrieved for this query):\n\n{context}"
         )
-        api_messages = [{"role": "system", "content": system_content}, *trimmed]
+
+        api_messages = trimmed
 
         reply = None
         for _ in range(MAX_TOOL_ROUNDS):
-            completion = openai_client.chat.completions.create(
-                model="gpt-4o-mini",
+            response = anthropic_client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                system=system_content,
                 messages=api_messages,
                 tools=TOOLS,
                 max_tokens=500,
                 temperature=0.7,
             )
 
-            choice = completion.choices[0]
+            tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
 
-            if choice.message.tool_calls:
-                # Serialize the assistant's tool-call message to a plain dict so
-                # it can be stored and replayed.  The OpenAI SDK object is not
-                # directly JSON-serialisable.
-                tool_calls_data = [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments,
-                        },
-                    }
-                    for tc in choice.message.tool_calls
-                ]
-                assistant_tool_msg = {
-                    "role": "assistant",
-                    "content": choice.message.content,
-                    "tool_calls": tool_calls_data,
-                }
+            if tool_use_blocks:
+                assistant_content = []
+                for block in response.content:
+                    if block.type == "text":
+                        assistant_content.append({"type": "text", "text": block.text})
+                    elif block.type == "tool_use":
+                        assistant_content.append({
+                            "type": "tool_use",
+                            "id": block.id,
+                            "name": block.name,
+                            "input": block.input,
+                        })
+
+                assistant_tool_msg = {"role": "assistant", "content": assistant_content}
                 api_messages.append(assistant_tool_msg)
                 _save_message(session_id, ip, assistant_tool_msg)
 
-                for tool_call in choice.message.tool_calls:
-                    args = json.loads(tool_call.function.arguments or "{}")
-                    result = execute_tool_call(
-                        tool_call.function.name, args, client_ip=ip
-                    )
-                    tool_result_msg = {
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
+                tool_results: list = []
+                for block in tool_use_blocks:
+                    args = block.input or {}
+                    result = execute_tool_call(block.name, args, client_ip=ip)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
                         "content": result,
-                    }
-                    api_messages.append(tool_result_msg)
-                    _save_message(session_id, ip, tool_result_msg)
+                    })
 
                     _db_execute(
                         "INSERT INTO tool_usage "
                         "(session_id, ip_address, tool_name, tool_args, tool_result) "
                         "VALUES (%s, %s, %s, %s, %s)",
-                        [
-                            session_id,
-                            ip,
-                            tool_call.function.name,
-                            json.dumps(args),
-                            result,
-                        ],
+                        [session_id, ip, block.name, json.dumps(args), result],
                     )
+
+                tool_result_msg = {"role": "user", "content": tool_results}
+                api_messages.append(tool_result_msg)
+                _save_message(session_id, ip, tool_result_msg)
                 continue
 
-            reply = choice.message.content or "Sorry, I couldn't generate a response."
+            # No tool use — extract the text reply.
+            text_blocks = [b.text for b in response.content if b.type == "text"]
+            reply = " ".join(text_blocks) if text_blocks else None
             break
 
         if not reply:

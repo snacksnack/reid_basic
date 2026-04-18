@@ -2,11 +2,11 @@
 
 ## Overview
 
-The resume site includes an AI-powered chatbot that answers questions about Reid's professional background. It uses OpenAI's `gpt-4o-mini` model with the full resume as context.
+The resume site includes an AI-powered chatbot that answers questions about Reid's professional background. It uses Anthropic's **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) for chat completions and OpenAI's `text-embedding-3-small` for RAG embeddings.
 
 **Architecture:**
 - **Frontend:** React component (`ChatBot.tsx`) — floating button in the bottom-right that opens a chat panel
-- **Backend:** Flask server (`app.py`) with a `POST /api/chat` endpoint that proxies requests to OpenAI
+- **Backend:** Flask server (`app.py`) with a `POST /api/chat` endpoint that proxies requests to Anthropic
 - **In production:** Gunicorn runs the Flask app, which serves both the static site (`dist/`) and the chat API
 - **In development:** Vite dev server proxies `/api` requests to the Flask backend
 
@@ -14,7 +14,8 @@ The resume site includes an AI-powered chatbot that answers questions about Reid
 
 ## Prerequisites
 
-- **OpenAI API key** — sign up at [platform.openai.com](https://platform.openai.com) and add a few dollars of credit ($5 is plenty)
+- **Anthropic API key** — sign up at [console.anthropic.com](https://console.anthropic.com) for chat completions (Claude Haiku 4.5)
+- **OpenAI API key** — sign up at [platform.openai.com](https://platform.openai.com) for RAG embeddings (`text-embedding-3-small`)
 
 ---
 
@@ -23,6 +24,7 @@ The resume site includes an AI-powered chatbot that answers questions about Reid
 ### 1. Create a `.env` file in the project root
 
 ```
+ANTHROPIC_API_KEY=sk-ant-your-key-here
 OPENAI_API_KEY=sk-your-actual-key
 ```
 
@@ -62,6 +64,7 @@ Click the blue chat bubble in the bottom-right corner and ask a question like "W
 ### Set the environment variables
 
 ```bash
+heroku config:set ANTHROPIC_API_KEY=sk-ant-your-key-here --app hihelloreid
 heroku config:set OPENAI_API_KEY=sk-your-actual-key --app hihelloreid
 heroku config:set FLASK_ENV=production --app hihelloreid
 ```
@@ -105,7 +108,7 @@ Or push to `main` on GitHub — CI runs, and Heroku auto-deploys if tests pass.
 | `.env` | Your actual API key (gitignored) |
 | `vite.config.ts` | Dev proxy: `/api` → `localhost:3001` |
 | `package.json` | Frontend dependencies and scripts |
-| `requirements.txt` | Python dependencies (Flask, OpenAI, etc.) |
+| `requirements.txt` | Python dependencies (Flask, Anthropic, OpenAI, etc.) |
 | `src/App.tsx` | Includes `<ChatBot />` component |
 
 ---
@@ -114,19 +117,21 @@ Or push to `main` on GitHub — CI runs, and Heroku auto-deploys if tests pass.
 
 ### Model
 
-The chatbot uses `gpt-4o-mini` (cheap and fast). To change the model, edit `app.py`:
+The chatbot uses Anthropic's **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — fast and affordable. To change the model, edit `app.py`:
 
 ```python
-completion = openai_client.chat.completions.create(
-    model="gpt-4o-mini",  # change to "gpt-4o" for higher quality
+response = anthropic_client.messages.create(
+    model="claude-haiku-4-5-20251001",  # change to "claude-sonnet-4-5-20250929" for higher quality
     ...
 )
 ```
 
+See [anthropic-migration.md](anthropic-migration.md) for full details on the provider switch.
+
 ### Conversation limits
 
 - **Client-side message cap:** 10 user messages per conversation (controlled by `MAX_USER_MESSAGES` in `ChatBot.tsx`). After the 10th message, the bot delivers a humorous cutoff message and disables the input.
-- **Server-side context window:** Last 20 messages sent to OpenAI (controlled by `MAX_CONVERSATION_MESSAGES` in `app.py`). Older messages are silently trimmed to control token costs.
+- **Server-side context window:** Last 20 messages sent to Anthropic (controlled by `MAX_CONVERSATION_MESSAGES` in `app.py`). Older messages are silently trimmed to control token costs.
 - **Max response tokens:** 500 per reply (controlled by `max_tokens` in the API call)
 
 ### Rate limiting
@@ -137,11 +142,11 @@ The `/api/chat` endpoint is protected by `flask-limiter`:
 - Returns a `429` status with `{ error: "Too many requests — please try again later." }` when exceeded
 - Resets after the 1-hour window expires
 
-This prevents scripts or bots from burning through OpenAI credits. A real user hitting the 10-message client-side cap will never reach the 20-request server limit.
+This prevents scripts or bots from burning through Anthropic credits. A real user hitting the 10-message client-side cap will never reach the 20-request server limit.
 
-### OpenAI spending limits
+### Spending limits
 
-As an additional safeguard, set a monthly budget cap in your OpenAI account at [platform.openai.com/settings/organization/limits](https://platform.openai.com/settings/organization/limits). This is a hard ceiling regardless of what happens on the server side.
+As an additional safeguard, set a monthly budget cap in your Anthropic account at [console.anthropic.com](https://console.anthropic.com) under Settings → Limits. This is a hard ceiling regardless of what happens on the server side. Also set an OpenAI budget cap at [platform.openai.com/settings/organization/limits](https://platform.openai.com/settings/organization/limits) for the embeddings usage.
 
 ### Visitor analytics (Postgres)
 
@@ -271,7 +276,7 @@ The analysis is deliberately framed as an advocate — it focuses on strengths a
 
 ### Agentic tool use (schedule meeting & send contact)
 
-The chatbot supports **OpenAI function calling** — the LLM can invoke server-side tools during a conversation. Two tools are implemented:
+The chatbot supports **Anthropic tool use** (previously OpenAI function calling) — the LLM can invoke server-side tools during a conversation. Two tools are implemented:
 
 - **`schedule_meeting`** — When a visitor asks to schedule a call or meeting, the model calls this tool to retrieve a scheduling link (Calendly, Cal.com, etc.) and presents it naturally in the response.
 - **`send_contact`** — When a visitor wants Reid to receive a written message and has provided name, email, and message in chat, the model can submit the same payload as the Contact Reid form (shared backend path, shared rate limit). See **[Agentic Tool Use](agentic-tool-use.md)** for behavior, validation, and privacy notes.
@@ -286,7 +291,7 @@ echo 'SCHEDULING_URL=https://calendly.com/your-link' >> .env
 heroku config:set SCHEDULING_URL=https://calendly.com/your-link --app hihelloreid
 ```
 
-For full details on the architecture, the tool-calling loop, `tool_usage` logging, and how to add new tools, see **[Agentic Tool Use](agentic-tool-use.md)**.
+For full details on the architecture, the tool-calling loop, `tool_usage` logging, and how to add new tools, see **[Agentic Tool Use](agentic-tool-use.md)**. That doc also explains **how OpenAI and Anthropic differ** (message roles, `tool_use` / `tool_result` content blocks vs OpenAI’s `tool_calls` / `tool` role).
 
 ### System prompt
 

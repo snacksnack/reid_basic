@@ -38,7 +38,7 @@ Top-k most relevant resume chunks
 Inject chunks into system prompt
     │
     ▼
-OpenAI chat completion (gpt-4o-mini)
+Anthropic chat completion (Claude Haiku 4.5)
     │
     ▼
 Response to user

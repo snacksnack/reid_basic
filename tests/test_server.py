@@ -72,20 +72,20 @@ class TestToolsDefinition:
 
     def test_schedule_meeting_schema(self):
         tool = next(
-            (t for t in TOOLS if t["function"]["name"] == "schedule_meeting"), None
+            (t for t in TOOLS if t["name"] == "schedule_meeting"), None
         )
         assert tool is not None
-        assert tool["type"] == "function"
-        assert "topic" in tool["function"]["parameters"]["properties"]
+        assert "input_schema" in tool
+        assert "topic" in tool["input_schema"]["properties"]
 
     def test_send_contact_schema(self):
         tool = next(
-            (t for t in TOOLS if t["function"]["name"] == "send_contact"), None
+            (t for t in TOOLS if t["name"] == "send_contact"), None
         )
         assert tool is not None
-        assert tool["type"] == "function"
-        props = tool["function"]["parameters"]["properties"]
-        assert set(tool["function"]["parameters"]["required"]) == {
+        assert "input_schema" in tool
+        props = tool["input_schema"]["properties"]
+        assert set(tool["input_schema"]["required"]) == {
             "name",
             "email",
             "message",
