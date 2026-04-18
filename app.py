@@ -587,7 +587,8 @@ def execute_tool_call(name, args, *, client_ip="unknown"):
         return json.dumps(
             {
                 "available": True,
-                "scheduling_url": scheduling_url,
+                "scheduling_link": f"[scheduling link]({scheduling_url})",
+                "instructions": "Include the scheduling_link value EXACTLY as-is in your reply. Do not alter the URL.",
                 "topic": args.get("topic"),
             }
         )

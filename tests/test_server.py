@@ -94,13 +94,13 @@ class TestToolsDefinition:
 
 
 class TestExecuteToolCall:
-    def test_returns_scheduling_url_when_set(self):
+    def test_returns_scheduling_link_when_set(self):
         os.environ["SCHEDULING_URL"] = "https://calendly.com/test"
         result = json.loads(
             execute_tool_call("schedule_meeting", {"topic": "engineering role"})
         )
         assert result["available"] is True
-        assert result["scheduling_url"] == "https://calendly.com/test"
+        assert result["scheduling_link"] == "[scheduling link](https://calendly.com/test)"
         assert result["topic"] == "engineering role"
         del os.environ["SCHEDULING_URL"]
 
