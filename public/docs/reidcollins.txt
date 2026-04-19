@@ -65,7 +65,7 @@ successful delivery
 CheetahMail / Experian
 SoGware Developer / Client SoluJons Team
 2008 – 2015
-• Scrum master and developer for Cheetahmail development client soluJons teams
+• Scrum master and developer for Cheetahmail development and client soluJons teams
 • Design and implement remarkeJng campaigns for clients. Build automated import processes
 that client feeds from Coremetrics, Google AnalyJcs, and Omniture to capture abandoned
 cart users.

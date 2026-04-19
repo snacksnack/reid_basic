@@ -38,7 +38,7 @@ Cheetah Digital — Technical Program Manager / Software Developer — 2015–20
 • Partnered directly with clients to support integrations, troubleshoot issues, and ensure successful delivery
 
 CheetahMail / Experian — Software Developer / Client Solutions Team — 2008–2015
-• Scrum master and developer for Cheetahmail development client solutions teams
+• Scrum master and developer for Cheetahmail development and client solutions teams
 • Design and implement remarketing campaigns for clients. Build automated import processes that client feeds from Coremetrics, Google Analytics, and Omniture to capture abandoned cart users.
 • Built ETL pipelines for client data ingestion (text/XML) into BerkeleyDB/CDB systems and supported API integrations
 • Integrated client imports/exports. Work closely with clients to design and implement customized solutions, aggregating campaign data to synch with client or 3rd party DB

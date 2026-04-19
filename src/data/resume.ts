@@ -76,7 +76,7 @@ const resume: ResumeData = {
       role: 'Software Developer / Client Solutions Team',
       period: '2008 — 2015',
       achievements: [
-        'Scrum master and developer for Cheetahmail development client solutions teams',
+        'Scrum master and developer for Cheetahmail development and client solutions teams',
         'Design and implement remarketing campaigns for clients. Build automated import processes that client feeds from Coremetrics, Google Analytics, and Omniture to capture abandoned cart users.',
         'Built ETL pipelines for client data ingestion (text/XML) into BerkeleyDB/CDB systems and supported API integrations',
         'Integrated client imports/exports. Work closely with clients to design and implement customized solutions, aggregating campaign data to synch with client or 3rd party DB',
