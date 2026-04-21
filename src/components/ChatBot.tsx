@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
+import ReactMarkdown from 'react-markdown'
 import './ChatBot.css'
 
 interface Message {
@@ -8,35 +9,6 @@ interface Message {
 
 const GREETING =
   "Hi! I'm an AI assistant for Reid's resume. Ask me anything about his experience, skills, or background."
-
-const LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)|(https?:\/\/[^\s)]+)/g
-
-function Linkified({ text }: { text: string }) {
-  const elements: React.ReactNode[] = []
-  let lastIndex = 0
-  let match: RegExpExecArray | null
-
-  LINK_PATTERN.lastIndex = 0
-  while ((match = LINK_PATTERN.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      elements.push(<span key={`t${lastIndex}`}>{text.slice(lastIndex, match.index)}</span>)
-    }
-    const url = match[2] || match[3]
-    const label = match[1] || url
-    elements.push(
-      <a key={`l${match.index}`} href={url} target="_blank" rel="noopener noreferrer" className="chat-link">
-        {label}
-      </a>
-    )
-    lastIndex = LINK_PATTERN.lastIndex
-  }
-
-  if (lastIndex === 0) return <>{text}</>
-  if (lastIndex < text.length) {
-    elements.push(<span key={`t${lastIndex}`}>{text.slice(lastIndex)}</span>)
-  }
-  return <>{elements}</>
-}
 
 const MAX_USER_MESSAGES = 10
 
@@ -173,7 +145,21 @@ export default function ChatBot() {
           <div className="chat-messages">
             {messages.map((msg, i) => (
               <div key={i} className={`chat-bubble ${msg.role}`}>
-                <Linkified text={msg.content} />
+                {msg.role === 'assistant' ? (
+                  <ReactMarkdown
+                    components={{
+                      a: ({ href, children }) => (
+                        <a href={href} target="_blank" rel="noopener noreferrer" className="chat-link">
+                          {children}
+                        </a>
+                      ),
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                ) : (
+                  msg.content
+                )}
               </div>
             ))}
             {isLoading && (
