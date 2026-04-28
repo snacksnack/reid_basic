@@ -43,6 +43,12 @@ export default function ChatBot() {
     }
   }, [isOpen])
 
+  useEffect(() => {
+    if (!isLoading && isOpen) {
+      inputRef.current?.focus()
+    }
+  }, [isLoading, isOpen])
+
   const sendMessage = async () => {
     const text = input.trim()
     if (!text || isLoading || isLimitReached) return
