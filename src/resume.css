@@ -25,11 +25,29 @@
   margin-bottom: 1.25rem;
 }
 
+.name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 .name {
   margin: 0;
   font-size: 1.75rem;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.badge-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.badge-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 
 .title {
@@ -260,6 +278,7 @@
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .section { page-break-inside: avoid; }
   .toolbar { display: none; }
+  .badge-link { display: none; }
   .resume.compact .section { margin: 0.7rem 0; }
   .resume.compact .header { margin-bottom: 0.75rem; }
   .contact-item.phone { display: none; }

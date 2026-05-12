@@ -16,7 +16,7 @@ const resume: ResumeData = {
     { category: 'Data', items: ['MySQL', 'PostgreSQL', 'ClickHouse', 'Hive', 'DynamoDB'] },
     { category: 'Observability', items: ['Prometheus', 'Grafana', 'distributed tracing', 'structured logging'] },
     { category: 'Tools', items: ['Git (Bitbucket)', 'Jira', 'Confluence', 'Swagger/OpenAPI', 'Docker', 'GitHub Copilot', 'Cursor'] },
-    { category: 'Certifications', items: ['Certified Scrum Master (CSM)'] },
+    { category: 'Certifications', items: ['AWS Solutions Architect - Associate', 'Certified Scrum Master (CSM)'] },
   ],
   experience: [
     {

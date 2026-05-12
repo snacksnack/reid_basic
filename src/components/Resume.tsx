@@ -186,7 +186,22 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
         )}
       </div>
       <header className="header">
-        <h1 className="name">{data.name}</h1>
+        <div className="name-row">
+          <h1 className="name">{data.name}</h1>
+          <a
+            href="https://www.credly.com/badges/afef4bbc-373d-4f44-ab8d-bf019db67384/public_url"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="AWS Solutions Architect - Associate certification on Credly"
+            className="badge-link"
+          >
+            <img
+              src="/images/aws-saa-badge.png"
+              alt="AWS Solutions Architect - Associate"
+              className="badge-icon"
+            />
+          </a>
+        </div>
         <p className="title">{data.title}</p>
         <ContactLine contact={data.contact} />
         {data.tagline && <p className="tagline">{data.tagline}</p>}
