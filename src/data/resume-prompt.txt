@@ -54,4 +54,5 @@ EDUCATION
 Bachelor of Arts, International Relations — Tulane University - 1998
 
 CERTIFICATIONS
+AWS Solutions Architect - Associate
 Certified Scrum Master (CSM)
