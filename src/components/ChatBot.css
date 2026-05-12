@@ -1,7 +1,27 @@
-.chat-fab {
+.chat-fab-wrapper {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: fab-entrance 500ms cubic-bezier(0.34, 1.56, 0.64, 1) 0.75s both;
+}
+
+@keyframes fab-entrance {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.chat-fab {
+  position: relative;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -14,12 +34,31 @@
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: transform 160ms ease, box-shadow 160ms ease;
-  z-index: 100;
 }
 
 .chat-fab:hover {
   transform: scale(1.08);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.chat-fab-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  animation: fab-ping 1.5s ease-out 2s 3;
+}
+
+@keyframes fab-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
 }
 
 .chat-panel {
@@ -255,14 +294,15 @@
     right: 1rem;
   }
 
-  .chat-fab {
+  .chat-fab-wrapper {
     bottom: 1rem;
     right: 1rem;
   }
+
 }
 
 @media print {
-  .chat-fab,
+  .chat-fab-wrapper,
   .chat-panel {
     display: none;
   }
