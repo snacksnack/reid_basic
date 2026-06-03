@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Query last 24 hours of site activity and email a digest via SendGrid SMTP.
+"""Query last 24 hours of site activity and email a digest.
 
 Replaces the Node-based chat-digest.mjs script.
 
@@ -11,20 +11,22 @@ Usage (Heroku Scheduler):
 """
 
 import os
-import smtplib
 import sys
 from collections import defaultdict
 from datetime import datetime
-from email.mime.text import MIMEText
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
+try:
+    from scripts.emailer import send_notification_email
+except ModuleNotFoundError:
+    from emailer import send_notification_email
+
 load_dotenv()
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
-RECIPIENT = os.environ.get("DIGEST_EMAIL", "hire.reid.collins@gmail.com")
 
 
 def run():
@@ -124,11 +126,6 @@ def run():
                 text += f"  [{label}] {msg['content']}\n\n"
             text += "\n"
 
-    sg_user = os.environ.get("SENDGRID_USERNAME")
-    sg_pass = os.environ.get("SENDGRID_PASSWORD")
-    if not sg_user or not sg_pass:
-        sys.exit("SENDGRID_USERNAME and SENDGRID_PASSWORD are required to send the digest")
-
     v_count = len(view_rows)
     d_count = len(download_rows)
     c_count = len(contact_rows)
@@ -140,18 +137,14 @@ def run():
         f"{s_count} chat{'s' if s_count != 1 else ''} — {today}"
     )
 
-    mime_msg = MIMEText(text)
-    mime_msg["Subject"] = subject
-    mime_msg["From"] = "Resume Chatbot <hire.reid.collins@gmail.com>"
-    mime_msg["To"] = RECIPIENT
-
-    with smtplib.SMTP("smtp.sendgrid.net", 587) as server:
-        server.starttls()
-        server.login(sg_user, sg_pass)
-        server.send_message(mime_msg)
+    recipient = send_notification_email(
+        subject=subject,
+        body=text,
+        from_name="Resume Chatbot",
+    )
 
     print(
-        f"Digest sent to {RECIPIENT} — "
+        f"Digest sent to {recipient} — "
         f"{v_count} view(s), {d_count} download(s), "
         f"{c_count} contact(s), {s_count} chat(s)"
     )

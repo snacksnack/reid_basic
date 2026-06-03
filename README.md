@@ -88,9 +88,11 @@ git push origin main
 | `OPENAI_API_KEY` | Yes | OpenAI API key for the chatbot |
 | `FLASK_ENV` | Production only | Set to `production` on Heroku |
 | `DATABASE_URL` | No | PostgreSQL connection string (auto-set by Heroku Postgres) |
-| `SENDGRID_USERNAME` | No | SendGrid SMTP username for email notifications |
-| `SENDGRID_PASSWORD` | No | SendGrid SMTP password |
-| `DIGEST_EMAIL` | No | Recipient for the nightly digest (default: hire.reid.collins@gmail.com) |
+| `GMAIL_CLIENT_ID` | Email notifications | Google OAuth client ID for Gmail API delivery |
+| `GMAIL_CLIENT_SECRET` | Email notifications | Google OAuth client secret |
+| `GMAIL_REFRESH_TOKEN` | Email notifications | Google OAuth refresh token with `gmail.send` scope |
+| `SMTP_USERNAME` | Email notifications | Gmail address used as the sender |
+| `NOTIFICATION_EMAIL` | No | Recipient for notifications and digest (default: hire.reid.collins@gmail.com) |
 | `SCHEDULING_URL` | No | Calendly/booking link for the chatbot's scheduling tool |
 
 ## npm Scripts

@@ -24,10 +24,10 @@ scripts/summarize_sessions.py
     ├── For each qualifying session:
     │       • Load full transcript from chat_logs
     │       • Call gpt-4o-mini to extract structured summary
-    │       • Save summary to chat_summaries
     │
     └── If any sessions were summarized:
-            • Send one email via SendGrid with all summaries
+            • Send one email via Gmail with all summaries
+            • Save summaries to chat_summaries only after email delivery succeeds
 ```
 
 ---
@@ -110,7 +110,7 @@ New script. Standalone — no dependency on the Flask app. Connects directly to 
 | `build_transcript_text()` | Format messages into a readable string for the prompt |
 | `summarize()` | OpenAI call — returns the structured summary text |
 | `save_summary()` | Insert into `chat_summaries` |
-| `send_email()` | Batch all summaries into one SendGrid email |
+| `send_email()` | Batch all summaries into one Gmail notification email |
 | `run()` | Orchestrates the full pipeline |
 
 ---
@@ -130,15 +130,17 @@ heroku addons:open scheduler --app hihelloreid
 ```
 
 ### Environment Variables
-No new variables required. The script reuses what is already configured on the dyno:
+The script needs database/model configuration plus Gmail OAuth settings for email delivery:
 
 | Variable | Purpose |
 |----------|---------|
 | `DATABASE_URL` | Postgres connection (required) |
 | `OPENAI_API_KEY` | Summarization model (required) |
-| `SENDGRID_USERNAME` | Email delivery (required to send) |
-| `SENDGRID_PASSWORD` | Email delivery (required to send) |
-| `DIGEST_EMAIL` | Recipient address (default: hire.reid.collins@gmail.com) |
+| `GMAIL_CLIENT_ID` | Google OAuth client ID for Gmail API delivery |
+| `GMAIL_CLIENT_SECRET` | Google OAuth client secret |
+| `GMAIL_REFRESH_TOKEN` | Google OAuth refresh token with `gmail.send` scope |
+| `SMTP_USERNAME` | Gmail address used as the sender |
+| `NOTIFICATION_EMAIL` | Recipient address (default: hire.reid.collins@gmail.com) |
 
 ### Optional Tuning
 These can be set as Heroku config vars to adjust behavior without code changes:

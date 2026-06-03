@@ -2,9 +2,7 @@ import hashlib
 import json
 import logging
 import os
-import smtplib
 import threading
-from email.mime.text import MIMEText
 from pathlib import Path
 
 import anthropic
@@ -14,6 +12,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from openai import OpenAI
+from scripts.emailer import send_notification_email
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 IS_PRODUCTION = os.environ.get("FLASK_ENV") == "production"
@@ -96,25 +95,17 @@ MAX_CONTACT_SUBMISSIONS_PER_HOUR = 5
 def _send_contact_notification_email(
     name: str, visitor_email: str, message: str, ip: str
 ) -> None:
-    sg_user = os.environ.get("SENDGRID_USERNAME")
-    sg_pass = os.environ.get("SENDGRID_PASSWORD")
-    if not sg_user or not sg_pass:
-        return
-    recipient = os.environ.get("DIGEST_EMAIL", "hire.reid.collins@gmail.com")
     body = (
         f"New contact form submission\n\n"
         f"Name: {name}\nEmail: {visitor_email}\nIP: {ip}\n\n{message}"
     )
-    mime_msg = MIMEText(body)
-    mime_msg["Subject"] = f"Contact form: {name}"
-    mime_msg["From"] = "Resume Site <hire.reid.collins@gmail.com>"
-    mime_msg["To"] = recipient
-    mime_msg["Reply-To"] = visitor_email
     try:
-        with smtplib.SMTP("smtp.sendgrid.net", 587) as server:
-            server.starttls()
-            server.login(sg_user, sg_pass)
-            server.send_message(mime_msg)
+        send_notification_email(
+            subject=f"Contact form: {name}",
+            body=body,
+            from_name="Resume Site",
+            reply_to=visitor_email,
+        )
     except Exception as e:
         logging.error("Failed to send contact email: %s", e)
 

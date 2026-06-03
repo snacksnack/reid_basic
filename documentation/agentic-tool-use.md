@@ -230,7 +230,7 @@ Both the HTTP contact route and the `send_contact` tool call the same function:
 1. **Validation** — non-empty `name`, `email`, `message`; lightweight email shape check.
 2. **Rate limit** — at most **5 successful submissions per client IP per rolling hour** (`MAX_CONTACT_SUBMISSIONS_PER_HOUR` in `app.py`), counted as rows in `contact_submissions` with a matching `ip_address`. This cap applies **together** for the modal and for chat — a visitor cannot bypass the limit by switching channels.
 3. **Persistence** — `INSERT` into `contact_submissions` (best-effort if DB is down; same behavior as before).
-4. **Email** — if `SENDGRID_USERNAME` / `SENDGRID_PASSWORD` are set, sends the same style of notification as the form (reply-to set to the visitor’s email).
+4. **Email** — if Gmail OAuth settings are configured, sends the same style of notification as the form (reply-to set to the visitor’s email).
 
 **Tool result JSON (what the model sees):**
 
@@ -262,7 +262,7 @@ The system prompt instructs the agent **not** to claim the message was sent unle
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SCHEDULING_URL` | No | Full URL to a scheduling page (e.g. Calendly, Cal.com, or any booking link). If not set, the tool gracefully falls back to suggesting email contact. |
-| SendGrid (`SENDGRID_USERNAME`, `SENDGRID_PASSWORD`) | No | Same as the contact form — if omitted, submissions are still stored when `DATABASE_URL` is set, but no immediate email is sent. |
+| Gmail OAuth (`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `SMTP_USERNAME`) | No | Same as the contact form — if omitted, submissions are still stored when `DATABASE_URL` is set, but no immediate email is sent. |
 
 `send_contact` does not introduce new environment variables.
 

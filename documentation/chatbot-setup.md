@@ -331,13 +331,13 @@ heroku addons:open scheduler --app hihelloreid
 
 ### Configuration
 
-- **Recipient email:** Defaults to `hire.reid.collins@gmail.com`. Override by setting `DIGEST_EMAIL` on Heroku:
+- **Recipient email:** Defaults to `hire.reid.collins@gmail.com`. Override by setting `NOTIFICATION_EMAIL` on Heroku:
 
 ```bash
-heroku config:set DIGEST_EMAIL=your-email@example.com --app hihelloreid
+heroku config:set NOTIFICATION_EMAIL=your-email@example.com --app hihelloreid
 ```
 
-- **Email sending:** Uses the existing SendGrid SMTP credentials (`SENDGRID_USERNAME` / `SENDGRID_PASSWORD`) already configured on Heroku.
+- **Email sending:** Uses Gmail API OAuth configuration (`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, and `SMTP_USERNAME`) configured on Heroku.
 
 ### Test on Heroku
 
@@ -357,7 +357,7 @@ A "Contact Reid" button in the toolbar opens a modal where visitors can submit t
 2. A modal appears with Name, Email, and Message fields
 3. On submit, the form sends a `POST /api/contact` request
 4. The submission is saved to the `contact_submissions` table
-5. **In production**, an immediate email notification is sent to Reid via SendGrid (with reply-to set to the visitor's email so you can reply directly)
+5. **In production**, an immediate email notification is sent to Reid via Gmail (with reply-to set to the visitor's email so you can reply directly)
 6. The nightly digest email also includes all submissions from the last 24 hours
 
 ### Database schema

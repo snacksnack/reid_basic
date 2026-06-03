@@ -4,7 +4,7 @@ Near-real-time chat session summarizer.
 
 Finds sessions that have gone inactive (no new messages for INACTIVITY_MINUTES)
 and have at least MIN_USER_MESSAGES turns, summarizes them with OpenAI, stores
-the summary in chat_summaries, and emails Reid.
+the summary in chat_summaries after the notification email sends, and emails Reid.
 
 Designed to be run every 15-30 minutes by Heroku Scheduler:
     python scripts/summarize_sessions.py
@@ -15,9 +15,11 @@ is safe — each session is summarized exactly once.
 Configuration (environment variables):
     DATABASE_URL          — Postgres connection string (required)
     OPENAI_API_KEY        — OpenAI API key for summarization (required)
-    SENDGRID_USERNAME     — SendGrid SMTP username (required to send email)
-    SENDGRID_PASSWORD     — SendGrid SMTP password (required to send email)
-    DIGEST_EMAIL          — recipient address (default: hire.reid.collins@gmail.com)
+    GMAIL_CLIENT_ID       — Google OAuth client ID (preferred email provider)
+    GMAIL_CLIENT_SECRET   — Google OAuth client secret
+    GMAIL_REFRESH_TOKEN   — Google OAuth refresh token with gmail.send scope
+    SMTP_USERNAME         — Gmail address used as the sender
+    NOTIFICATION_EMAIL    — recipient address (default: hire.reid.collins@gmail.com)
     INACTIVITY_MINUTES    — minutes of silence before a session is considered
                             inactive (default: 30)
     MIN_USER_MESSAGES     — minimum user turns required to summarize
@@ -25,15 +27,18 @@ Configuration (environment variables):
 """
 
 import os
-import smtplib
 import sys
 from datetime import datetime
-from email.mime.text import MIMEText
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from openai import OpenAI
+
+try:
+    from scripts.emailer import send_notification_email
+except ModuleNotFoundError:
+    from emailer import send_notification_email
 
 load_dotenv()
 
@@ -43,7 +48,6 @@ load_dotenv()
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-RECIPIENT = os.environ.get("DIGEST_EMAIL", "hire.reid.collins@gmail.com")
 INACTIVITY_MINUTES = int(os.environ.get("INACTIVITY_MINUTES", 30))
 MIN_USER_MESSAGES = int(os.environ.get("MIN_USER_MESSAGES", 3))
 
@@ -157,12 +161,6 @@ def summarize(client: OpenAI, transcript: str) -> str:
 
 def send_email(summaries: list[dict]) -> None:
     """Email all summaries produced in this run as a single digest."""
-    sg_user = os.environ.get("SENDGRID_USERNAME")
-    sg_pass = os.environ.get("SENDGRID_PASSWORD")
-    if not sg_user or not sg_pass:
-        print("SENDGRID credentials not set — skipping email.")
-        return
-
     now = datetime.now().strftime("%A, %B %d at %I:%M %p")
     count = len(summaries)
     noun = "session" if count == 1 else "sessions"
@@ -184,15 +182,11 @@ def send_email(summaries: list[dict]) -> None:
         f"Chat summary: {count} new {noun} — {datetime.now().strftime('%b %d, %I:%M %p')}"
     )
 
-    mime_msg = MIMEText(body)
-    mime_msg["Subject"] = subject
-    mime_msg["From"] = "Resume Chatbot <hire.reid.collins@gmail.com>"
-    mime_msg["To"] = RECIPIENT
-
-    with smtplib.SMTP("smtp.sendgrid.net", 587) as server:
-        server.starttls()
-        server.login(sg_user, sg_pass)
-        server.send_message(mime_msg)
+    send_notification_email(
+        subject=subject,
+        body=body,
+        from_name="Resume Chatbot",
+    )
 
     print(f"Summary email sent — {count} {noun}")
 
@@ -230,13 +224,6 @@ def run() -> None:
                 messages = load_transcript(conn, sid)
                 transcript = build_transcript_text(messages)
                 summary = summarize(client, transcript)
-                save_summary(
-                    conn,
-                    sid,
-                    session["ip_address"],
-                    summary,
-                    session["user_message_count"],
-                )
                 summarized.append({**session, "summary": summary})
                 print(f"  Summarized {sid} ({session['user_message_count']} user turns)")
             except Exception as e:
@@ -245,6 +232,14 @@ def run() -> None:
 
         if summarized:
             send_email(summarized)
+            for summary in summarized:
+                save_summary(
+                    conn,
+                    summary["session_id"],
+                    summary["ip_address"],
+                    summary["summary"],
+                    summary["user_message_count"],
+                )
 
     finally:
         conn.close()
