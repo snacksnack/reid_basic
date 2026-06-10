@@ -88,5 +88,5 @@ AWS: ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena
 Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB
 Observability: Prometheus, Grafana, distributed tracing, structured logging
 Tools: Git (Bitbucket), Jira, Confluence, Swagger/OpenAPI, Docker, Cursor, NoJon, n8n
-EducaJon: Bachelor of Arts, InternaJonal RelaJons — Tulane University - 1998
+EducaJon: Bachelor of Arts, InternaJonal RelaJons — Tulane University
 CerJficaJons: AWS SoluJons Architect - Associate, CerJfied Scrum Master (CSM)

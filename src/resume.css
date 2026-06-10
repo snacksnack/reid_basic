@@ -232,7 +232,7 @@
 .education {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0 0 2rem;
   font-size: 0.95rem;
 }
 
@@ -282,4 +282,5 @@
   .resume.compact .section { margin: 0.7rem 0; }
   .resume.compact .header { margin-bottom: 0.75rem; }
   .contact-item.phone { display: none; }
+  .education { margin-bottom: 0; }
 }

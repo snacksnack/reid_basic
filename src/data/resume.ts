@@ -85,7 +85,7 @@ const resume: ResumeData = {
   ],
   education: [
     {
-      school: 'Tulane University - 1998',
+      school: 'Tulane University',
       degree: 'Bachelor of Arts, International Relations',
       period: '',
     },

@@ -51,7 +51,7 @@ Observability: Prometheus, Grafana, distributed tracing, structured logging
 Tools: Git (Bitbucket), Jira, Confluence, Swagger/OpenAPI, Docker, Cursor, Notion, n8n
 
 EDUCATION
-Bachelor of Arts, International Relations — Tulane University - 1998
+Bachelor of Arts, International Relations — Tulane University
 
 CERTIFICATIONS
 AWS Solutions Architect - Associate
