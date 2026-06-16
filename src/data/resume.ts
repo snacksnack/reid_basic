@@ -6,7 +6,9 @@ const resume: ResumeData = {
   contact: {
     location: 'Brooklyn, NY',
     email: 'hire.reid.collins@gmail.com',
+    website: 'https://hihelloreid.com',
     linkedin: 'https://linkedin.com/in/reidcollins',
+    github: 'https://github.com/snacksnack',
   },
   summary:
     'Senior Technical Program Manager / Backend Engineer with a hybrid background in software engineering, program leadership, and client-facing technical delivery. Proven track record of driving large-scale platform migrations, leading cross-functional initiatives, translating business requirements into production systems, and delivering scalable solutions on AWS.',

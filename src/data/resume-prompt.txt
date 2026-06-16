@@ -1,6 +1,6 @@
 REID COLLINS
 Senior Technical Program Manager / Backend Engineer
-Brooklyn, NY | hire.reid.collins@gmail.com | linkedin.com/in/reidcollins
+Brooklyn, NY | hire.reid.collins@gmail.com | hihelloreid.com | linkedin.com/in/reidcollins | github.com/snacksnack
 
 SUMMARY
 Senior Technical Program Manager / Backend Engineer with a hybrid background in software engineering, program leadership, and client-facing technical delivery. Proven track record of driving large-scale platform migrations, leading cross-functional initiatives, translating business requirements into production systems, and delivering scalable solutions on AWS.
