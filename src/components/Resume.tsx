@@ -120,7 +120,7 @@ function ContactLine({ contact }: { contact?: ContactInfo }) {
       type: 'github',
       node: (
         <a href={contact.github} target="_blank" rel="noreferrer noopener">
-          GitHub
+          {contact.github.replace(/^https?:\/\//, '')}
         </a>
       ),
     })
