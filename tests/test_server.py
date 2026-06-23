@@ -6,6 +6,7 @@ import pytest
 from app import (
     TOOLS,
     FIT_CARD_TOOL,
+    MATCH_MAX_CHARS,
     _build_fit_card,
     execute_tool_call,
     _chunk_resume,
@@ -178,6 +179,31 @@ class TestMatchEndpoint:
         assert res.status_code == 200
         assert "fitCard" not in res.json
         assert "couldn't analyze" in res.json["reply"].lower()
+
+    def test_caps_oversized_job_description_before_the_api_call(self, client, monkeypatch):
+        tool_block = _Block(
+            "tool_use",
+            name="render_fit_card",
+            input={
+                "role_title": "X",
+                "verdict": "good",
+                "verdict_label": "Good fit",
+                "strengths": ["a"],
+                "transferable": [],
+                "gaps": [],
+                "summary": "s",
+            },
+        )
+        fake = self._patch_client(monkeypatch, _FakeClient(_Resp([tool_block])))
+
+        huge = "x" * (MATCH_MAX_CHARS + 5000)
+        res = client.post(
+            "/api/chat", json={"message": "/match " + huge, "sessionId": "m4"}
+        )
+
+        assert res.status_code == 200
+        sent = fake.messages.calls[0]["messages"][0]["content"]
+        assert len(sent) <= MATCH_MAX_CHARS
 
 
 class TestFitCardTool:

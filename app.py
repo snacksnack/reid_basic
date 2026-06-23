@@ -510,6 +510,18 @@ _watcher.start()
 MAX_CONVERSATION_MESSAGES = 20
 MAX_TOOL_ROUNDS = 3
 
+# Upper bound on the job-description body sent to the role-fit matcher. The
+# normal chat path trims to a token budget; the /match path sends the raw body
+# directly, so cap it to avoid an oversized/expensive call (e.g. a recruiter
+# pasting an entire HTML page). A real JD front-loads the relevant detail well
+# within this limit.
+MATCH_MAX_CHARS = 8000
+
+# Output token budget for the structured fit card. Higher than the regular chat
+# path because the card packs several arrays (strengths/transferable/gaps) plus
+# a summary; too low risks a truncated tool call that silently falls back.
+MATCH_MAX_TOKENS = 1200
+
 # ---------------------------------------------------------------------------
 # Tool definitions
 # ---------------------------------------------------------------------------
@@ -761,6 +773,15 @@ def chat():
         is_match = raw_query.lower().startswith("/match")
         match_body = raw_query[len("/match"):].strip() if is_match else ""
 
+        # Cap the job-description body before it reaches the model (cost/context).
+        if len(match_body) > MATCH_MAX_CHARS:
+            logging.info(
+                "Truncating /match job description from %d to %d chars",
+                len(match_body),
+                MATCH_MAX_CHARS,
+            )
+            match_body = match_body[:MATCH_MAX_CHARS]
+
         # "/match" with no job description: a static prompt, no model call needed.
         if is_match and not match_body:
             return jsonify(
@@ -839,7 +860,7 @@ def chat():
                     messages=[{"role": "user", "content": match_body}],
                     tools=[FIT_CARD_TOOL],
                     tool_choice={"type": "tool", "name": "render_fit_card"},
-                    max_tokens=800,
+                    max_tokens=MATCH_MAX_TOKENS,
                     temperature=0.4,
                 )
                 tool_block = next(
@@ -854,6 +875,13 @@ def chat():
                 logging.error("Role-fit match error: %s", e)
 
             if not tool_block:
+                # No tool call came back — an API error (logged above) or a
+                # truncated/empty response. Log so silent degradation is visible.
+                logging.warning(
+                    "Role-fit match produced no fit card; returning fallback "
+                    "(possible truncation at max_tokens=%d or API error).",
+                    MATCH_MAX_TOKENS,
+                )
                 fallback = (
                     "I couldn't analyze that role right now. Please try again in a "
                     "moment, or email Reid directly at hire.reid.collins@gmail.com."
