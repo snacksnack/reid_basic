@@ -3,7 +3,15 @@ import os
 
 import pytest
 
-from app import TOOLS, execute_tool_call, _chunk_resume, _retrieve_context, _resume_path
+from app import (
+    TOOLS,
+    FIT_CARD_TOOL,
+    _build_fit_card,
+    execute_tool_call,
+    _chunk_resume,
+    _retrieve_context,
+    _resume_path,
+)
 
 
 class TestDownload:
@@ -63,6 +71,150 @@ class TestChat:
     def test_rejects_non_string_message(self, client):
         res = client.post("/api/chat", json={"message": []})
         assert res.status_code == 400
+
+    def test_bare_match_returns_prompt_without_model(self, client):
+        # "/match" with no job description is answered statically — no model
+        # call — so it works even when chat is unconfigured, and never 503s.
+        res = client.post("/api/chat", json={"message": "/match"})
+        assert res.status_code == 200
+        assert "job description" in res.json["reply"].lower()
+        assert "fitCard" not in res.json
+
+
+class _Block:
+    """Minimal stand-in for an Anthropic content block."""
+
+    def __init__(self, type, name=None, input=None, text=None):
+        self.type = type
+        self.name = name
+        self.input = input
+        self.text = text
+
+
+class _Resp:
+    def __init__(self, content):
+        self.content = content
+
+
+class _FakeMessages:
+    def __init__(self, response=None, error=None):
+        self._response = response
+        self._error = error
+        self.calls = []
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        if self._error:
+            raise self._error
+        return self._response
+
+
+class _FakeClient:
+    def __init__(self, response=None, error=None):
+        self.messages = _FakeMessages(response, error)
+
+
+class TestMatchEndpoint:
+    """Covers the forced-tool /match branch of the chat endpoint."""
+
+    def _patch_client(self, monkeypatch, fake):
+        import app as app_module
+
+        monkeypatch.setattr(app_module, "anthropic_client", fake)
+        return fake
+
+    def test_returns_structured_fit_card_via_forced_tool(self, client, monkeypatch):
+        tool_block = _Block(
+            "tool_use",
+            name="render_fit_card",
+            input={
+                "role_title": "Senior Backend Engineer",
+                "verdict": "good",
+                "verdict_label": "Good fit, some gaps",
+                "strengths": ["Python depth"],
+                "transferable": ["ECS → K8s"],
+                "gaps": ["No production Kubernetes"],
+                "summary": "Strong backend fit.",
+            },
+        )
+        fake = self._patch_client(monkeypatch, _FakeClient(_Resp([tool_block])))
+
+        res = client.post(
+            "/api/chat",
+            json={"message": "/match Backend role needs Python and K8s", "sessionId": "m1"},
+        )
+
+        assert res.status_code == 200
+        body = res.json
+        card = body["fitCard"]
+        assert card["roleTitle"] == "Senior Backend Engineer"
+        assert card["verdict"] == "good"
+        assert card["gaps"] == ["No production Kubernetes"]
+        assert card["sectionsReviewed"] >= 1
+        assert body["reply"]  # conversational follow-up accompanies the card
+
+        # The model call must force the render_fit_card tool.
+        kwargs = fake.messages.calls[0]
+        assert kwargs["tool_choice"] == {"type": "tool", "name": "render_fit_card"}
+
+    def test_falls_back_when_model_returns_no_tool_block(self, client, monkeypatch):
+        self._patch_client(monkeypatch, _FakeClient(_Resp([_Block("text", text="hi")])))
+
+        res = client.post(
+            "/api/chat", json={"message": "/match some role", "sessionId": "m2"}
+        )
+
+        assert res.status_code == 200
+        assert "fitCard" not in res.json
+        assert "couldn't analyze" in res.json["reply"].lower()
+
+    def test_falls_back_gracefully_on_api_error(self, client, monkeypatch):
+        self._patch_client(monkeypatch, _FakeClient(error=RuntimeError("boom")))
+
+        res = client.post(
+            "/api/chat", json={"message": "/match some role", "sessionId": "m3"}
+        )
+
+        assert res.status_code == 200
+        assert "fitCard" not in res.json
+        assert "couldn't analyze" in res.json["reply"].lower()
+
+
+class TestFitCardTool:
+    def test_schema_requires_honest_gaps(self):
+        props = FIT_CARD_TOOL["input_schema"]["properties"]
+        required = FIT_CARD_TOOL["input_schema"]["required"]
+        assert FIT_CARD_TOOL["name"] == "render_fit_card"
+        for field in ("role_title", "verdict", "strengths", "transferable", "gaps", "summary"):
+            assert field in props
+            assert field in required
+        assert props["verdict"]["enum"] == ["strong", "good", "partial"]
+
+    def test_build_fit_card_normalizes_to_camel_case(self):
+        card = _build_fit_card(
+            {
+                "role_title": "Senior Backend Engineer",
+                "verdict": "good",
+                "verdict_label": "Good fit, some gaps",
+                "strengths": ["7+ yrs backend", "  AWS at scale  "],
+                "transferable": ["ECS → K8s"],
+                "gaps": ["No production Kubernetes"],
+                "summary": "Strong backend fit; main gap is K8s.",
+            },
+            sections_reviewed=8,
+        )
+        assert card["roleTitle"] == "Senior Backend Engineer"
+        assert card["verdict"] == "good"
+        assert card["strengths"] == ["7+ yrs backend", "AWS at scale"]
+        assert card["gaps"] == ["No production Kubernetes"]
+        assert card["sectionsReviewed"] == 8
+
+    def test_build_fit_card_defaults_unknown_verdict(self):
+        card = _build_fit_card({"verdict": "amazing"}, sections_reviewed=0)
+        assert card["verdict"] == "good"
+        assert card["roleTitle"] == "this role"
+        assert card["strengths"] == []
+        assert card["gaps"] == []
 
 
 class TestToolsDefinition:
