@@ -20,6 +20,52 @@
   }
 }
 
+.chat-fab-label {
+  border: 1px solid var(--border, #e6e8ee);
+  background: white;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  /* Pulse a few times to draw the eye, mirroring the FAB ping timing. */
+  animation: label-pulse 1.5s ease-out 2s 3;
+}
+
+@keyframes label-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(15, 98, 254, 0.35);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 0 6px rgba(15, 98, 254, 0);
+  }
+}
+
+.chat-fab-label:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-fab-label {
+    animation: none;
+  }
+}
+
+.chat-fab-label span {
+  transition: transform 160ms ease;
+  display: inline-block;
+}
+
+.chat-fab-label:hover span {
+  transform: translateX(3px);
+}
+
 .chat-fab {
   position: relative;
   width: 56px;
@@ -65,8 +111,8 @@
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  width: 380px;
-  height: 520px;
+  width: 440px;
+  height: 560px;
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -229,6 +275,258 @@
   }
 }
 
+.chat-loading-label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+/* Starter prompt chips (empty-state discoverability) */
+.chat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.chat-chip {
+  border: 1px solid var(--border, #e6e8ee);
+  background: white;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-family: inherit;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+
+.chat-chip:hover:not(:disabled) {
+  background: var(--info-bg);
+  border-color: var(--accent);
+}
+
+.chat-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Role-fit card (the hero result) */
+.fit-card-wrap {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fit-card {
+  border: 1px solid var(--border, #e6e8ee);
+  border-radius: 14px;
+  padding: 0.85rem;
+  background: white;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.fit-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.fit-card-title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.fit-pill {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.fit-pill.strong {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.fit-pill.good {
+  color: var(--info);
+  background: var(--info-bg);
+}
+
+.fit-pill.partial {
+  color: var(--caution);
+  background: var(--caution-bg);
+}
+
+.fit-card-provenance {
+  margin: -0.4rem 0 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.fit-section {
+  border-left: 3px solid transparent;
+  padding-left: 0.6rem;
+}
+
+.fit-section.success {
+  border-left-color: var(--success);
+}
+
+.fit-section.info {
+  border-left-color: var(--info);
+}
+
+.fit-section.caution {
+  border-left-color: var(--caution);
+}
+
+.fit-section.verdict {
+  border-left-color: var(--border, #e6e8ee);
+}
+
+.fit-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.fit-section.success .fit-section-label {
+  color: var(--success);
+}
+
+.fit-section.info .fit-section-label {
+  color: var(--info);
+}
+
+.fit-section.caution .fit-section-label {
+  color: var(--caution);
+}
+
+.fit-section.verdict .fit-section-label {
+  color: var(--muted);
+}
+
+.fit-section-glyph {
+  font-weight: 700;
+}
+
+.fit-section-items {
+  margin: 0;
+  padding-left: 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.fit-verdict-text {
+  margin: 0;
+  color: var(--text);
+}
+
+.fit-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+}
+
+.fit-btn {
+  flex: 1;
+  min-width: 130px;
+  text-align: center;
+  font-size: 0.83rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 120ms, background 120ms;
+}
+
+.fit-btn.primary {
+  background: var(--accent);
+  color: white;
+  border: 1px solid var(--accent);
+}
+
+.fit-btn.primary:hover {
+  opacity: 0.9;
+  text-decoration: none;
+}
+
+.fit-btn.secondary {
+  background: white;
+  color: var(--accent);
+  border: 1px solid var(--border, #e6e8ee);
+}
+
+.fit-btn.secondary:hover {
+  background: var(--info-bg);
+}
+
+.fit-followup {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+  align-self: flex-start;
+}
+
+.chat-subheader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.45rem 1rem;
+  background: var(--info-bg);
+  border-bottom: 1px solid var(--border, #e6e8ee);
+  flex-shrink: 0;
+}
+
+.chat-subheader-title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--accent);
+}
+
+.chat-subheader-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.chat-subheader-cancel {
+  margin-left: auto;
+  align-self: center;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.chat-subheader-cancel:hover {
+  color: var(--text);
+}
+
 .chat-input-bar {
   display: flex;
   align-items: flex-end;
@@ -299,6 +597,18 @@
     right: 1rem;
   }
 
+  .chat-fab-label {
+    display: none;
+  }
+
+  .fit-actions {
+    flex-direction: column;
+  }
+
+  .fit-btn {
+    flex: none;
+    width: 100%;
+  }
 }
 
 @media print {

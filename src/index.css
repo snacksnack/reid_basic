@@ -3,6 +3,15 @@
   --muted: #5b657a;
   --bg: #ffffff;
   --accent: #0f62fe;
+
+  /* Semantic tints for the role-fit card (RC1-127).
+     Honest gaps use caution amber, not red: "worth knowing, not disqualifying." */
+  --success: #0f7b3f;
+  --success-bg: #e7f4ec;
+  --info: #0f62fe;
+  --info-bg: #eaf0ff;
+  --caution: #9a6700;
+  --caution-bg: #fdf3e2;
 }
 
 * {

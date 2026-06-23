@@ -1,14 +1,31 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
+import FitCard, { type FitCardData } from './FitCard'
 import './ChatBot.css'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
+  fitCard?: FitCardData
+  isMatch?: boolean
 }
 
 const GREETING =
-  "Hi! I'm an AI assistant for Reid's resume. Ask me anything about his experience, skills, or background."
+  "Hi — I'm Reid's AI assistant. Ask me anything about his experience, or paste a job description to see how he fits the role."
+
+// Internal command that triggers the structured fit card. Prepended invisibly
+// when the user is in role-fit mode — never shown in the input or their bubble.
+const MATCH_PREFIX = '/match '
+const MATCH_PLACEHOLDER = 'Paste the job description here, then press send…'
+
+// Starter chips shown in the empty state (discoverability — recruiters can't
+// find a hidden slash command). The match chip enters role-fit mode; the rest
+// send immediately.
+const PROMPT_CHIPS: Array<{ label: string; value?: string; match?: boolean }> = [
+  { label: 'See how he fits your role', match: true },
+  { label: 'Is he senior enough?', value: 'Is Reid senior enough for a lead role?' },
+  { label: "What's his AWS experience?", value: 'What is Reid’s AWS experience?' },
+]
 
 const MAX_USER_MESSAGES = 10
 
@@ -26,6 +43,7 @@ export default function ChatBot() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [matchMode, setMatchMode] = useState(false)
   const sessionId = useMemo(generateSessionId, [])
 
   const userMessageCount = messages.filter((m) => m.role === 'user').length
@@ -49,14 +67,36 @@ export default function ChatBot() {
     }
   }, [isLoading, isOpen])
 
-  const sendMessage = async () => {
-    const text = input.trim()
+  // The resume-page CTA opens the panel and enters role-fit mode — the recruiter
+  // just pastes a job description. Decoupled via a window event so the CTA needs
+  // no shared state with this component.
+  useEffect(() => {
+    const openForMatch = () => {
+      setIsOpen(true)
+      setMatchMode(true)
+      setTimeout(() => inputRef.current?.focus(), 120)
+    }
+    window.addEventListener('open-role-fit', openForMatch)
+    return () => window.removeEventListener('open-role-fit', openForMatch)
+  }, [])
+
+  const sendMessage = async (override?: string) => {
+    const text = (override ?? input).trim()
     if (!text || isLoading || isLimitReached) return
 
-    const userMessage: Message = { role: 'user', content: text }
+    // In role-fit mode the user pastes a raw job description; prepend the /match
+    // command for the API but keep it out of what the user sees in their bubble.
+    const isMatch = matchMode && override === undefined
+    const apiText =
+      isMatch && !text.toLowerCase().startsWith(MATCH_PREFIX.trim())
+        ? `${MATCH_PREFIX}${text}`
+        : text
+
+    const userMessage: Message = { role: 'user', content: text, isMatch }
     const updated = [...messages, userMessage]
     setMessages(updated)
     setInput('')
+    setMatchMode(false)
     if (inputRef.current) inputRef.current.style.height = 'auto'
 
     const newUserCount = userMessageCount + 1
@@ -72,13 +112,16 @@ export default function ChatBot() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, sessionId }),
+        body: JSON.stringify({ message: apiText, sessionId }),
       })
 
       if (!res.ok) throw new Error('request failed')
 
       const data = await res.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: data.reply, fitCard: data.fitCard },
+      ])
     } catch {
       setMessages(prev => [
         ...prev,
@@ -100,10 +143,33 @@ export default function ChatBot() {
     }
   }
 
+  const handleChip = (chip: (typeof PROMPT_CHIPS)[number]) => {
+    if (chip.match) {
+      setMatchMode(true)
+      inputRef.current?.focus()
+    } else if (chip.value) {
+      sendMessage(chip.value)
+    }
+  }
+
+  // Only show starter chips before the recruiter has said anything (and not once
+  // they're already in role-fit mode).
+  const showChips = userMessageCount === 0 && !matchMode
+  // The role match takes longer (full-résumé retrieval); label the wait so it
+  // reads as "thinking," not "stuck."
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
+  const isMatchLoading = isLoading && !!lastUserMessage?.isMatch
+
   return (
     <>
       {!isOpen && (
         <div className="chat-fab-wrapper">
+          <button
+            className="chat-fab-label"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-role-fit'))}
+          >
+            See how I fit your role <span aria-hidden="true">→</span>
+          </button>
           <button
             className="chat-fab"
             onClick={() => setIsOpen(true)}
@@ -151,28 +217,68 @@ export default function ChatBot() {
             </button>
           </div>
 
+          {matchMode && (
+            <div className="chat-subheader">
+              <span className="chat-subheader-title">Role Fit</span>
+              <span className="chat-subheader-desc">· paste a job description below</span>
+              <button
+                type="button"
+                className="chat-subheader-cancel"
+                onClick={() => setMatchMode(false)}
+                aria-label="Cancel role fit"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           <div className="chat-messages">
-            {messages.map((msg, i) => (
-              <div key={i} className={`chat-bubble ${msg.role}`}>
-                {msg.role === 'assistant' ? (
-                  <ReactMarkdown
-                    components={{
-                      a: ({ href, children }) => (
-                        <a href={href} target="_blank" rel="noopener noreferrer" className="chat-link">
-                          {children}
-                        </a>
-                      ),
-                    }}
+            {messages.map((msg, i) =>
+              msg.fitCard ? (
+                <div key={i} className="fit-card-wrap">
+                  <FitCard data={msg.fitCard} />
+                  {msg.content && <p className="fit-followup">{msg.content}</p>}
+                </div>
+              ) : (
+                <div key={i} className={`chat-bubble ${msg.role}`}>
+                  {msg.role === 'assistant' ? (
+                    <ReactMarkdown
+                      components={{
+                        a: ({ href, children }) => (
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="chat-link">
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+              )
+            )}
+            {showChips && (
+              <div className="chat-chips" role="group" aria-label="Suggested prompts">
+                {PROMPT_CHIPS.map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    className="chat-chip"
+                    onClick={() => handleChip(chip)}
+                    disabled={isLoading || isLimitReached}
                   >
-                    {msg.content}
-                  </ReactMarkdown>
-                ) : (
-                  msg.content
-                )}
+                    {chip.label}
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
             {isLoading && (
               <div className="chat-bubble assistant">
+                {isMatchLoading && (
+                  <span className="chat-loading-label">Reviewing résumé against the role</span>
+                )}
                 <span className="typing-dots">
                   <span />
                   <span />
@@ -202,7 +308,13 @@ export default function ChatBot() {
               }}
               onKeyDown={handleKeyDown}
               disabled={isLoading || isLimitReached}
-              placeholder={isLimitReached ? 'Message limit reached' : 'Ask a question...'}
+              placeholder={
+                isLimitReached
+                  ? 'Message limit reached'
+                  : matchMode
+                    ? MATCH_PLACEHOLDER
+                    : 'Ask a question, or paste a job description…'
+              }
             />
             <button
               className="chat-send"

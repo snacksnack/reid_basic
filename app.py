@@ -510,6 +510,22 @@ _watcher.start()
 MAX_CONVERSATION_MESSAGES = 20
 MAX_TOOL_ROUNDS = 3
 
+# Upper bound on the job-description body sent to the role-fit matcher. The
+# normal chat path trims to a token budget; the /match path sends the raw body
+# directly, so cap it to avoid an oversized/expensive call (e.g. a recruiter
+# pasting an entire HTML page). A real JD front-loads the relevant detail well
+# within this limit.
+MATCH_MAX_CHARS = 8000
+
+# Output token budget for the structured fit card. Higher than the regular chat
+# path because the card packs several arrays (strengths/transferable/gaps) plus
+# a summary; too low risks a truncated tool call that silently falls back.
+MATCH_MAX_TOKENS = 1200
+
+# Model shared by the conversational chat path and the role-fit matcher, so the
+# two never silently diverge. Overridable via env for easy upgrades.
+CHAT_MODEL = os.environ.get("ANTHROPIC_CHAT_MODEL", "claude-haiku-4-5-20251001")
+
 # ---------------------------------------------------------------------------
 # Tool definitions
 # ---------------------------------------------------------------------------
@@ -561,6 +577,96 @@ TOOLS = [
         },
     },
 ]
+
+
+# The role-fit matcher forces this tool so the model returns structured fields
+# (validated by the API) instead of free-text JSON we'd have to parse. It is NOT
+# part of the general TOOLS list — it is only offered on a "/match" request.
+FIT_CARD_TOOL = {
+    "name": "render_fit_card",
+    "description": (
+        "Render a structured, honest assessment of how Reid Collins fits a job "
+        "description. Base every field strictly on the retrieved résumé context. "
+        "Always include real gaps — honesty is the point of this feature."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "role_title": {
+                "type": "string",
+                "description": "The role/title from the job description, e.g. 'Senior Backend Engineer'.",
+            },
+            "verdict": {
+                "type": "string",
+                "enum": ["strong", "good", "partial"],
+                "description": "Honest overall fit judgment.",
+            },
+            "verdict_label": {
+                "type": "string",
+                "description": "Short pill label matching the verdict, e.g. 'Strong fit', 'Good fit, some gaps', 'Partial fit'.",
+            },
+            "strengths": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "2-4 concrete, evidence-based matches drawn directly from the résumé.",
+            },
+            "transferable": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "1-3 adjacent areas where Reid would ramp quickly; name the adjacency.",
+            },
+            "gaps": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": (
+                    "Only genuine gaps the role clearly needs that the résumé does not "
+                    "demonstrate (or a close equivalent). Verify against the full skills/tools "
+                    "lists and every experience bullet first. Prefer 1-3, but may be empty for a "
+                    "strong fit — never manufacture a gap."
+                ),
+            },
+            "summary": {
+                "type": "string",
+                "description": "2-3 sentence honest verdict acknowledging the main gap and genuine strengths.",
+            },
+        },
+        "required": [
+            "role_title",
+            "verdict",
+            "verdict_label",
+            "strengths",
+            "transferable",
+            "gaps",
+            "summary",
+        ],
+    },
+}
+
+
+def _build_fit_card(tool_input: dict, sections_reviewed: int) -> dict:
+    """Normalize the render_fit_card tool input into the camelCase shape the
+    frontend FitCard component expects. Defensive against a missing/odd field
+    even though the API validates the schema."""
+
+    def _as_list(value):
+        if not isinstance(value, list):
+            return []
+        return [str(item).strip() for item in value if str(item).strip()]
+
+    verdict = tool_input.get("verdict")
+    if verdict not in ("strong", "good", "partial"):
+        verdict = "good"
+
+    return {
+        "roleTitle": (tool_input.get("role_title") or "this role").strip(),
+        "verdict": verdict,
+        "verdictLabel": (tool_input.get("verdict_label") or "Fit assessment").strip(),
+        "strengths": _as_list(tool_input.get("strengths")),
+        "transferable": _as_list(tool_input.get("transferable")),
+        "gaps": _as_list(tool_input.get("gaps")),
+        "summary": (tool_input.get("summary") or "").strip(),
+        "sectionsReviewed": sections_reviewed,
+    }
 
 
 def execute_tool_call(name, args, *, client_ip="unknown"):
@@ -667,6 +773,29 @@ def chat():
         if not message or not isinstance(message, str) or not message.strip():
             return jsonify({"error": "message is required"}), 400
 
+        raw_query = message.strip()
+        is_match = raw_query.lower().startswith("/match")
+        match_body = raw_query[len("/match"):].strip() if is_match else ""
+
+        # Cap the job-description body before it reaches the model (cost/context).
+        if len(match_body) > MATCH_MAX_CHARS:
+            logging.info(
+                "Truncating /match job description from %d to %d chars",
+                len(match_body),
+                MATCH_MAX_CHARS,
+            )
+            match_body = match_body[:MATCH_MAX_CHARS]
+
+        # "/match" with no job description: a static prompt, no model call needed.
+        if is_match and not match_body:
+            return jsonify(
+                {
+                    "reply": "Paste a job description and I'll break down how Reid's "
+                    "background fits — strengths, transferable experience, and any "
+                    "honest gaps."
+                }
+            )
+
         if not anthropic_client:
             return jsonify({"error": "Chat is not configured"}), 503
 
@@ -698,9 +827,8 @@ def chat():
         # coverage.  For ordinary conversational messages, top-3 is enough:
         # most questions target one area of the resume (e.g. AWS experience,
         # skills, a specific employer) and returning more chunks adds noise.
-        raw_query = message.strip()
-        if raw_query.lower().startswith("/match"):
-            retrieval_query = raw_query[6:].strip() or raw_query
+        if is_match:
+            retrieval_query = match_body or raw_query
             n_results = len(_resume_chunks_list) if _resume_chunks_list else 10
         else:
             prior_assistant = next(
@@ -721,6 +849,80 @@ def chat():
             f"---\n\n"
             f"Relevant resume context (retrieved for this query):\n\n{context}"
         )
+
+        # Role-fit matcher: a single forced-tool call so the model returns
+        # structured, schema-validated fields the frontend renders as a fit card,
+        # rather than free-text we'd have to parse. Bypasses the conversational
+        # tool loop (no scheduling/contact during an analysis).
+        if is_match:
+            sections_reviewed = len(_resume_chunks_list) if _resume_chunks_list else n_results
+            tool_block = None
+            try:
+                match_response = anthropic_client.messages.create(
+                    model=CHAT_MODEL,
+                    system=system_content,
+                    messages=[{"role": "user", "content": match_body}],
+                    tools=[FIT_CARD_TOOL],
+                    tool_choice={"type": "tool", "name": "render_fit_card"},
+                    max_tokens=MATCH_MAX_TOKENS,
+                    temperature=0.4,
+                )
+                tool_block = next(
+                    (
+                        b
+                        for b in match_response.content
+                        if b.type == "tool_use" and b.name == "render_fit_card"
+                    ),
+                    None,
+                )
+            except anthropic.AuthenticationError as e:
+                # Bad/expired key — a config problem, not a transient failure.
+                # Surface it loudly so it isn't mistaken for a flaky model.
+                logging.error("Role-fit match auth error (check ANTHROPIC_API_KEY): %s", e)
+            except anthropic.APIStatusError as e:
+                # Other 4xx/5xx (rate limit, overload, server error): log the
+                # status so transient issues are distinguishable from config ones.
+                logging.error(
+                    "Role-fit match API error (status %s): %s",
+                    getattr(e, "status_code", "?"),
+                    e,
+                )
+            except Exception as e:
+                logging.error("Role-fit match error: %s", e)
+
+            if not tool_block:
+                # No tool call came back — an API error (logged above) or a
+                # truncated/empty response. Log so silent degradation is visible.
+                logging.warning(
+                    "Role-fit match produced no fit card; returning fallback "
+                    "(possible truncation at max_tokens=%d or API error).",
+                    MATCH_MAX_TOKENS,
+                )
+                fallback = (
+                    "I couldn't analyze that role right now. Please try again in a "
+                    "moment, or email Reid directly at hire.reid.collins@gmail.com."
+                )
+                _save_message(session_id, ip, {"role": "assistant", "content": fallback})
+                return jsonify({"reply": fallback})
+
+            fit_card = _build_fit_card(tool_block.input or {}, sections_reviewed)
+            follow_up = (
+                "Want me to go deeper on any of these — the gaps, a specific "
+                "requirement, or whether he's senior enough?"
+            )
+            # Persist a readable summary so later turns have context.
+            _save_message(
+                session_id,
+                ip,
+                {
+                    "role": "assistant",
+                    "content": (
+                        f"[Role-fit: {fit_card['verdictLabel']} for "
+                        f"{fit_card['roleTitle']}] {fit_card['summary']}"
+                    ),
+                },
+            )
+            return jsonify({"reply": follow_up, "fitCard": fit_card})
 
         api_messages = trimmed
 

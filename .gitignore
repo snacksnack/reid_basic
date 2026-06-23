@@ -26,3 +26,6 @@ __pycache__
 *.njsproj
 *.sln
 *.sw?
+
+# Local render/preview artifacts
+.render_anthropic_quicklook/
