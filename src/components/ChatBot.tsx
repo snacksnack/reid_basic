@@ -195,7 +195,7 @@ export default function ChatBot() {
       {isOpen && (
         <div className="chat-panel" role="dialog" aria-label="Resume chat">
           <div className="chat-header">
-            <span className="chat-header-title">Role Fit</span>
+            <span className="chat-header-title">Ask about Reid</span>
             <button
               className="chat-close"
               onClick={() => setIsOpen(false)}
@@ -216,6 +216,21 @@ export default function ChatBot() {
               </svg>
             </button>
           </div>
+
+          {matchMode && (
+            <div className="chat-subheader">
+              <span className="chat-subheader-title">Role Fit</span>
+              <span className="chat-subheader-desc">· paste a job description below</span>
+              <button
+                type="button"
+                className="chat-subheader-cancel"
+                onClick={() => setMatchMode(false)}
+                aria-label="Cancel role fit"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           <div className="chat-messages">
             {messages.map((msg, i) =>
@@ -273,20 +288,6 @@ export default function ChatBot() {
             )}
             <div ref={messagesEndRef} />
           </div>
-
-          {matchMode && (
-            <div className="match-hint">
-              <span>Paste the job description below — I'll assess Reid's fit for the role.</span>
-              <button
-                type="button"
-                className="match-hint-cancel"
-                onClick={() => setMatchMode(false)}
-                aria-label="Cancel role fit"
-              >
-                ✕
-              </button>
-            </div>
-          )}
 
           <form
             className="chat-input-bar"

@@ -42,7 +42,7 @@ describe('ChatBot', () => {
     // No "/match" text dumped into the input.
     expect(input().value).toBe('')
     // A muted hint + a job-description placeholder guide the recruiter.
-    expect(screen.getByText(/paste the job description below/i)).toBeInTheDocument()
+    expect(screen.getByText('Role Fit')).toBeInTheDocument()
     expect(input().placeholder).toMatch(/paste the job description/i)
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -110,9 +110,9 @@ describe('ChatBot', () => {
     render(<ChatBot />)
     openPanel()
     fireEvent.click(matchChip())
-    expect(screen.getByText(/paste the job description below/i)).toBeInTheDocument()
+    expect(screen.getByText('Role Fit')).toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('Cancel role fit'))
-    expect(screen.queryByText(/paste the job description below/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Role Fit')).not.toBeInTheDocument()
   })
 
   it('FAB label opens the panel and enters role-fit mode (no /match in the input)', () => {
@@ -120,7 +120,7 @@ describe('ChatBot', () => {
     fireEvent.click(screen.getByText(/see how i fit your role/i))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(input().value).toBe('')
-    expect(screen.getByText(/paste the job description below/i)).toBeInTheDocument()
+    expect(screen.getByText('Role Fit')).toBeInTheDocument()
   })
 
   it('opens and enters role-fit mode when the open-role-fit event fires', () => {
@@ -131,6 +131,6 @@ describe('ChatBot', () => {
     })
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(input().value).toBe('')
-    expect(screen.getByText(/paste the job description below/i)).toBeInTheDocument()
+    expect(screen.getByText('Role Fit')).toBeInTheDocument()
   })
 })

@@ -522,6 +522,10 @@ MATCH_MAX_CHARS = 8000
 # a summary; too low risks a truncated tool call that silently falls back.
 MATCH_MAX_TOKENS = 1200
 
+# Model shared by the conversational chat path and the role-fit matcher, so the
+# two never silently diverge. Overridable via env for easy upgrades.
+CHAT_MODEL = os.environ.get("ANTHROPIC_CHAT_MODEL", "claude-haiku-4-5-20251001")
+
 # ---------------------------------------------------------------------------
 # Tool definitions
 # ---------------------------------------------------------------------------
@@ -855,7 +859,7 @@ def chat():
             tool_block = None
             try:
                 match_response = anthropic_client.messages.create(
-                    model="claude-haiku-4-5-20251001",
+                    model=CHAT_MODEL,
                     system=system_content,
                     messages=[{"role": "user", "content": match_body}],
                     tools=[FIT_CARD_TOOL],
@@ -870,6 +874,18 @@ def chat():
                         if b.type == "tool_use" and b.name == "render_fit_card"
                     ),
                     None,
+                )
+            except anthropic.AuthenticationError as e:
+                # Bad/expired key — a config problem, not a transient failure.
+                # Surface it loudly so it isn't mistaken for a flaky model.
+                logging.error("Role-fit match auth error (check ANTHROPIC_API_KEY): %s", e)
+            except anthropic.APIStatusError as e:
+                # Other 4xx/5xx (rate limit, overload, server error): log the
+                # status so transient issues are distinguishable from config ones.
+                logging.error(
+                    "Role-fit match API error (status %s): %s",
+                    getattr(e, "status_code", "?"),
+                    e,
                 )
             except Exception as e:
                 logging.error("Role-fit match error: %s", e)
