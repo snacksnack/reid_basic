@@ -152,9 +152,9 @@ export default function ChatBot() {
     }
   }
 
-  // Only show starter chips before the recruiter has said anything (and not once
-  // they're already in role-fit mode).
-  const showChips = userMessageCount === 0 && !matchMode
+  // Show starter chips before the recruiter has said anything — regardless of
+  // how they opened the panel (plain chat or the Role Fit CTA).
+  const showChips = userMessageCount === 0
   // The role match takes longer (full-résumé retrieval); label the wait so it
   // reads as "thinking," not "stuck."
   const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')
@@ -261,7 +261,7 @@ export default function ChatBot() {
             )}
             {showChips && (
               <div className="chat-chips" role="group" aria-label="Suggested prompts">
-                {PROMPT_CHIPS.map((chip) => (
+                {PROMPT_CHIPS.filter((chip) => !(matchMode && chip.match)).map((chip) => (
                   <button
                     key={chip.label}
                     type="button"
