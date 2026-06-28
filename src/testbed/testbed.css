@@ -197,6 +197,27 @@ body {
 .tb-skin .contact-success p { color: var(--tb-ink); }
 
 @media (max-width: 640px) {
-  .tb-statusbar { font-size: 10px; gap: 10px; }
-  .tb-statusbar-right { gap: 12px; width: 100%; justify-content: space-between; }
+  /* Tighten the page gutter on phones. */
+  #root { padding: 1.5rem 1rem; }
+
+  /* Status bar: availability on its own row, actions left-aligned below it. */
+  .tb-statusbar {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    gap: 8px 10px;
+    margin-bottom: 1.25rem;
+  }
+  .tb-status { flex: 1 1 100%; }
+  .tb-toolbar { width: 100%; }
+
+  /* Header scales down a touch; contact row stays on the warm paper. */
+  .tb-skin .name { font-size: 1.3rem; }
+  .tb-skin .contact { font-size: 0.72rem; }
+
+  /* Never let a long token (email, URL) force horizontal scrolling. */
+  .tb-skin .summary,
+  .tb-skin .contact,
+  .tb-skin .skill-category-items,
+  .tb-skin .achievements li,
+  .tb-skin .experience-header { overflow-wrap: break-word; }
 }
