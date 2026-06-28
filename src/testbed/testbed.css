@@ -108,7 +108,8 @@ body {
 }
 .tb-skin .name-row { justify-content: flex-start; gap: 0.55rem; }
 .tb-skin .name { font-size: 1.55rem; letter-spacing: -0.01em; }
-.tb-skin .badge-icon { width: 22px; height: 22px; }
+.tb-skin .name-row { align-items: center; }
+.tb-skin .badge-icon { width: 24px; height: 24px; }
 
 /* Surface the role (hidden on the live site) as a compact eyebrow. */
 .tb-skin .title {
@@ -131,6 +132,43 @@ body {
   color: var(--tb-muted);
 }
 .tb-skin .contact .sep { color: #c9c4b8; }
+
+/* Chatbot — warm it onto the paper and tie it to the ink/mono aesthetic.
+   Scoped to .tb-skin so the live site's chat keeps its original styling. */
+.tb-skin .chat-panel {
+  background: var(--tb-paper, #fafaf7);
+  border: 1px solid var(--tb-hair);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(22, 21, 15, 0.16);
+}
+.tb-skin .chat-header {
+  background: var(--tb-ink);
+  border-bottom: 1px solid #2b2920;
+}
+.tb-skin .chat-header-title {
+  font-family: var(--tb-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.tb-skin .chat-messages { background: #fafaf7; }
+.tb-skin .chat-bubble.assistant {
+  background: #ffffff;
+  border: 1px solid var(--tb-hair);
+  color: var(--tb-ink);
+}
+.tb-skin .chat-input-bar {
+  background: #fafaf7;
+  border-top: 1px solid var(--tb-hair);
+}
+.tb-skin .chat-input {
+  background: #ffffff;
+  border-color: var(--tb-hair);
+}
+.tb-skin .chat-chip { background: #ffffff; border-color: var(--tb-hair); }
+.tb-skin .chat-fab-label { border-color: var(--tb-hair); }
+/* The blue FAB, send button, and user bubble stay accent-blue — the one accent
+   that already appears in the resume (status dot, links). */
 
 @media (max-width: 640px) {
   .tb-statusbar { font-size: 10px; gap: 10px; }

@@ -5,7 +5,8 @@ import ContactModal from '../components/ContactModal'
 import TestbedStatusBar from './TestbedStatusBar'
 import TestbedHeader from './TestbedHeader'
 import resume from '../data/resume'
-import './testbed.css'
+import '../resume.css' // base resume layout (the live site loads this via App.tsx)
+import './testbed.css' // skin overrides — imported AFTER resume.css so they win
 
 // Testbed = the LIVE resume layout (real Resume component, same content/order)
 // with three opt-in cosmetic touches applied via the .tb-skin wrapper:
