@@ -170,6 +170,32 @@ body {
 /* The blue FAB, send button, and user bubble stay accent-blue — the one accent
    that already appears in the resume (status dot, links). */
 
+/* Contact modal — same treatment as the chat: warm paper, ink mono header,
+   hairline inputs. Scoped to .tb-skin so the live site's modal is untouched.
+   The blue Send button stays (matches the chat send button). */
+.tb-skin .contact-modal {
+  background: var(--tb-paper, #fafaf7);
+  border: 1px solid var(--tb-hair);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(22, 21, 15, 0.2);
+}
+.tb-skin .contact-modal-header { background: var(--tb-ink); }
+.tb-skin .contact-modal-title {
+  font-family: var(--tb-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.tb-skin .contact-field span { color: var(--tb-ink); }
+.tb-skin .contact-field input,
+.tb-skin .contact-field textarea {
+  background: #ffffff;
+  border-color: var(--tb-hair);
+  border-radius: 6px;
+}
+.tb-skin .contact-submit { border-radius: 6px; }
+.tb-skin .contact-success p { color: var(--tb-ink); }
+
 @media (max-width: 640px) {
   .tb-statusbar { font-size: 10px; gap: 10px; }
   .tb-statusbar-right { gap: 12px; width: 100%; justify-content: space-between; }
