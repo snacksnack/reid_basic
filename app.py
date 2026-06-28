@@ -1,13 +1,15 @@
 import hashlib
+import hmac
 import json
 import logging
 import os
 import threading
+from functools import wraps
 from pathlib import Path
 
 import anthropic
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, Response, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -31,6 +33,37 @@ limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_
 
 anthropic_client = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
 openai_client = OpenAI() if os.environ.get("OPENAI_API_KEY") else None
+
+# ---------------------------------------------------------------------------
+# /ui-testbed basic auth — gates the in-progress redesign preview.
+# Set TESTBED_USER and TESTBED_PASS in the environment to enable access.
+# If either is unset the route stays locked (401) so it can never be
+# accidentally exposed on the public domain.
+# ---------------------------------------------------------------------------
+TESTBED_USER = os.environ.get("TESTBED_USER")
+TESTBED_PASS = os.environ.get("TESTBED_PASS")
+
+
+def _testbed_auth_ok(auth) -> bool:
+    if not TESTBED_USER or not TESTBED_PASS or auth is None:
+        return False
+    user_ok = hmac.compare_digest(auth.username or "", TESTBED_USER)
+    pass_ok = hmac.compare_digest(auth.password or "", TESTBED_PASS)
+    return user_ok and pass_ok
+
+
+def requires_testbed_auth(view):
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        if not _testbed_auth_ok(request.authorization):
+            return Response(
+                "Authentication required.",
+                401,
+                {"WWW-Authenticate": 'Basic realm="ui-testbed"'},
+            )
+        return view(*args, **kwargs)
+
+    return wrapper
 
 # ---------------------------------------------------------------------------
 # Database
@@ -1024,6 +1057,13 @@ def download(fmt):
 # ---------------------------------------------------------------------------
 
 if IS_PRODUCTION:
+
+    @app.route("/ui-testbed")
+    @requires_testbed_auth
+    def ui_testbed():
+        # Isolated redesign preview. Static rule wins over the catch-all below,
+        # so the live site at "/" is never affected.
+        return send_from_directory(str(BASE_DIR / "dist"), "ui-testbed.html")
 
     @app.route("/")
     @app.route("/<path:path>")

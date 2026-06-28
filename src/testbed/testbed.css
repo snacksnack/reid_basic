@@ -1,0 +1,202 @@
+/* =========================================================================
+   Testbed "skin" — three cosmetic touches layered on the LIVE resume layout.
+   Loaded ONLY in the /ui-testbed bundle, so the live site is never affected.
+   ========================================================================= */
+
+.tb-skin {
+  --tb-paper: #fafaf7;
+  --tb-ink: #16150f;
+  --tb-hair: #e4e3dd;
+  --tb-muted: #55534c;
+  --tb-faint: #6b6b66;
+  --tb-blue: #2f6bff;
+  --tb-mono: 'Space Mono', ui-monospace, monospace;
+
+  width: 100%;
+  max-width: 850px;
+}
+
+/* (1) Background + (2) typeface — scoped to this page via the body override
+   that only ships in this bundle. Use a literal color here: `body` sits ABOVE
+   .tb-skin, so it cannot read a custom property defined on .tb-skin. */
+body {
+  background: #fafaf7;
+  font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  line-height: 1.55;
+}
+
+/* Hide the Resume component's own button toolbar — the status bar below
+   provides the same actions. */
+.tb-skin .toolbar { display: none; }
+
+/* (3) Status bar ------------------------------------------------------- */
+.tb-statusbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: -1rem 0 1.5rem;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--tb-hair);
+  /* Solid fill (no backdrop-filter): sticky + backdrop-filter has a browser
+     bug where the bar vanishes as content scrolls under it. */
+  background: #fafaf7;
+  font-family: var(--tb-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tb-ink);
+}
+.tb-statusbar-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.tb-status { display: flex; align-items: center; gap: 8px; color: var(--tb-muted); }
+.tb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tb-blue); display: inline-block; }
+.tb-toolbar { display: flex; gap: 8px; }
+.tb-btn {
+  font-family: var(--tb-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border: 1px solid var(--tb-hair);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--tb-ink);
+  cursor: pointer;
+  text-decoration: none;
+  line-height: normal;
+  transition: border-color 0.15s;
+}
+.tb-btn:hover { border-color: var(--tb-ink); text-decoration: none; }
+
+/* Quiet "spec-sheet" body: smaller + muted + uniform, for a crisp, deliberate
+   read. Section titles are deliberately kept darker/ruled (below) so the page
+   still has navigational landmarks. */
+.tb-skin .resume { color: var(--tb-muted); }
+.tb-skin .summary,
+.tb-skin .skill-category,
+.tb-skin .skill-category-items,
+.tb-skin .achievements,
+.tb-skin .education,
+.tb-skin .experience-role-period .period { font-size: 0.84rem; color: var(--tb-muted); }
+.tb-skin .experience-header .company { font-size: 0.9rem; color: var(--tb-muted); font-weight: 700; }
+.tb-skin .experience-role-period .role { color: var(--tb-muted); }
+.tb-skin .achievement-group-heading { font-size: 0.82rem; color: var(--tb-muted); }
+.tb-skin .skill-category-label { color: var(--tb-muted); }
+.tb-skin .achievements { line-height: 1.55; }
+
+/* Section titles stay the landmarks: ink-dark, uppercase, firmly ruled. */
+.tb-skin .section-title {
+  font-size: 0.8rem;
+  color: var(--tb-ink);
+  border-bottom: 1.5px solid var(--tb-ink);
+}
+
+/* Compact, left-aligned "spec-sheet" header --------------------------------
+   Replaces the tall centered name block: name + badge on one line, the role
+   surfaced as a small mono eyebrow, and a single tight contact row.
+   The live Resume's own header is hidden here; TestbedHeader renders instead. */
+.tb-skin .resume .header { display: none; }
+.tb-skin .header {
+  text-align: left;
+  margin: 0 0 1.4rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--tb-hair);
+}
+.tb-skin .name-row { justify-content: flex-start; gap: 0.55rem; }
+.tb-skin .name { font-size: 1.55rem; letter-spacing: -0.01em; }
+.tb-skin .name-row { align-items: center; }
+.tb-skin .badge-icon { width: 24px; height: 24px; }
+
+/* Surface the role (hidden on the live site) as a compact eyebrow. */
+.tb-skin .title {
+  display: block;
+  margin: 0.3rem 0 0;
+  font-family: var(--tb-mono);
+  font-size: 0.72rem;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--tb-faint);
+}
+
+/* One tight, left-aligned contact row. */
+.tb-skin .contact {
+  justify-content: flex-start;
+  margin-top: 0.55rem;
+  gap: 0.3rem 0.35rem;
+  font-size: 0.76rem;
+  color: var(--tb-muted);
+}
+.tb-skin .contact .sep { color: #c9c4b8; }
+
+/* Chatbot — warm it onto the paper and tie it to the ink/mono aesthetic.
+   Scoped to .tb-skin so the live site's chat keeps its original styling. */
+.tb-skin .chat-panel {
+  background: var(--tb-paper, #fafaf7);
+  border: 1px solid var(--tb-hair);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(22, 21, 15, 0.16);
+}
+.tb-skin .chat-header {
+  background: var(--tb-ink);
+  border-bottom: 1px solid #2b2920;
+}
+.tb-skin .chat-header-title {
+  font-family: var(--tb-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.tb-skin .chat-messages { background: #fafaf7; }
+.tb-skin .chat-bubble.assistant {
+  background: #ffffff;
+  border: 1px solid var(--tb-hair);
+  color: var(--tb-ink);
+}
+.tb-skin .chat-input-bar {
+  background: #fafaf7;
+  border-top: 1px solid var(--tb-hair);
+}
+.tb-skin .chat-input {
+  background: #ffffff;
+  border-color: var(--tb-hair);
+}
+.tb-skin .chat-chip { background: #ffffff; border-color: var(--tb-hair); }
+.tb-skin .chat-fab-label { border-color: var(--tb-hair); }
+/* The blue FAB, send button, and user bubble stay accent-blue — the one accent
+   that already appears in the resume (status dot, links). */
+
+/* Contact modal — same treatment as the chat: warm paper, ink mono header,
+   hairline inputs. Scoped to .tb-skin so the live site's modal is untouched.
+   The blue Send button stays (matches the chat send button). */
+.tb-skin .contact-modal {
+  background: var(--tb-paper, #fafaf7);
+  border: 1px solid var(--tb-hair);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(22, 21, 15, 0.2);
+}
+.tb-skin .contact-modal-header { background: var(--tb-ink); }
+.tb-skin .contact-modal-title {
+  font-family: var(--tb-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.tb-skin .contact-field span { color: var(--tb-ink); }
+.tb-skin .contact-field input,
+.tb-skin .contact-field textarea {
+  background: #ffffff;
+  border-color: var(--tb-hair);
+  border-radius: 6px;
+}
+.tb-skin .contact-submit { border-radius: 6px; }
+.tb-skin .contact-success p { color: var(--tb-ink); }
+
+@media (max-width: 640px) {
+  .tb-statusbar { font-size: 10px; gap: 10px; }
+  .tb-statusbar-right { gap: 12px; width: 100%; justify-content: space-between; }
+}
