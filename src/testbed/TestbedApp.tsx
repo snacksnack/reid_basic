@@ -36,7 +36,6 @@ export default function TestbedApp() {
   return (
     <div className="tb-skin">
       <TestbedStatusBar
-        name={resume.name}
         location={resume.contact?.location}
         onContactClick={() => setContactOpen(true)}
       />

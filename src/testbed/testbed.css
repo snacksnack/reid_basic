@@ -33,7 +33,7 @@ body {
 .tb-statusbar {
   position: sticky;
   top: 0;
-  z-index: 15;
+  z-index: 50;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -42,15 +42,15 @@ body {
   margin: -1rem 0 1.5rem;
   padding: 12px 0;
   border-bottom: 1px solid var(--tb-hair);
-  background: rgba(250, 250, 247, 0.88);
-  backdrop-filter: saturate(140%) blur(8px);
+  /* Solid fill (no backdrop-filter): sticky + backdrop-filter has a browser
+     bug where the bar vanishes as content scrolls under it. */
+  background: #fafaf7;
   font-family: var(--tb-mono);
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--tb-ink);
 }
-.tb-statusbar-name { font-weight: 700; }
 .tb-statusbar-right { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .tb-status { display: flex; align-items: center; gap: 8px; color: var(--tb-muted); }
 .tb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tb-blue); display: inline-block; }

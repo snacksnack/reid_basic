@@ -17,12 +17,7 @@ export default function TestbedHeader({ data }: TestbedHeaderProps) {
     items.push(
       <a key="email" className="email" href={`mailto:${c.email}`}>{c.email}</a>
     )
-  if (c.website)
-    items.push(
-      <a key="site" href={c.website} target="_blank" rel="noreferrer noopener">
-        {c.website.replace(/^https?:\/\//, '')}
-      </a>
-    )
+  // Website link intentionally omitted — the visitor is already on the site.
   if (c.linkedin)
     items.push(
       <a key="li" href={c.linkedin} target="_blank" rel="noreferrer noopener">LinkedIn ↗</a>
