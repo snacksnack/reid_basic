@@ -34,6 +34,10 @@ EXPERIENCE_SUB_HEADERS_RE = re.compile(
 
 DATE_RE = re.compile(r"^\d{4}\s*[–—\-]\s*(?:\d{4}|Present)$")
 
+INLINE_DATE_RE = re.compile(
+    r"^(.+?)\s+(\d{4}\s*[–—\-]\s*(?:\d{4}|Present))$"
+)
+
 LIGATURE_PAIRS = [
     ("\ufb01", "fi"),
     ("\ufb02", "fl"),
@@ -136,11 +140,18 @@ def split_sections(lines: list[str]) -> dict[str, list[str]]:
     return sections
 
 
+def _normalize_url(value: str) -> str:
+    return value if value.startswith("http") else f"https://{value}"
+
+
 def parse_header(lines: list[str]) -> dict[str, str]:
     name = lines[0] if lines else ""
-    location, email, linkedin = "", "", ""
+    location, email, linkedin, website, github = "", "", "", "", ""
 
     for line in lines[1:]:
+        if line.lower().startswith("open to"):
+            continue
+
         parts = []
         for sep in ["|", "\u2022"]:
             if sep in line:
@@ -152,54 +163,100 @@ def parse_header(lines: list[str]) -> dict[str, str]:
                 if "@" in p:
                     email = p
                 elif "linkedin" in p.lower():
-                    linkedin = p if p.startswith("http") else f"https://{p}"
+                    linkedin = _normalize_url(p)
+                elif "github" in p.lower():
+                    github = _normalize_url(p)
+                elif re.search(r"\.(com|dev|io|me|net|org)", p, re.I):
+                    website = _normalize_url(p)
                 elif re.search(r"NY|New York|CA|TX|Brooklyn|San Francisco", p, re.I):
                     location = p
         elif "@" in line:
             email = line.strip()
         elif "linkedin" in line.lower():
-            linkedin = line.strip()
-            if not linkedin.startswith("http"):
-                linkedin = f"https://{linkedin}"
+            linkedin = _normalize_url(line.strip())
+        elif "github" in line.lower():
+            github = _normalize_url(line.strip())
+        elif re.search(r"\.(com|dev|io|me|net|org)", line, re.I):
+            website = _normalize_url(line.strip())
         elif re.search(r"NY|New York|CA|TX|Brooklyn", line, re.I) and not location:
             location = line.strip()
 
-    return {"name": name, "location": location, "email": email, "linkedin": linkedin}
+    return {
+        "name": name,
+        "location": location,
+        "email": email,
+        "linkedin": linkedin,
+        "website": website,
+        "github": github,
+    }
 
 
 def parse_summary(lines: list[str]) -> str:
     return " ".join(lines).strip()
 
 
+def normalize_period(period: str) -> str:
+    return re.sub(r"\s*[–\-]\s*", " \u2014 ", period.strip())
+
+
 def is_experience_sub_header(line: str) -> bool:
     """Detect sub-headers like 'Platform & Backend Systems' within experience."""
-    if line.startswith("\u2022") or DATE_RE.match(line):
+    if line.startswith("\u2022") or DATE_RE.match(line) or INLINE_DATE_RE.match(line):
         return False
     if EXPERIENCE_SUB_HEADERS_RE.match(line) and len(line.split()) <= 8:
         return True
     return False
 
 
+def find_job_starts(lines: list[str]) -> list[dict]:
+    """Locate job headers in either inline-date or separate-date layout."""
+    jobs: list[dict] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        inline = INLINE_DATE_RE.match(line)
+        if inline:
+            jobs.append({
+                "company": inline.group(1).strip(),
+                "role": lines[i + 1].strip() if i + 1 < len(lines) else "",
+                "period": normalize_period(inline.group(2)),
+                "header_index": i,
+                "content_start": i + 2,
+            })
+            i += 2
+            continue
+
+        if i + 2 < len(lines) and DATE_RE.match(lines[i + 2].strip()):
+            company = line
+            if company.startswith("\u2022"):
+                i += 1
+                continue
+            jobs.append({
+                "company": company,
+                "role": lines[i + 1].strip(),
+                "period": normalize_period(lines[i + 2].strip()),
+                "header_index": i,
+                "content_start": i + 3,
+            })
+            i += 3
+            continue
+
+        i += 1
+    return jobs
+
+
 def parse_experience(lines: list[str]) -> list[dict]:
-    date_indices = [i for i, l in enumerate(lines) if DATE_RE.match(l.strip())]
+    job_starts = find_job_starts(lines)
     jobs: list[dict] = []
 
-    for j, di in enumerate(date_indices):
-        period = re.sub(r"\s*[–\-]\s*", " \u2014 ", lines[di].strip())
-
-        role = lines[di - 1].strip() if di >= 1 else ""
-        company = lines[di - 2].strip() if di >= 2 else ""
-        if company.startswith("\u2022"):
-            company = ""
-
-        bstart = di + 1
-        bend = (date_indices[j + 1] - 2) if j + 1 < len(date_indices) else len(lines)
+    for j, job in enumerate(job_starts):
+        bend = job_starts[j + 1]["header_index"] if j + 1 < len(job_starts) else len(lines)
 
         groups: list[dict] = []
         current_heading: str | None = None
         current_bullets: list[str] = []
 
-        for line in lines[bstart:bend]:
+        for line in lines[job["content_start"]:bend]:
             if is_experience_sub_header(line):
                 if current_bullets:
                     groups.append({"heading": current_heading, "items": current_bullets})
@@ -220,17 +277,42 @@ def parse_experience(lines: list[str]) -> list[dict]:
 
         if has_sub_headers:
             jobs.append({
-                "company": company, "role": role, "period": period,
+                "company": job["company"], "role": job["role"], "period": job["period"],
                 "achievementGroups": [g for g in groups if g["heading"] is not None],
             })
         else:
             flat = [b for g in groups for b in g["items"]]
             jobs.append({
-                "company": company, "role": role, "period": period,
+                "company": job["company"], "role": job["role"], "period": job["period"],
                 "achievements": flat,
             })
 
     return jobs
+
+
+def split_skill_items(rest: str) -> list[str]:
+    """Split comma-separated skill items, respecting parentheses."""
+    items: list[str] = []
+    current: list[str] = []
+    depth = 0
+    for char in rest:
+        if char == "(":
+            depth += 1
+            current.append(char)
+        elif char == ")":
+            depth -= 1
+            current.append(char)
+        elif char == "," and depth == 0:
+            item = "".join(current).strip()
+            if item:
+                items.append(item)
+            current = []
+        else:
+            current.append(char)
+    item = "".join(current).strip()
+    if item:
+        items.append(item)
+    return items
 
 
 def parse_skills(lines: list[str]) -> tuple[list[dict], list[dict]]:
@@ -255,7 +337,7 @@ def parse_skills(lines: list[str]) -> tuple[list[dict], list[dict]]:
             else:
                 education.append({"degree": rest, "school": ""})
         else:
-            items = [i.strip() for i in rest.split(",") if i.strip()]
+            items = split_skill_items(rest)
             if items:
                 categories.append({"category": label, "items": items})
 
@@ -292,8 +374,12 @@ def generate_ts(header, summary, skills, experience, education) -> str:
     w("  contact: {")
     w(f"    location: '{ts_str(header['location'])}',")
     w(f"    email: '{ts_str(header['email'])}',")
+    if header.get("website"):
+        w(f"    website: '{ts_str(header['website'])}',")
     if header["linkedin"]:
         w(f"    linkedin: '{ts_str(header['linkedin'])}',")
+    if header.get("github"):
+        w(f"    github: '{ts_str(header['github'])}',")
     w("  },")
 
     w("  summary:")
@@ -363,9 +449,13 @@ def generate_prompt_txt(header, summary, skills, experience, education) -> str:
         contact_parts.append(header["location"])
     if header["email"]:
         contact_parts.append(header["email"])
+    if header.get("website"):
+        contact_parts.append(header["website"].replace("https://", ""))
     if header["linkedin"]:
         li = header["linkedin"].replace("https://", "")
         contact_parts.append(li)
+    if header.get("github"):
+        contact_parts.append(header["github"].replace("https://", ""))
 
     w(header["name"].upper())
     w(title)
