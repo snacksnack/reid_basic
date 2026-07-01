@@ -102,9 +102,9 @@ body {
 .tb-skin .resume .header { display: none; }
 .tb-skin .header {
   text-align: left;
-  margin: 0 0 1.4rem;
-  padding-bottom: 1.1rem;
-  border-bottom: 1px solid var(--tb-hair);
+  /* No divider or bottom padding — the first section's top margin supplies the
+     gap, keeping spacing consistent with the rest of the page. */
+  margin: 0;
 }
 .tb-skin .name-row { justify-content: flex-start; gap: 0.55rem; }
 .tb-skin .name { font-size: 1.55rem; letter-spacing: -0.01em; }
