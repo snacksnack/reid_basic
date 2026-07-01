@@ -29,6 +29,7 @@ const resume: ResumeData = {
         {
           heading: 'Program Leadership & Delivery',
           items: [
+            'Owned program delivery for a portfolio of platform-migration initiatives, coordinating engineering, SRE, and product teams to land each on schedule and within budget',
             'Led migration from Phabricator to Bitbucket across engineering, SRE, and client development teams (3 repositories), defining migration strategy, redesigning branching models, enabling automated commits via bot/service accounts, and enforcing mandatory code review on all commits to reduce production issues by 20%',
             'Directed migration from on-prem Jira to Jira Cloud across 20 projects and 15 teams, redefining workflows for cloud constraints and incompatible plugins, establishing ticket migration cutoffs, and managing external contractors within budget',
             'Established team execution processes and built Jira/Notion/n8n automation workflows for delivery tracking, stakeholder reporting, and stale-ticket visibility, saving ~2 hours per week of manual reporting and cutting stale tickets by a fifth',

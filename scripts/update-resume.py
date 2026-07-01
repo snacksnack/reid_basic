@@ -38,6 +38,21 @@ INLINE_DATE_RE = re.compile(
     r"^(.+?)\s+(\d{4}\s*[–—\-]\s*(?:\d{4}|Present))$"
 )
 
+BULLET_PREFIXES = ("\u2022", "\u00b7", "-", "*")
+
+
+def is_bullet_line(line: str) -> bool:
+    stripped = line.lstrip()
+    return any(stripped.startswith(prefix) for prefix in BULLET_PREFIXES)
+
+
+def strip_bullet(line: str) -> str:
+    stripped = line.lstrip()
+    for prefix in BULLET_PREFIXES:
+        if stripped.startswith(prefix):
+            return stripped[len(prefix):].lstrip(" \t")
+    return stripped
+
 LIGATURE_PAIRS = [
     ("\ufb01", "fi"),
     ("\ufb02", "fl"),
@@ -201,7 +216,7 @@ def normalize_period(period: str) -> str:
 
 def is_experience_sub_header(line: str) -> bool:
     """Detect sub-headers like 'Platform & Backend Systems' within experience."""
-    if line.startswith("\u2022") or DATE_RE.match(line) or INLINE_DATE_RE.match(line):
+    if is_bullet_line(line) or DATE_RE.match(line) or INLINE_DATE_RE.match(line):
         return False
     if EXPERIENCE_SUB_HEADERS_RE.match(line) and len(line.split()) <= 8:
         return True
@@ -228,7 +243,7 @@ def find_job_starts(lines: list[str]) -> list[dict]:
 
         if i + 2 < len(lines) and DATE_RE.match(lines[i + 2].strip()):
             company = line
-            if company.startswith("\u2022"):
+            if is_bullet_line(company):
                 i += 1
                 continue
             jobs.append({
@@ -262,8 +277,8 @@ def parse_experience(lines: list[str]) -> list[dict]:
                     groups.append({"heading": current_heading, "items": current_bullets})
                 current_heading = line
                 current_bullets = []
-            elif line.startswith("\u2022"):
-                bullet = line.lstrip("\u2022 \t")
+            elif is_bullet_line(line):
+                bullet = strip_bullet(line)
                 if bullet:
                     current_bullets.append(bullet)
             elif current_bullets:
