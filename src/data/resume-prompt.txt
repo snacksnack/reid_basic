@@ -1,6 +1,7 @@
 REID COLLINS
 Senior Technical Program Manager / Software Developer
 Brooklyn, NY | hire.reid.collins@gmail.com | hihelloreid.com | linkedin.com/in/reidcollins | github.com/snacksnack
+Open to Senior Technical Program Manager and Technical Solutions roles
 
 SUMMARY
 Senior Technical Program Manager / Software Developer with a hybrid background in software engineering, program leadership, and client-facing technical delivery. Proven track record of driving large-scale platform migrations, leading cross-functional initiatives, translating business requirements into production systems, and delivering scalable solutions on AWS.

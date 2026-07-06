@@ -31,3 +31,6 @@ jobs:
 
       - name: Server tests
         run: pytest tests/test_server.py -v
+
+      - name: Resume docx/prompt sync guardrail
+        run: pytest tests/test_resume_sync.py -v
