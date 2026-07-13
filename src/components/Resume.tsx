@@ -48,6 +48,7 @@ export interface CertificationItem {
   name: string
   issuer?: string
   year?: string
+  url?: string
 }
 
 export interface SkillCategory {
@@ -294,18 +295,44 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
         </section>
       )}
 
-      {data.education && data.education.length > 0 && (
+      {((data.education && data.education.length > 0) ||
+        (data.certifications && data.certifications.length > 0)) && (
         <section className="section">
-          <h2 className="section-title">Education</h2>
-          <ul className="education">
-            {data.education.map((ed) => (
-              <li key={`${ed.school}-${ed.degree}-${ed.period}`} className="education-item">
-                <span className="degree">{ed.degree}</span>
-                <span className="school"> — {ed.school}</span>
-                {ed.period && <span className="period"> ({ed.period})</span>}
-              </li>
-            ))}
-          </ul>
+          <h2 className="section-title">
+            {data.certifications && data.certifications.length > 0
+              ? 'Education & Certifications'
+              : 'Education'}
+          </h2>
+          {data.education && data.education.length > 0 && (
+            <ul className="education">
+              {data.education.map((ed) => (
+                <li key={`${ed.school}-${ed.degree}-${ed.period}`} className="education-item">
+                  <span className="degree">{ed.degree}</span>
+                  <span className="school"> — {ed.school}</span>
+                  {ed.period && <span className="period"> ({ed.period})</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          {data.certifications && data.certifications.length > 0 && (
+            <ul className="certifications">
+              {data.certifications.map((c) => (
+                <li key={`${c.name}-${c.issuer}-${c.year}`} className="certification-item">
+                  <span className="cert-name">
+                    {c.url ? (
+                      <a href={c.url} target="_blank" rel="noreferrer noopener">
+                        {c.name}
+                      </a>
+                    ) : (
+                      c.name
+                    )}
+                  </span>
+                  {c.issuer && <span className="issuer"> — {c.issuer}</span>}
+                  {c.year && <span className="year"> ({c.year})</span>}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
@@ -334,21 +361,6 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
                     </ul>
                   </div>
                 )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {data.certifications && data.certifications.length > 0 && (
-        <section className="section">
-          <h2 className="section-title">Certifications</h2>
-          <ul className="certifications">
-            {data.certifications.map((c) => (
-              <li key={`${c.name}-${c.issuer}-${c.year}`} className="certification-item">
-                <span className="cert-name">{c.name}</span>
-                {c.issuer && <span className="issuer"> — {c.issuer}</span>}
-                {c.year && <span className="year"> ({c.year})</span>}
               </li>
             ))}
           </ul>

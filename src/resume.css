@@ -1,6 +1,7 @@
 .resume {
   width: 100%;
   max-width: 850px;
+  padding-bottom: 1.75rem;
 }
 
 .toolbar { display: flex; gap: 0.5rem; justify-content: center; align-items: center; position: sticky; top: 0.75rem; margin-bottom: 1rem; z-index: 10; transition: box-shadow 160ms ease; }
@@ -232,13 +233,26 @@
 .education {
   list-style: none;
   padding: 0;
-  margin: 0 0 2rem;
+  margin: 0;
   font-size: 0.95rem;
 }
 
+.education-item { line-height: 1.6; }
 .education-item .degree { font-weight: 600; }
 .education-item .school { font-weight: 400; }
 .education-item .period { color: var(--muted); }
+
+.certifications {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.certification-item { line-height: 1.6; }
+.certification-item .cert-name { font-weight: 600; }
+.certification-item .issuer { font-weight: 400; }
+.certification-item .year { color: var(--muted); }
 
 /* Links */
 .links {

@@ -13,12 +13,12 @@ const resume: ResumeData = {
   summary:
     'Senior Technical Program Manager / Software Developer with a hybrid background in software engineering, program leadership, and client-facing technical delivery. Proven track record of driving large-scale platform migrations, leading cross-functional initiatives, translating business requirements into production systems, and delivering scalable solutions on AWS.',
   skillCategories: [
-    { category: 'Program Management', items: ['Agile', 'Scrum', 'Program Governance', 'Roadmap Execution', 'Release Planning', 'Release Management', 'RAID Management', 'Dependency Management', 'Stakeholder Management', 'Jira', 'Confluence', 'Notion', 'n8n'] },
+    { category: 'Program Management', items: ['Agile', 'Scrum', 'Program Governance', 'Roadmap Execution', 'Release Planning', 'Release Management', 'RAID Management', 'Dependency Management', 'Stakeholder Management'] },
     { category: 'Languages', items: ['Python', 'Perl', 'Ruby', 'Bash'] },
     { category: 'Cloud & Infrastructure', items: ['AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)'] },
     { category: 'Data', items: ['MySQL', 'PostgreSQL', 'ClickHouse', 'Hive', 'DynamoDB'] },
     { category: 'Observability', items: ['Prometheus', 'Grafana', 'distributed tracing', 'structured logging'] },
-    { category: 'Developer Tools', items: ['Git (GitHub, Bitbucket)', 'Docker', 'Swagger/OpenAPI', 'Cursor'] },
+    { category: 'Developer Tools', items: ['Git (GitHub, Bitbucket)', 'Docker', 'OpenAPI', 'Cursor', 'Jira', 'Confluence', 'Notion', 'n8n'] },
     { category: 'Certifications', items: ['AWS Solutions Architect – Associate', 'Certified Scrum Master (CSM)'] },
   ],
   experience: [
@@ -92,6 +92,16 @@ const resume: ResumeData = {
       school: 'Tulane University',
       degree: 'Bachelor of Arts, International Relations',
       period: '',
+    },
+  ],
+  certifications: [
+    {
+      name: 'AWS Solutions Architect – Associate',
+      issuer: 'Amazon Web Services',
+    },
+    {
+      name: 'Certified Scrum Master (CSM)',
+      issuer: 'Scrum Alliance',
     },
   ],
 }
