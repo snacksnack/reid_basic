@@ -13,11 +13,12 @@ const resume: ResumeData = {
   summary:
     'Senior Technical Program Manager / Software Developer with a hybrid background in software engineering, program leadership, and client-facing technical delivery. Proven track record of driving large-scale platform migrations, leading cross-functional initiatives, translating business requirements into production systems, and delivering scalable solutions on AWS.',
   skillCategories: [
-    { category: 'Languages', items: ['Python', 'Ruby', 'Perl', 'Bash'] },
-    { category: 'AWS', items: ['ECS/Fargate', 'Lambda', 'SQS', 'EventBridge', 'SageMaker', 'S3', 'Athena'] },
+    { category: 'Program Management', items: ['Agile', 'Scrum', 'Program Governance', 'Roadmap Execution', 'Release Planning', 'Release Management', 'RAID Management', 'Dependency Management', 'Stakeholder Management', 'Jira', 'Confluence', 'Notion', 'n8n'] },
+    { category: 'Languages', items: ['Python', 'Perl', 'Ruby', 'Bash'] },
+    { category: 'Cloud & Infrastructure', items: ['AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)'] },
     { category: 'Data', items: ['MySQL', 'PostgreSQL', 'ClickHouse', 'Hive', 'DynamoDB'] },
     { category: 'Observability', items: ['Prometheus', 'Grafana', 'distributed tracing', 'structured logging'] },
-    { category: 'Tools', items: ['Git (Bitbucket, Github)', 'Jira', 'Confluence', 'Swagger/OpenAPI', 'Docker', 'Cursor', 'Notion', 'n8n'] },
+    { category: 'Developer Tools', items: ['Git (GitHub, Bitbucket)', 'Docker', 'Swagger/OpenAPI', 'Cursor'] },
     { category: 'Certifications', items: ['AWS Solutions Architect – Associate', 'Certified Scrum Master (CSM)'] },
   ],
   experience: [
@@ -32,15 +33,17 @@ const resume: ResumeData = {
             'Owned program delivery for a portfolio of platform-migration initiatives, coordinating engineering, SRE, and product teams to land each on schedule and within budget',
             'Led migration from Phabricator to Bitbucket across engineering, SRE, and client development teams (3 repositories), defining migration strategy, redesigning branching models, enabling automated commits via bot/service accounts, and enforcing mandatory code review on all commits to reduce production issues by 20%',
             'Directed migration from on-prem Jira to Jira Cloud across 20 projects and 15 teams, redefining workflows for cloud constraints and incompatible plugins, establishing ticket migration cutoffs, and managing external contractors within budget',
-            'Established team execution processes and built Jira/Notion/n8n automation workflows for delivery tracking, stakeholder reporting, and stale-ticket visibility, saving ~2 hours per week of manual reporting and cutting stale tickets by a fifth',
+            'Led program governance — roadmap execution, release planning, decision & RAID logs, and dependency tracking — while building Jira/Notion/n8n automation that cut manual reporting ~2 hrs/week and stale tickets 20%',
           ],
         },
         {
           heading: 'Machine Learning / Data Platform',
           items: [
-            'Led onboarding of 100+ clients to ML platform over two quarters, translating client data requirements into ingestion pipelines using ClickHouse S3 integration and EventBridge to process multi-terabyte datasets (10–50GB per client), reducing average client onboarding time by 30%',
-            'Engineered nightly data pipelines with Analytics using Athena and S3, coding ClickHouse queries, implementing client-driven export controls via flag files, enabling cross-team S3 access via AWS SAM, and building monitoring to ensure reliable ingestion',
-            'Drove cross-functional delivery of Propensity-to-Purchase and Discount Optimization models via a serverless ML platform (Lambda, SQS, EventBridge, SageMaker), coding a data assessment layer shipped to production and coordinating teams to source higher-quality purchase data from distributed systems (ClickHouse, Hive)',
+            'Led onboarding of 100+ clients to the ML platform over two quarters, translating client data requirements into ClickHouse-to-S3 + EventBridge ingestion for multi-terabyte datasets (10–50GB per client) and coordinating cross-account, multi-region (US/APAC/Japan) access — cutting average onboarding time by 30%',
+            'Engineered nightly data pipelines on Athena and S3, coding ClickHouse queries with client-driven export controls and cross-team S3 access via AWS SAM, plus monitoring to ensure reliable ingestion',
+            'Drove release delivery of three production ML models — Propensity-to-Purchase, Discount Optimization, and Send Time Optimization — on a serverless platform (Lambda, SQS, EventBridge, SageMaker), owning release planning, deployment readiness, and cross-functional dependencies through production launch',
+            'Delivered a queue-driven (SQS) export pipeline on a scheduled cadence to return model scores to clients, safely handling concurrent multi-exports',
+            'Shipped a run-tracking service (Lambda + DynamoDB) storing training/scoring runs by month with a query API, giving teams operational visibility into model-run history',
           ],
         },
         {
@@ -74,7 +77,7 @@ const resume: ResumeData = {
     },
     {
       company: 'CheetahMail / Experian',
-      role: 'Software Developer / Client Solutions Team',
+      role: 'Solutions Developer / Client Solutions Team',
       period: '2008 — 2015',
       achievements: [
         'Served as developer and Scrum Master across product development and client solutions teams, partnering with clients, account teams, and engineering to deliver custom technical solutions',

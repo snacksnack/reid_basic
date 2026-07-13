@@ -19,19 +19,21 @@ bot/service accounts, and enforcing mandatory code review on all commits to redu
 · Directed migration from on-prem Jira to Jira Cloud across 20 projects and 15 teams, redefining workflows for
 cloud constraints and incompatible plugins, establishing ticket migration cutoffs, and managing external
 contractors within budget
-· Established team execution processes and built Jira/Notion/n8n automation workflows for delivery tracking,
-stakeholder reporting, and stale-ticket visibility, saving ~2 hours per week of manual reporting and cutting stale
-tickets by a fifth
+· Led program governance — roadmap execution, release planning, decision & RAID logs, and dependency tracking —
+while building Jira/Notion/n8n automation that cut manual reporting ~2 hrs/week and stale tickets 20%
 Machine Learning / Data Platform
-· Led onboarding of 100+ clients to ML platform over two quarters, translating client data requirements into
-ingestion pipelines using ClickHouse S3 integration and EventBridge to process multi-terabyte datasets (10–50GB
-per client), reducing average client onboarding time by 30%
-· Engineered nightly data pipelines with Analytics using Athena and S3, coding ClickHouse queries, implementing
-client-driven export controls via flag files, enabling cross-team S3 access via AWS SAM, and building monitoring to
-ensure reliable ingestion
-· Drove cross-functional delivery of Propensity-to-Purchase and Discount Optimization models via a serverless ML
-platform (Lambda, SQS, EventBridge, SageMaker), coding a data assessment layer shipped to production and
-coordinating teams to source higher-quality purchase data from distributed systems (ClickHouse, Hive)
+· Led onboarding of 100+ clients to the ML platform over two quarters, translating client data requirements into
+ClickHouse-to-S3 + EventBridge ingestion for multi-terabyte datasets (10–50GB per client) and coordinating
+cross-account, multi-region (US/APAC/Japan) access — cutting average onboarding time by 30%
+· Engineered nightly data pipelines on Athena and S3, coding ClickHouse queries with client-driven export controls
+and cross-team S3 access via AWS SAM, plus monitoring to ensure reliable ingestion
+· Drove release delivery of three production ML models — Propensity-to-Purchase, Discount Optimization, and Send
+Time Optimization — on a serverless platform (Lambda, SQS, EventBridge, SageMaker), owning release planning,
+deployment readiness, and cross-functional dependencies through production launch
+· Delivered a queue-driven (SQS) export pipeline on a scheduled cadence to return model scores to clients, safely
+handling concurrent multi-exports
+· Shipped a run-tracking service (Lambda + DynamoDB) storing training/scoring runs by month with a query API,
+giving teams operational visibility into model-run history
 Platform & Backend Systems
 · Developed a containerized API proxy and token management system on AWS ECS/Fargate, improving
 authentication reliability and horizontal scalability — sustaining a 400K messages/hour SLA (100K per container
@@ -64,7 +66,7 @@ execution consistency
 · Partnered directly with enterprise clients to scope integrations, troubleshoot data and workflow issues, and
 translate client requirements into backend delivery plans
 CheetahMail / Experian 2008 – 2015
-Software Developer / Client Solutions Team
+Solutions Developer / Client Solutions Team
 · Served as developer and Scrum Master across product development and client solutions teams, partnering with
 clients, account teams, and engineering to deliver custom technical solutions
 · Designed and implemented client-specific remarketing and personalization campaigns using behavioral data from
@@ -74,10 +76,11 @@ into BerkeleyDB/CDB-backed systems
 · Integrated client imports, exports, and APIs, translating business requirements into scalable data workflows and
 third-party platform integrations
 TECHNICAL SKILLS & EDUCATION
-Languages: Python, Ruby, Perl, Bash
-AWS: ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena
+Program Management: Agile, Scrum, Program Governance, Roadmap Execution, Release Planning, Release Management, RAID Management, Dependency Management, Stakeholder Management, Jira, Confluence, Notion, n8n
+Languages: Python, Perl, Ruby, Bash
+Cloud & Infrastructure: AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)
 Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB
 Observability: Prometheus, Grafana, distributed tracing, structured logging
-Tools: Git (Bitbucket, Github), Jira, Confluence, Swagger/OpenAPI, Docker, Cursor, Notion, n8n
+Developer Tools: Git (GitHub, Bitbucket), Docker, Swagger/OpenAPI, Cursor
 Education: Bachelor of Arts, International Relations — Tulane University
 Certifications: AWS Solutions Architect – Associate, Certified Scrum Master (CSM)
