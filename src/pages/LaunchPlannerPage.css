@@ -1,0 +1,222 @@
+/* Launch Planner overview page (RC1-206). Warm-paper / Space Mono spec-sheet,
+   using the .tb-skin tokens; self-contained so it can render without the résumé
+   chrome. Shared button/kicker rules are duplicated from the card (the two
+   components never render on the same screen). */
+
+.lp-page {
+  padding-bottom: 3rem;
+}
+
+/* --- top nav ------------------------------------------------------------ */
+.lp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: -1rem 0 1.75rem;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--tb-hair);
+  background: var(--tb-paper);
+  font-size: 0.82rem;
+}
+.lp-nav-back {
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+.lp-nav-links {
+  display: flex;
+  gap: 14px;
+}
+
+/* --- shared bits (kicker + buttons) ------------------------------------ */
+.lp-kicker {
+  display: inline-block;
+  font-size: 0.66rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tb-blue);
+}
+.lp-btn {
+  font-size: 0.8rem;
+  color: var(--tb-ink);
+  border: 1px solid var(--tb-hair);
+  border-radius: 6px;
+  padding: 0.4rem 0.85rem;
+  background: #fff;
+  text-decoration: none;
+  transition: border-color 120ms, background 120ms;
+}
+.lp-btn:hover {
+  border-color: var(--tb-ink);
+  text-decoration: none;
+}
+.lp-btn-primary {
+  border-color: var(--tb-blue);
+  color: var(--tb-blue);
+}
+.lp-btn-primary:hover {
+  background: #f2f6ff;
+}
+
+/* --- hero -------------------------------------------------------------- */
+.lp-hero {
+  margin-bottom: 2.5rem;
+}
+.lp-hero-title {
+  margin: 0.35rem 0 0;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--tb-ink);
+}
+.lp-hero-tagline {
+  margin: 0.6rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--tb-muted);
+  max-width: 62ch;
+}
+.lp-hero-principle {
+  margin: 0.9rem 0 0;
+  padding-left: 0.8rem;
+  border-left: 2px solid var(--tb-blue);
+  font-size: 0.9rem;
+  color: var(--tb-ink);
+}
+.lp-hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 1.4rem;
+}
+
+/* --- sections ---------------------------------------------------------- */
+.lp-section {
+  margin: 2.5rem 0;
+}
+.lp-h2 {
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tb-ink);
+  border-bottom: 1.5px solid var(--tb-ink);
+  padding-bottom: 0.3rem;
+  margin: 0 0 1.1rem;
+}
+.lp-lede {
+  margin: 0 0 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--tb-muted);
+  max-width: 64ch;
+}
+
+/* --- pipeline (numbered flow) ------------------------------------------ */
+.lp-pipeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.lp-stage {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 9px;
+  align-items: baseline;
+  border: 1px solid var(--tb-hair);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  background: #fdfdfb;
+}
+.lp-stage-n {
+  grid-row: 1 / 3;
+  align-self: start;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--tb-blue);
+}
+.lp-stage-label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+.lp-stage-blurb {
+  grid-column: 2;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--tb-muted);
+  margin-top: 2px;
+}
+
+/* --- surfaces grid ----------------------------------------------------- */
+.lp-surfaces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.lp-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid var(--tb-hair);
+  border-left: 3px solid var(--tb-blue);
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  background: #fdfdfb;
+}
+.lp-surface-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+.lp-surface-blurb {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--tb-muted);
+}
+
+/* --- principles -------------------------------------------------------- */
+.lp-principles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+.lp-principle-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--tb-ink);
+}
+.lp-principle-blurb {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--tb-muted);
+}
+
+/* --- footer ------------------------------------------------------------ */
+.lp-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--tb-hair);
+}
+.lp-foot .lp-nav-back {
+  margin-left: auto;
+}
+
+@media (max-width: 520px) {
+  .lp-hero-title {
+    font-size: 1.6rem;
+  }
+}
