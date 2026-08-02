@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import CareerTimeline, { slugify } from './CareerTimeline'
+import LaunchPlannerCard from './LaunchPlannerCard'
 
 export interface AchievementGroup {
   heading: string
@@ -336,9 +337,10 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
         </section>
       )}
 
-      {data.projects && data.projects.length > 0 && (
-        <section className="section">
-          <h2 className="section-title">Projects</h2>
+      <section className="section">
+        <h2 className="section-title">Projects</h2>
+        <LaunchPlannerCard />
+        {data.projects && data.projects.length > 0 && (
           <ul className="projects">
             {data.projects.map((p) => (
               <li key={p.name} className="project-item">
@@ -364,8 +366,8 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
 
       {data.links && data.links.length > 0 && (
         <section className="section">

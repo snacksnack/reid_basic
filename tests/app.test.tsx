@@ -50,8 +50,8 @@ describe('Resume component', () => {
     expect(screen.getByText('Summary')).toBeInTheDocument()
     expect(screen.getByText('Technical Skills')).toBeInTheDocument()
     expect(screen.getByText('Professional Experience')).toBeInTheDocument()
-    expect(screen.getByText('Education')).toBeInTheDocument()
-    expect(screen.getByText('Certifications')).toBeInTheDocument()
+    // Education and certifications share one heading when both are present.
+    expect(screen.getByText('Education & Certifications')).toBeInTheDocument()
   })
 
   it('renders contact information', () => {

@@ -1,0 +1,104 @@
+/* Mini-Gantt (RC1-206) — warm-paper / Space Mono aesthetic, shared by the
+   homepage card and the overview page. Local tokens only; no globals touched. */
+.mg {
+  --mg-bar: #2f6bff; /* --tb-blue: parallel / non-critical work */
+  --mg-crit: #c0392b; /* the critical path */
+  --mg-hair: #e4e3dd;
+  --mg-track: #f0efe9;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mg-row {
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.mg-label {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: #55534c;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mg-track {
+  position: relative;
+  height: 14px;
+  background: var(--mg-track);
+  border-radius: 3px;
+}
+
+.mg-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 3px;
+  background: var(--mg-bar);
+  border-radius: 3px;
+}
+
+.mg-crit {
+  background: var(--mg-crit);
+}
+
+.mg-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 4px;
+  padding-left: 160px;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  color: #6b6b66;
+}
+
+.mg-key::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+.mg-key-crit::before {
+  background: #c0392b;
+}
+.mg-key-par::before {
+  background: #2f6bff;
+}
+
+/* Compact variant for the homepage card. */
+.mg-compact {
+  gap: 5px;
+}
+.mg-compact .mg-row {
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+}
+.mg-compact .mg-track {
+  height: 11px;
+}
+.mg-compact .mg-label {
+  font-size: 0.66rem;
+}
+.mg-compact .mg-legend {
+  padding-left: 130px;
+}
+
+@media (max-width: 520px) {
+  .mg-row,
+  .mg-compact .mg-row {
+    grid-template-columns: 96px 1fr;
+    gap: 8px;
+  }
+  .mg-legend,
+  .mg-compact .mg-legend {
+    padding-left: 0;
+  }
+}
