@@ -1,0 +1,71 @@
+/* Stage strip (RC1-216) — a run left to right, human approval gate marked. */
+.ms {
+  --ms-hair: #e4e3dd;
+  --ms-gate: #2f6bff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 0;
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.ms-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ms-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.62rem;
+  color: #55534c;
+  background: #f6f5f0;
+  border: 1px solid var(--ms-hair);
+  border-radius: 3px;
+  padding: 0.16rem 0.4rem;
+  white-space: nowrap;
+}
+
+/* The gate is the one stage that stops the run, so it gets the accent. */
+.ms-gate {
+  color: var(--ms-gate);
+  border-color: var(--ms-gate);
+  background: #f2f6ff;
+}
+
+.ms-gate-mark {
+  width: 7px;
+  height: 8px;
+  flex: none;
+  border-left: 2px solid var(--ms-gate);
+  border-right: 2px solid var(--ms-gate);
+}
+
+.ms-sep {
+  width: 12px;
+  height: 1px;
+  background: #b8b7b0;
+  margin: 0 4px;
+  position: relative;
+  flex: none;
+}
+.ms-sep::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -2.5px;
+  border-left: 5px solid #b8b7b0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+@media (max-width: 520px) {
+  .ms-sep {
+    width: 8px;
+    margin: 0 3px;
+  }
+  .ms-stage {
+    font-size: 0.6rem;
+  }
+}

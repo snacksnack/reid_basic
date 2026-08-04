@@ -1,7 +1,7 @@
 // Content for the Launch Planner project — the source of truth shared by the
-// homepage card (LaunchPlannerCard) and the self-hosted overview page
+// homepage index row (ProjectIndex) and the self-hosted overview page
 // (LaunchPlannerPage). Ported from the RC1-204 quick-start into the site's own
-// voice; no claude.ai dependency. (RC1-206)
+// voice; no claude.ai dependency. (RC1-206, reshaped in RC1-216)
 
 export interface GanttTask {
   name: string
@@ -29,13 +29,24 @@ export interface Principle {
 export const launchPlanner = {
   name: 'Launch Planner',
   kicker: 'Flagship project',
+  lead: 'An agentic delivery planner for migrations and launches.',
   tagline:
     'An agentic planner for migrations and launches: a PRD goes in, a defensible delivery plan comes out — critical-path schedule, risk log, and exec status — with a first-class audit trail.',
   principle: 'The LLM proposes; deterministic Python validates; a human approves.',
+  // The index row shows `note`; the overview page still reads `principle`.
+  note: 'The LLM proposes; deterministic Python validates; a human approves.',
+  flagship: true,
 
   overviewPath: '/projects/launch-planner',
   demoUrl: 'https://planner.hihelloreid.com',
   repoUrl: 'https://github.com/snacksnack/launch-planner-agent',
+
+  // The same three destinations the retired card offered, as index-row links.
+  links: [
+    { label: 'Overview →', href: '/projects/launch-planner', primary: true, internal: true },
+    { label: 'Live demo ↗', href: 'https://planner.hihelloreid.com' },
+    { label: 'GitHub ↗', href: 'https://github.com/snacksnack/launch-planner-agent' },
+  ],
 
   technologies: ['Python', 'FastAPI', 'Pydantic', 'Claude API', 'CPM / Monte Carlo', 'Vite'],
 

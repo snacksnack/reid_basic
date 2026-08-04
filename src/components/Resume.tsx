@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import CareerTimeline, { slugify } from './CareerTimeline'
-import LaunchPlannerCard from './LaunchPlannerCard'
+import ProjectIndex from './ProjectIndex'
 
 export interface AchievementGroup {
   heading: string
@@ -339,7 +339,9 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
 
       <section className="section">
         <h2 className="section-title">Projects</h2>
-        <LaunchPlannerCard />
+        {/* One aligned index — the flagship open on load, the rest a line each
+            until opened (RC1-216). */}
+        <ProjectIndex />
         {data.projects && data.projects.length > 0 && (
           <ul className="projects">
             {data.projects.map((p) => (

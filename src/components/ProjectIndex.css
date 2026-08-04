@@ -1,0 +1,234 @@
+/* Projects index (RC1-216) — hairlines carry the structure; no cards, no
+   radius, no shadow. Tokens all match the existing warm-paper stylesheets. */
+
+.pi-thesis-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 0.9rem;
+}
+
+.pi-thesis {
+  margin: 0;
+  max-width: 620px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #55534c;
+  text-wrap: pretty;
+}
+
+.pi-all {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: #55534c;
+  background: #fff;
+  border: 1px solid var(--tb-hair, #e4e3dd);
+  border-radius: 6px;
+  padding: 0.28rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 120ms;
+}
+.pi-all:hover {
+  border-color: var(--tb-ink, #16150f);
+  color: var(--tb-ink, #16150f);
+}
+
+.pi-index {
+  border-top: 1px solid var(--tb-hair, #e4e3dd);
+}
+
+.pi-row {
+  border-bottom: 1px solid var(--tb-hair, #e4e3dd);
+}
+
+/* The clickable summary line. */
+.pi-head {
+  display: grid;
+  /* 250px, not the spec's 230px: "Dependency Drift Detector" needs 240px to
+     stay on one line, and a single wrapped name breaks the row rhythm. */
+  grid-template-columns: 250px 1fr 22px;
+  align-items: baseline;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0.8rem 0.2rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.pi-head:hover {
+  background: #fbfbf8;
+}
+
+/* The row is the control, but the eye lands on the name — so the name is what
+   has to say "clickable". Underline on hover rather than a colour shift, which
+   would collide with the flagship's accent kicker. */
+.pi-head:hover .pi-name,
+.pi-head:focus-visible .pi-name {
+  text-decoration: underline;
+  text-decoration-color: #b8b7b0;
+  text-underline-offset: 3px;
+}
+
+.pi-head:focus-visible {
+  outline: 2px solid #2f6bff;
+  outline-offset: -2px;
+}
+
+.pi-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pi-kicker {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #6b6b66;
+}
+.pi-kicker-flagship {
+  color: #2f6bff;
+}
+
+.pi-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--tb-ink, #16150f);
+}
+
+.pi-lead {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #55534c;
+}
+
+.pi-mark {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.85rem;
+  color: #6b6b66;
+  text-align: right;
+  transition: color 120ms;
+}
+.pi-head:hover .pi-mark {
+  color: var(--tb-ink, #16150f);
+}
+
+/* The expanded spec sheet. */
+.pi-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0 0.2rem 1.1rem;
+}
+
+.pi-tagline {
+  margin: 0;
+  max-width: 640px;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #55534c;
+  text-wrap: pretty;
+}
+
+/* The visual sits flush on the panel — no frame, no background. */
+.pi-visual {
+  padding: 0.1rem 0;
+}
+
+.pi-note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #6b6b66;
+  border-left: 2px solid var(--tb-hair, #e4e3dd);
+  padding-left: 0.6rem;
+}
+
+.pi-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pi-tech {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.pi-tech li {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.66rem;
+  color: #55534c;
+  border: 1px solid var(--tb-hair, #e4e3dd);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+}
+
+.pi-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pi-btn {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.74rem;
+  color: var(--tb-ink, #16150f);
+  border: 1px solid var(--tb-hair, #e4e3dd);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  background: #fff;
+  text-decoration: none;
+  transition: border-color 120ms;
+}
+.pi-btn:hover {
+  border-color: var(--tb-ink, #16150f);
+  text-decoration: none;
+}
+.pi-btn-primary {
+  border-color: #2f6bff;
+  color: #2f6bff;
+}
+.pi-btn-primary:hover {
+  border-color: #2f6bff;
+  background: #f2f6ff;
+}
+
+/* Below ~700px the lead drops under the name and the mark holds its column. */
+@media (max-width: 700px) {
+  .pi-head {
+    grid-template-columns: 1fr 22px;
+    gap: 6px 12px;
+  }
+  .pi-lead {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .pi-mark {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+/* Print carries the leads only: the section becomes a scannable list instead of
+   pushing the résumé long. Supersedes the retired cards' print rules. */
+@media print {
+  .pi-panel,
+  .pi-mark,
+  .pi-all {
+    display: none;
+  }
+  .pi-head {
+    padding: 0.35rem 0.2rem;
+  }
+}
