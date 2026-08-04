@@ -1,0 +1,121 @@
+/* Mock PR review (RC1-216) — the agent's posted review, in miniature. */
+.mr {
+  --mr-hair: #e4e3dd;
+  --mr-high: #c0392b;
+  --mr-medium: #c98a1b;
+  --mr-low: #9a9990;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  border: 1px solid var(--mr-hair);
+  border-radius: 5px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.mr-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.55rem;
+  background: #f6f5f0;
+  border-bottom: 1px solid var(--mr-hair);
+}
+
+.mr-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2f6bff;
+  color: #fff;
+  font-size: 0.46rem;
+  letter-spacing: 0.02em;
+  flex: none;
+}
+
+.mr-actor {
+  font-size: 0.66rem;
+  color: #16150f;
+}
+
+.mr-action {
+  font-size: 0.62rem;
+  color: #8a8981;
+}
+
+.mr-summary {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  font-family: inherit;
+  font-size: 0.64rem;
+  line-height: 1.5;
+  color: #55534c;
+  border-bottom: 1px solid var(--mr-hair);
+}
+
+.mr-findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mr-finding {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 7px;
+  padding: 0.4rem 0.55rem;
+  border-bottom: 1px solid #f0efe9;
+  border-left: 3px solid var(--mr-low);
+}
+.mr-high {
+  border-left-color: var(--mr-high);
+}
+.mr-medium {
+  border-left-color: var(--mr-medium);
+}
+
+.mr-sev {
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  padding: 0.06rem 0.3rem;
+  color: #fff;
+  background: var(--mr-low);
+  flex: none;
+}
+.mr-high .mr-sev {
+  background: var(--mr-high);
+}
+.mr-medium .mr-sev {
+  background: var(--mr-medium);
+}
+
+.mr-loc {
+  font-size: 0.62rem;
+  color: #2f6bff;
+}
+
+.mr-cat {
+  font-size: 0.57rem;
+  color: #8a8981;
+  border: 1px solid var(--mr-hair);
+  border-radius: 3px;
+  padding: 0.02rem 0.28rem;
+}
+
+.mr-msg {
+  flex-basis: 100%;
+  font-size: 0.63rem;
+  line-height: 1.45;
+  color: #55534c;
+}
+
+.mr-verdict {
+  padding: 0.38rem 0.55rem;
+  font-size: 0.62rem;
+  color: #6b6b66;
+  background: #f6f5f0;
+}

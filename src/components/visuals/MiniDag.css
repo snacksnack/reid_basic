@@ -1,0 +1,126 @@
+/* Mini dependency graph (RC1-216) — drifting chains, coloured by severity
+   bucket. Shares the mini-Gantt's warm-paper / Space Mono vocabulary. */
+.md {
+  --md-red: #c0392b;
+  --md-yellow: #c98a1b;
+  --md-white: #9a9990;
+  --md-hair: #e4e3dd;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.md-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: #f6f5f0;
+  border-left: 3px solid var(--md-white);
+}
+.md-red {
+  border-left-color: var(--md-red);
+}
+.md-yellow {
+  border-left-color: var(--md-yellow);
+}
+
+.md-chain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.md-node-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.md-node {
+  font-size: 0.66rem;
+  color: #16150f;
+  background: #fff;
+  border: 1px solid var(--md-hair);
+  border-radius: 3px;
+  padding: 0.08rem 0.34rem;
+  white-space: nowrap;
+}
+
+/* The dependency edge: a short rule with an arrowhead. */
+.md-arrow {
+  width: 16px;
+  height: 1px;
+  background: #b8b7b0;
+  margin: 0 3px;
+  position: relative;
+  flex: none;
+}
+.md-arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -2.5px;
+  border-left: 5px solid #b8b7b0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+/* The finding itself — visible rather than a title tooltip, which touch
+   devices can never reach. */
+.md-detail {
+  font-size: 0.63rem;
+  color: #55534c;
+}
+
+.md-rule {
+  font-size: 0.63rem;
+  color: #6b6b66;
+  margin-left: auto;
+}
+.md-red .md-rule {
+  color: var(--md-red);
+}
+.md-yellow .md-rule {
+  color: #a5710f;
+}
+
+.md-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 2px;
+  font-size: 0.64rem;
+  color: #6b6b66;
+}
+
+.md-key::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: 0;
+}
+.md-key-red::before {
+  background: var(--md-red);
+}
+.md-key-yellow::before {
+  background: var(--md-yellow);
+}
+.md-key-white::before {
+  background: #fff;
+  border: 1px solid #b8b7b0;
+}
+
+@media (max-width: 520px) {
+  .md-detail,
+  .md-rule {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}

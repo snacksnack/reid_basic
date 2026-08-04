@@ -1,0 +1,129 @@
+/* Alert funnel (RC1-216) — three sources converging into one incident card. */
+.mf {
+  --mf-hair: #e4e3dd;
+  --mf-crit: #c0392b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.mf-sources {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.mf-source {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  flex: 1 1 0;
+  min-width: 84px;
+  background: #fff;
+  border: 1px solid var(--mf-hair);
+  border-radius: 4px;
+  padding: 0.3rem 0.4rem;
+  text-align: center;
+}
+.mf-source-name {
+  font-size: 0.66rem;
+  color: #16150f;
+}
+.mf-source-blurb {
+  font-size: 0.58rem;
+  color: #8a8981;
+}
+
+/* The taper: a trapezoid narrowing from the three sources to the single band. */
+.mf-converge {
+  width: 100%;
+  height: 14px;
+  background: #f0efe9;
+  clip-path: polygon(0 0, 100% 0, 68% 100%, 32% 100%);
+}
+
+.mf-collapse {
+  width: 100%;
+  text-align: center;
+  font-size: 0.62rem;
+  color: #55534c;
+  background: #f0efe9;
+  border-radius: 4px;
+  padding: 0.32rem 0.4rem;
+}
+
+.mf-stem {
+  width: 1px;
+  height: 12px;
+  background: #b8b7b0;
+}
+
+.mf-incident {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--mf-hair);
+  border-left: 3px solid var(--mf-crit);
+  border-radius: 4px;
+  padding: 0.45rem 0.6rem 0.5rem;
+}
+
+.mf-incident-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mf-sev {
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--mf-crit);
+  border-radius: 3px;
+  padding: 0.08rem 0.32rem;
+}
+
+.mf-service {
+  font-size: 0.68rem;
+  color: #16150f;
+}
+
+.mf-summary {
+  margin: 0.3rem 0 0;
+  font-family: inherit;
+  font-size: 0.63rem;
+  line-height: 1.45;
+  color: #55534c;
+}
+
+.mf-dests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0.4rem;
+}
+
+.mf-dest {
+  font-size: 0.58rem;
+  color: #6b6b66;
+  border: 1px solid var(--mf-hair);
+  border-radius: 3px;
+  padding: 0.06rem 0.3rem;
+}
+
+@media (max-width: 420px) {
+  .mf-source {
+    flex-basis: 100%;
+  }
+  /* Stacked sources make the taper read as noise. */
+  .mf-converge {
+    height: 10px;
+    clip-path: none;
+    width: 1px;
+    background: #b8b7b0;
+  }
+}
