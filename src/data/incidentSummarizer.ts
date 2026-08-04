@@ -21,12 +21,12 @@ export const incidentSummarizer = {
   lead: 'Correlates three alert firehoses into one incident.',
   tagline:
     'Three observability firehoses land as one incident instead of fifty pages. Alerts are normalized to a shared schema, deduplicated by fingerprint, and correlated in a time window; an LLM writes the summary that reaches Slack and Jira.',
-  note: 'Resolved incidents expire on a DynamoDB TTL; replies thread back onto the original Slack message.',
+  note: 'Correlation state lives in DynamoDB TTL, so the Lambdas stay stateless; replies thread back onto the original Slack message.',
 
   technologies: ['AWS Lambda', 'SAM', 'DynamoDB', 'API Gateway', 'Claude API', 'Next.js', 'Vercel'],
 
   links: [
-    { label: 'Live demo ↗', href: 'https://ai-incident-summarizer.vercel.app', primary: true },
+    { label: 'Live demo ↗', href: 'https://incidents.hihelloreid.com', primary: true },
     { label: 'GitHub ↗', href: 'https://github.com/snacksnack/ai-incident-summarizer' },
   ],
 
