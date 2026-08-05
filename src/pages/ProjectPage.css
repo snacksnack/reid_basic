@@ -3,12 +3,12 @@
    chrome. Shared button/kicker rules are duplicated from the card (the two
    components never render on the same screen). */
 
-.lp-page {
+.pp-page {
   padding-bottom: 3rem;
 }
 
 /* --- top nav ------------------------------------------------------------ */
-.lp-nav {
+.pp-nav {
   position: sticky;
   top: 0;
   z-index: 50;
@@ -23,24 +23,24 @@
   background: var(--tb-paper);
   font-size: 0.82rem;
 }
-.lp-nav-back {
+.pp-nav-back {
   font-weight: 700;
   color: var(--tb-ink);
 }
-.lp-nav-links {
+.pp-nav-links {
   display: flex;
   gap: 14px;
 }
 
 /* --- shared bits (kicker + buttons) ------------------------------------ */
-.lp-kicker {
+.pp-kicker {
   display: inline-block;
   font-size: 0.66rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--tb-blue);
 }
-.lp-btn {
+.pp-btn {
   font-size: 0.8rem;
   color: var(--tb-ink);
   border: 1px solid var(--tb-hair);
@@ -50,44 +50,44 @@
   text-decoration: none;
   transition: border-color 120ms, background 120ms;
 }
-.lp-btn:hover {
+.pp-btn:hover {
   border-color: var(--tb-ink);
   text-decoration: none;
 }
-.lp-btn-primary {
+.pp-btn-primary {
   border-color: var(--tb-blue);
   color: var(--tb-blue);
 }
-.lp-btn-primary:hover {
+.pp-btn-primary:hover {
   background: #f2f6ff;
 }
 
 /* --- hero -------------------------------------------------------------- */
-.lp-hero {
+.pp-hero {
   margin-bottom: 2.5rem;
 }
-.lp-hero-title {
+.pp-hero-title {
   margin: 0.35rem 0 0;
   font-size: 2.1rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--tb-ink);
 }
-.lp-hero-tagline {
+.pp-hero-tagline {
   margin: 0.6rem 0 0;
   font-size: 1rem;
   line-height: 1.6;
   color: var(--tb-muted);
   max-width: 62ch;
 }
-.lp-hero-principle {
+.pp-hero-principle {
   margin: 0.9rem 0 0;
   padding-left: 0.8rem;
   border-left: 2px solid var(--tb-blue);
   font-size: 0.9rem;
   color: var(--tb-ink);
 }
-.lp-hero-cta {
+.pp-hero-cta {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -95,10 +95,10 @@
 }
 
 /* --- sections ---------------------------------------------------------- */
-.lp-section {
+.pp-section {
   margin: 2.5rem 0;
 }
-.lp-h2 {
+.pp-h2 {
   font-size: 0.82rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -107,7 +107,7 @@
   padding-bottom: 0.3rem;
   margin: 0 0 1.1rem;
 }
-.lp-lede {
+.pp-lede {
   margin: 0 0 1.1rem;
   font-size: 0.9rem;
   line-height: 1.6;
@@ -116,7 +116,7 @@
 }
 
 /* --- pipeline (numbered flow) ------------------------------------------ */
-.lp-pipeline {
+.pp-pipeline {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -124,7 +124,7 @@
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
 }
-.lp-stage {
+.pp-stage {
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: auto auto;
@@ -135,19 +135,19 @@
   padding: 0.6rem 0.75rem;
   background: #fdfdfb;
 }
-.lp-stage-n {
+.pp-stage-n {
   grid-row: 1 / 3;
   align-self: start;
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--tb-blue);
 }
-.lp-stage-label {
+.pp-stage-label {
   font-size: 0.86rem;
   font-weight: 700;
   color: var(--tb-ink);
 }
-.lp-stage-blurb {
+.pp-stage-blurb {
   grid-column: 2;
   font-size: 0.76rem;
   line-height: 1.45;
@@ -156,12 +156,12 @@
 }
 
 /* --- surfaces grid ----------------------------------------------------- */
-.lp-surfaces {
+.pp-surfaces {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 10px;
 }
-.lp-surface {
+.pp-surface {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -171,30 +171,30 @@
   padding: 0.6rem 0.75rem;
   background: #fdfdfb;
 }
-.lp-surface-name {
+.pp-surface-name {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--tb-ink);
 }
-.lp-surface-blurb {
+.pp-surface-blurb {
   font-size: 0.76rem;
   line-height: 1.45;
   color: var(--tb-muted);
 }
 
 /* --- principles -------------------------------------------------------- */
-.lp-principles {
+.pp-principles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 16px;
 }
-.lp-principle-title {
+.pp-principle-title {
   margin: 0 0 0.35rem;
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--tb-ink);
 }
-.lp-principle-blurb {
+.pp-principle-blurb {
   margin: 0;
   font-size: 0.82rem;
   line-height: 1.55;
@@ -202,7 +202,7 @@
 }
 
 /* --- footer ------------------------------------------------------------ */
-.lp-foot {
+.pp-foot {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -211,12 +211,36 @@
   padding-top: 1.5rem;
   border-top: 1px solid var(--tb-hair);
 }
-.lp-foot .lp-nav-back {
+.pp-foot .pp-nav-back {
   margin-left: auto;
 }
 
 @media (max-width: 520px) {
-  .lp-hero-title {
+  .pp-hero-title {
     font-size: 1.6rem;
   }
+}
+
+/* Technology chips, matching the index row's .pi-tech so a project reads the
+   same on its overview page as it does in the Projects list. (RC1-225) */
+.pp-tech {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.pp-tech li {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: #55534c;
+  border: 1px solid var(--tb-hair, #e4e3dd);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+}
+
+/* Wrapper for a project's visual inside a section. (RC1-225) */
+.pp-visual {
+  margin-top: 0.5rem;
 }
