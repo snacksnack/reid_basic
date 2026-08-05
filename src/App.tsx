@@ -5,21 +5,32 @@ import ContactModal from './components/ContactModal'
 import TestbedStatusBar from './testbed/TestbedStatusBar'
 import TestbedHeader from './testbed/TestbedHeader'
 import LaunchPlannerPage from './pages/LaunchPlannerPage'
+import IncidentSummarizerPage from './pages/IncidentSummarizerPage'
 import resume from './data/resume'
 import './resume.css'
 import './testbed/testbed.css'
 
-// Path-based routing without a router dependency (RC1-206). Flask's catch-all
-// serves index.html for deep links, so this deep path resolves to the SPA.
-function isLaunchPlannerPath(): boolean {
-  return /^\/projects\/launch-planner\/?$/.test(window.location.pathname)
+// Path-based routing without a router dependency (RC1-206, generalised in
+// RC1-225 when the second project page landed). Flask's catch-all serves
+// index.html for deep links, so these deep paths resolve to the SPA.
+//
+// Adding another project overview page is one entry here plus the page itself.
+const PROJECT_PAGES: Record<string, () => React.ReactElement> = {
+  '/projects/launch-planner': () => <LaunchPlannerPage />,
+  '/projects/incident-summarizer': () => <IncidentSummarizerPage />,
+}
+
+function matchProjectPage(): (() => React.ReactElement) | undefined {
+  // Tolerate a trailing slash, as the previous single-path regex did.
+  const path = window.location.pathname.replace(/\/+$/, '') || '/'
+  return PROJECT_PAGES[path]
 }
 
 // The redesigned "spec-sheet" layout (developed under /ui-testbed) is now the
 // default site: warm paper, Space Mono, slim status bar, compact header.
 function App() {
   const [contactOpen, setContactOpen] = useState(false)
-  const launchPlanner = isLaunchPlannerPath()
+  const projectPage = matchProjectPage()
 
   useEffect(() => {
     fetch('/api/pageview', {
@@ -38,8 +49,8 @@ function App() {
     return () => window.removeEventListener('open-contact', open)
   }, [])
 
-  if (launchPlanner) {
-    return <LaunchPlannerPage />
+  if (projectPage) {
+    return projectPage()
   }
 
   return (
