@@ -6,7 +6,7 @@
 // Every claim below is checked against the implementation, not the README —
 // the README has been wrong before.
 
-import type { ProjectCardContent } from './projectCard'
+import type { ProjectCardContent, ProjectOverviewContent } from './projectCard'
 
 export interface FunnelSource {
   name: string
@@ -101,7 +101,7 @@ export const incidentSummarizer = {
         'The Anthropic key, Datadog credentials, and webhook signing secrets are pulled from AWS Secrets Manager at runtime. Nothing sensitive is baked into the template or the deployment.',
     },
   ] as Principle[],
-} as const satisfies ProjectCardContent & {
+} as const satisfies ProjectCardContent & ProjectOverviewContent & {
   sources: FunnelSource[]
   collapse: string
   incident: FunnelIncident
