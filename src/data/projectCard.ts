@@ -19,3 +19,13 @@ export interface ProjectCardContent {
   links: readonly ProjectLink[]
   flagship?: boolean // accent kicker + open on load
 }
+
+// The extra fields a project carries when it has a self-hosted overview page
+// (Launch Planner, Incident Summarizer). Both pages read all four the same way;
+// index-only projects omit the interface entirely.
+export interface ProjectOverviewContent {
+  principle: string // the hero line — the index row shows `note` instead
+  overviewPath: string
+  demoUrl: string
+  repoUrl: string
+}

@@ -3,6 +3,8 @@
 // (LaunchPlannerPage). Ported from the RC1-204 quick-start into the site's own
 // voice; no claude.ai dependency. (RC1-206, reshaped in RC1-216)
 
+import type { ProjectCardContent, ProjectOverviewContent } from './projectCard'
+
 export interface GanttTask {
   name: string
   start: number // in working-day units
@@ -102,4 +104,9 @@ export const launchPlanner = {
         'Jira writes and status emails happen only behind an explicit human approval step. The web demo is read-only by construction.',
     },
   ] as Principle[],
-} as const
+} as const satisfies ProjectCardContent & ProjectOverviewContent & {
+  gantt: GanttTask[]
+  pipeline: PipelineStage[]
+  surfaces: Surface[]
+  principles: Principle[]
+}
