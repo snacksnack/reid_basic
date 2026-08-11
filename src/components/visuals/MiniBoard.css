@@ -1,0 +1,143 @@
+/* The Job Scout board in miniature (RC1-226). Same construction as MiniReview:
+   hairline frame, mono type, one tinted header and footer. Green/amber chip
+   tints come from the shared semantic vars added in RC1-127. */
+.mb {
+  --mb-hair: #e4e3dd;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  border: 1px solid var(--mb-hair);
+  border-radius: 5px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.mb-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.35rem 0.55rem;
+  background: #f6f5f0;
+  border-bottom: 1px solid var(--mb-hair);
+}
+
+.mb-title {
+  font-size: 0.62rem;
+  color: #16150f;
+}
+
+.mb-count {
+  font-size: 0.57rem;
+  color: #8a8981;
+}
+
+.mb-roles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mb-role {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: start;
+  gap: 4px 9px;
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid #f0efe9;
+}
+
+/* The match percent leads the row — it is what the sort is on. */
+.mb-score {
+  font-size: 0.78rem;
+  color: #2f6bff;
+  text-align: right;
+  line-height: 1.3;
+}
+
+.mb-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mb-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 7px;
+}
+
+.mb-role-title {
+  font-size: 0.64rem;
+  color: #16150f;
+}
+
+.mb-domain {
+  font-size: 0.55rem;
+  color: #8a8981;
+  border: 1px solid var(--mb-hair);
+  border-radius: 3px;
+  padding: 0.02rem 0.28rem;
+}
+
+.mb-meta {
+  font-size: 0.58rem;
+  color: #8a8981;
+}
+
+.mb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 1px;
+}
+
+.mb-chip {
+  font-size: 0.55rem;
+  border-radius: 3px;
+  padding: 0.04rem 0.3rem;
+}
+/* Met = what the JD asked for and the résumé has; gap = asked for and missing.
+   The gap chips are the honest half, and are deliberately not hidden. */
+.mb-chip-met {
+  color: var(--success, #0f7b3f);
+  background: var(--success-bg, #e7f4ec);
+}
+.mb-chip-gap {
+  color: var(--caution, #9a6700);
+  background: var(--caution-bg, #fdf3e2);
+}
+
+.mb-status {
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b6b66;
+  border: 1px solid var(--mb-hair);
+  border-radius: 3px;
+  padding: 0.06rem 0.32rem;
+  white-space: nowrap;
+}
+.mb-status-applied {
+  color: var(--info, #0f62fe);
+  border-color: #c7d6ff;
+}
+
+.mb-caption {
+  padding: 0.38rem 0.55rem;
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: #6b6b66;
+  background: #f6f5f0;
+}
+
+/* On phones the status chip drops under the role rather than squeezing it. */
+@media (max-width: 520px) {
+  .mb-role {
+    grid-template-columns: 26px 1fr;
+  }
+  .mb-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

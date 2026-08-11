@@ -1,0 +1,126 @@
+/* One show's 100-point scorecard (RC1-226). Hairline frame and mono type, same
+   construction as the other mini-visuals; the bars are the only new element and
+   are deliberately flat — no gradient, no radius, no animation. */
+.mc {
+  --mc-hair: #e4e3dd;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  border: 1px solid var(--mc-hair);
+  border-radius: 5px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.mc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.55rem;
+  background: #f6f5f0;
+  border-bottom: 1px solid var(--mc-hair);
+}
+
+.mc-artist {
+  font-size: 0.62rem;
+  color: #16150f;
+}
+
+.mc-where {
+  font-size: 0.57rem;
+  color: #8a8981;
+}
+
+.mc-dims {
+  list-style: none;
+  margin: 0;
+  padding: 0.15rem 0;
+}
+
+/* label · bar · points on one line; the explanation wraps beneath all three. */
+.mc-dim {
+  display: grid;
+  grid-template-columns: 66px 1fr 42px;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 0.28rem 0.55rem;
+}
+
+.mc-label {
+  font-size: 0.6rem;
+  color: #16150f;
+}
+
+/* Width is set inline, in proportion to this dimension's share of the 100 —
+   the track is the ceiling, the fill is what the show earned against it. */
+.mc-track {
+  height: 6px;
+  justify-self: start;
+  background: #f0efe9;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mc-fill {
+  display: block;
+  height: 100%;
+  background: #9db4e8;
+}
+/* A dimension at its ceiling reads in the accent, so a full row is visible at
+   a glance without a legend. */
+.mc-fill-full {
+  background: #2f6bff;
+}
+
+.mc-points {
+  font-size: 0.6rem;
+  color: #16150f;
+  text-align: right;
+}
+
+.mc-max {
+  color: #a3a29a;
+}
+
+.mc-detail {
+  grid-column: 2 / -1;
+  font-size: 0.57rem;
+  line-height: 1.4;
+  color: #8a8981;
+}
+
+.mc-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.4rem 0.55rem;
+  border-top: 1px solid var(--mc-hair);
+}
+
+.mc-total-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b6b66;
+}
+
+.mc-total-value {
+  font-size: 0.86rem;
+  color: #2f6bff;
+}
+
+.mc-caption {
+  padding: 0.38rem 0.55rem;
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: #6b6b66;
+  background: #f6f5f0;
+  border-top: 1px solid var(--mc-hair);
+}
+
+@media (max-width: 520px) {
+  .mc-dim {
+    grid-template-columns: 58px 1fr 38px;
+  }
+}

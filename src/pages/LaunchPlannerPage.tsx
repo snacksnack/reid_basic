@@ -18,6 +18,7 @@ export default function LaunchPlannerPage() {
       <nav className="pp-nav">
         <a className="pp-nav-back" href="/">← Reid Collins</a>
         <span className="pp-nav-links">
+          <a href="/work">All work</a>
           <a href={lp.demoUrl} target="_blank" rel="noreferrer noopener">Live demo ↗</a>
           <a href={lp.repoUrl} target="_blank" rel="noreferrer noopener">GitHub ↗</a>
         </span>

@@ -244,3 +244,21 @@
 .pp-visual {
   margin-top: 0.5rem;
 }
+
+/* --- /work (RC1-226) ---------------------------------------------------- */
+/* The index page's hero is shorter than a project page's — no tagline, since
+   the index states the thesis itself directly beneath. */
+.wp-hero {
+  margin-bottom: 1.6rem;
+}
+.wp-back {
+  display: block;
+  margin-bottom: 0.9rem;
+  font-size: 0.82rem;
+}
+/* A <button> in the footer has to be told to look like the sibling links. */
+.pp-foot .pp-btn {
+  font-family: inherit;
+  line-height: normal;
+  cursor: pointer;
+}

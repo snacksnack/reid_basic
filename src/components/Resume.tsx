@@ -339,9 +339,9 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
 
       <section className="section">
         <h2 className="section-title">Projects</h2>
-        {/* One aligned index — the flagship open on load, the rest a line each
-            until opened (RC1-216). */}
-        <ProjectIndex />
+        {/* A three-row teaser — the flagship open on load, the rest a line each
+            until opened (RC1-216). The full seven live at /work (RC1-226). */}
+        <ProjectIndex teaser />
         {data.projects && data.projects.length > 0 && (
           <ul className="projects">
             {data.projects.map((p) => (

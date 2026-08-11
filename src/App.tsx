@@ -6,31 +6,34 @@ import TestbedStatusBar from './testbed/TestbedStatusBar'
 import TestbedHeader from './testbed/TestbedHeader'
 import LaunchPlannerPage from './pages/LaunchPlannerPage'
 import IncidentSummarizerPage from './pages/IncidentSummarizerPage'
+import WorkPage from './pages/WorkPage'
 import resume from './data/resume'
 import './resume.css'
 import './testbed/testbed.css'
 
 // Path-based routing without a router dependency (RC1-206, generalised in
-// RC1-225 when the second project page landed). Flask's catch-all serves
-// index.html for deep links, so these deep paths resolve to the SPA.
+// RC1-225 when the second project page landed, renamed in RC1-226 once /work
+// joined and the map was no longer only project pages). Flask's catch-all
+// serves index.html for deep links, so these paths resolve to the SPA.
 //
-// Adding another project overview page is one entry here plus the page itself.
-const PROJECT_PAGES: Record<string, () => React.ReactElement> = {
+// Adding another page is one entry here plus the page itself.
+const PAGES: Record<string, () => React.ReactElement> = {
+  '/work': () => <WorkPage />,
   '/projects/launch-planner': () => <LaunchPlannerPage />,
   '/projects/incident-summarizer': () => <IncidentSummarizerPage />,
 }
 
-function matchProjectPage(): (() => React.ReactElement) | undefined {
+function matchPage(): (() => React.ReactElement) | undefined {
   // Tolerate a trailing slash, as the previous single-path regex did.
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
-  return PROJECT_PAGES[path]
+  return PAGES[path]
 }
 
 // The redesigned "spec-sheet" layout (developed under /ui-testbed) is now the
 // default site: warm paper, Space Mono, slim status bar, compact header.
 function App() {
   const [contactOpen, setContactOpen] = useState(false)
-  const projectPage = matchProjectPage()
+  const page = matchPage()
 
   useEffect(() => {
     fetch('/api/pageview', {
@@ -49,8 +52,8 @@ function App() {
     return () => window.removeEventListener('open-contact', open)
   }, [])
 
-  if (projectPage) {
-    return projectPage()
+  if (page) {
+    return page()
   }
 
   return (
