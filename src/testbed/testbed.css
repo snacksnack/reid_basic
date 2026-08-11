@@ -71,6 +71,8 @@ body {
   transition: border-color 0.15s;
 }
 .tb-btn:hover { border-color: var(--tb-ink); text-decoration: none; }
+/* The nav link for the page you're already on (RC1-226). */
+.tb-btn[aria-current='page'] { border-color: var(--tb-ink); background: #f0efe9; }
 
 /* Quiet "spec-sheet" body: smaller + muted + uniform, for a crisp, deliberate
    read. Section titles are deliberately kept darker/ruled (below) so the page

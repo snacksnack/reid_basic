@@ -204,6 +204,24 @@
   background: #f2f6ff;
 }
 
+/* The teaser's way out to the full index (RC1-226). Sits under the last row and
+   stays left — the chat FAB is pinned to the bottom-right corner, and two
+   arrowed links side by side there read as one crowded control. */
+.pi-more-row {
+  margin: 0.7rem 0 0;
+}
+
+.pi-more {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: #2f6bff;
+  text-decoration: none;
+}
+.pi-more:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* Below ~700px the lead drops under the name and the mark holds its column. */
 @media (max-width: 700px) {
   .pi-head {
@@ -225,7 +243,8 @@
 @media print {
   .pi-panel,
   .pi-mark,
-  .pi-all {
+  .pi-all,
+  .pi-more-row {
     display: none;
   }
   .pi-head {
