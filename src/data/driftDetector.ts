@@ -20,8 +20,13 @@ export const driftDetector = {
   tagline:
     "Launch Planner plans the critical path; this watches it drift. It walks a Jira project's dependency graph and flags upstream slips the downstream schedule hasn't absorbed — before the collision lands.",
   note: 'Deterministic Python decides what is drifting; Claude only writes the narrative.',
+  evals: {
+    blurb:
+      'Drift-digest goldens in the shared agent-evals harness — a template edit that changes the digest fails CI.',
+    href: 'https://snacksnack.github.io/agent-evals/',
+  },
 
-  technologies: ['Python', 'FastAPI', 'networkx', 'SQLite', 'Claude API', 'Fly.io'],
+  technologies: ['Python', 'FastAPI', 'networkx', 'SQLite', 'Claude API', 'Fly.io', 'agent-evals'],
 
   links: [
     { label: 'GitHub ↗', href: 'https://github.com/snacksnack/tpm-automation-platform' },

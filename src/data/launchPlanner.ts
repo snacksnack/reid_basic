@@ -37,6 +37,11 @@ export const launchPlanner = {
   principle: 'The LLM proposes; deterministic Python validates; a human approves.',
   // The index row shows `note`; the overview page still reads `principle`.
   note: 'The LLM proposes; deterministic Python validates; a human approves.',
+  evals: {
+    blurb:
+      'Work-breakdown, dependency and RAID goldens; the status narrative gates on a deterministic hallucination rate; the LLM judge gates only where calibration earned it (κ 0.86).',
+    href: 'https://snacksnack.github.io/agent-evals/',
+  },
   flagship: true,
 
   overviewPath: '/projects/launch-planner',
@@ -50,7 +55,7 @@ export const launchPlanner = {
     { label: 'GitHub ↗', href: 'https://github.com/snacksnack/launch-planner-agent' },
   ],
 
-  technologies: ['Python', 'FastAPI', 'Pydantic', 'Claude API', 'CPM / Monte Carlo', 'Vite'],
+  technologies: ['Python', 'FastAPI', 'Pydantic', 'Claude API', 'CPM / Monte Carlo', 'Vite', 'agent-evals'],
 
   // An illustrative slice of the flagship plan (On-Prem Jira → Jira Cloud), with
   // the critical path highlighted. Not the full 23-task plan — enough to read.

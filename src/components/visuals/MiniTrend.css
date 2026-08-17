@@ -1,0 +1,97 @@
+/* The trend sparkline (RC1-266). Hairline frame and mono type, same
+   construction as the other mini-visuals; the chart is deliberately flat —
+   no gradient, no area fill, no animation. */
+.mt {
+  --mt-hair: #e4e3dd;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  border: 1px solid var(--mt-hair);
+  border-radius: 5px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.mt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.55rem;
+  background: #f6f5f0;
+  border-bottom: 1px solid var(--mt-hair);
+}
+
+.mt-title {
+  font-size: 0.62rem;
+  color: #16150f;
+}
+
+.mt-scope {
+  font-size: 0.57rem;
+  color: #8a8981;
+}
+
+.mt-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+  padding: 0.3rem 0.55rem 0;
+}
+
+.mt-line {
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.mt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 0.3rem 0.55rem 0.4rem;
+}
+
+.mt-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6rem;
+  color: #16150f;
+}
+
+.mt-swatch {
+  width: 10px;
+  height: 2px;
+}
+
+.mt-latest {
+  color: #a3a29a;
+}
+
+.mt-flag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.57rem;
+  line-height: 1.4;
+  color: #55534c;
+  border-top: 1px solid var(--mt-hair);
+}
+
+.mt-flag-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c0392b;
+}
+
+.mt-caption {
+  padding: 0.38rem 0.55rem;
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: #6b6b66;
+  background: #f6f5f0;
+  border-top: 1px solid var(--mt-hair);
+}

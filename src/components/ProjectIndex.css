@@ -151,6 +151,39 @@
   padding-left: 0.6rem;
 }
 
+/* The continuous-eval line (RC1-266): the note's quiet construction with a
+   mono kicker and a soft accent hairline, so the measured rows read as one
+   program. Every link lands on the same public trend page. */
+.pi-evals {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #6b6b66;
+  border-left: 2px solid #9db4e8;
+  padding-left: 0.6rem;
+}
+
+.pi-evals-kicker {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #2f6bff;
+  margin-right: 0.5rem;
+}
+
+.pi-evals-link {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: #2f6bff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.pi-evals-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .pi-meta {
   display: flex;
   flex-direction: column;
