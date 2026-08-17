@@ -19,6 +19,11 @@ export const prReviewAgent = {
   tagline:
     'A GitHub App that reviews every pull request opened across an account — including repos that do not exist yet. On each PR it explores the repository for context first, then posts one structured review: a summary plus severity-tagged inline findings.',
   note: 'Advisory by default — it escalates to "Request changes" only on a committed secret.',
+  evals: {
+    blurb:
+      'Measured on planted-defect recall — seeded bugs the review must find — plus a prompt-contract gate in CI.',
+    href: 'https://snacksnack.github.io/agent-evals/',
+  },
 
   technologies: ['Python', 'FastAPI', 'GitHub App', 'Claude API', 'Fly.io', 'pytest'],
 

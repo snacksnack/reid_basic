@@ -7,6 +7,7 @@ import MiniReview from './visuals/MiniReview'
 import MiniStageStrip from './visuals/MiniStageStrip'
 import MiniBoard from './visuals/MiniBoard'
 import MiniScorecard from './visuals/MiniScorecard'
+import MiniTrend from './visuals/MiniTrend'
 import { launchPlanner } from '../data/launchPlanner'
 import { driftDetector } from '../data/driftDetector'
 import { incidentSummarizer } from '../data/incidentSummarizer'
@@ -14,6 +15,7 @@ import { prReviewAgent } from '../data/prReviewAgent'
 import { automationSuite } from '../data/automationSuite'
 import { jobSearchAgent } from '../data/jobSearchAgent'
 import { concertIntelligence } from '../data/concertIntelligence'
+import { agentEvals } from '../data/agentEvals'
 import type { ProjectCardContent } from '../data/projectCard'
 import './ProjectIndex.css'
 
@@ -96,6 +98,13 @@ const ENTRIES: Entry[] = [
       />
     ),
   },
+  // Last on purpose: the harness that measures five of the rows above it, so
+  // the index closes on how the work is graded rather than on one more system.
+  {
+    id: 'agent-evals',
+    content: agentEvals,
+    visual: <MiniTrend series={agentEvals.series} caption={agentEvals.trendCaption} />,
+  },
 ]
 
 // The thesis line counts the systems rather than hardcoding a number, so adding
@@ -111,7 +120,7 @@ const initialOpen = (entries: Entry[]) =>
 
 interface ProjectIndexProps {
   // The résumé's short index: the three teaser rows plus a link out to /work,
-  // instead of all seven with an expand-all control.
+  // instead of the full index with an expand-all control.
   teaser?: boolean
 }
 

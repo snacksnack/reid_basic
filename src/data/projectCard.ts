@@ -9,12 +9,21 @@ export interface ProjectLink {
   internal?: boolean // same-origin route; must not open in a new tab
 }
 
+// The continuous-eval line a row carries once the system runs under the shared
+// agent-evals harness (RC1-266): what the suite measures for this subject.
+// Every one links the same public quality trend page.
+export interface ProjectEvals {
+  blurb: string
+  href: string
+}
+
 export interface ProjectCardContent {
   name: string
   kicker: string
   lead: string // the one-line index lead: what the thing is, in one breath
   tagline: string // the full thesis, shown verbatim in the expanded panel
   note?: string // the design principle, shown under the visual
+  evals?: ProjectEvals
   technologies: readonly string[]
   links: readonly ProjectLink[]
   flagship?: boolean // accent kicker + open on load

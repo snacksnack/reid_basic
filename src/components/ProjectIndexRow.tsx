@@ -51,6 +51,21 @@ export default function ProjectIndexRow({
 
           {content.note && <p className="pi-note">{content.note}</p>}
 
+          {content.evals && (
+            <p className="pi-evals">
+              <span className="pi-evals-kicker">Under eval</span>
+              {content.evals.blurb}{' '}
+              <a
+                className="pi-evals-link"
+                href={content.evals.href}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                Quality trend ↗
+              </a>
+            </p>
+          )}
+
           <div className="pi-meta">
             <ul className="pi-tech">
               {content.technologies.map((t) => (

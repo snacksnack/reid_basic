@@ -37,6 +37,11 @@ export const launchPlanner = {
   principle: 'The LLM proposes; deterministic Python validates; a human approves.',
   // The index row shows `note`; the overview page still reads `principle`.
   note: 'The LLM proposes; deterministic Python validates; a human approves.',
+  evals: {
+    blurb:
+      'Work-breakdown, dependency and RAID goldens; the status narrative gates on a deterministic hallucination rate; the LLM judge gates only where calibration earned it (κ 0.86).',
+    href: 'https://snacksnack.github.io/agent-evals/',
+  },
   flagship: true,
 
   overviewPath: '/projects/launch-planner',

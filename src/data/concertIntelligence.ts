@@ -29,6 +29,10 @@ export const concertIntelligence = {
   tagline:
     'An n8n workflow that reads a Spotify listening history every morning, sweeps Ticketmaster for the next six months within fifty miles, matches events to artists on normalized names, and scores each show out of 100. What clears the bar becomes an email digest, a calendar event and a Notion row — each carrying a Claude-written preview of what the band has been playing live.',
   note: 'Ticketmaster refuses to page past 1,000 results, so the search is split into month-sized windows and matched page by page inside the loop — the workflow never holds thousands of raw events in one node.',
+  evals: {
+    blurb: 'Prompt-contract and golden evals on the Claude-written concert preview.',
+    href: 'https://snacksnack.github.io/agent-evals/',
+  },
 
   technologies: [
     'n8n',

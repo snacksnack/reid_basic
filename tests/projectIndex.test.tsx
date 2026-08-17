@@ -13,6 +13,7 @@ const ALL_NAMES = [
   'Job Scout',
   'TPM Workflow Automation',
   'Concert Intelligence Agent',
+  'Agent Evals',
 ]
 
 const rowButton = (name: string | RegExp) =>
@@ -61,7 +62,7 @@ describe('ProjectIndex', () => {
 
   it('counts the systems in the thesis rather than hardcoding the total', () => {
     render(<ProjectIndex />)
-    expect(screen.getByText(/^Seven shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Eight shipped systems on one thesis:/)).toBeInTheDocument()
   })
 
   it('points each row header at the panel it controls', () => {
@@ -121,6 +122,34 @@ describe('ProjectIndex', () => {
     )
     expect(points.reduce((a, b) => a + b, 0)).toBe(total)
   })
+
+  // --- the eval harness row and its cross-links (RC1-266) ----------------
+
+  it('renders the Agent Evals row with the trend sparkline and live link first', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('Agent Evals'))
+    const panel = document.getElementById('agent-evals-panel')!
+    expect(within(panel).getByText('status-narrative')).toBeInTheDocument()
+    expect(panel.querySelector('.mt-chart')).toBeInTheDocument()
+    // The flagged run is the story: a regression caught by the gate.
+    expect(within(panel).getByText(/the contract gate failed the build/)).toBeInTheDocument()
+    expect(within(panel).getByText('Quality trend ↗')).toHaveAttribute(
+      'href',
+      'https://snacksnack.github.io/agent-evals/',
+    )
+  })
+
+  it('marks each measured system with an eval line linking the trend page', () => {
+    render(<ProjectIndex />)
+    // The flagship opens on load; its panel carries the line.
+    const panel = document.getElementById('launch-planner-panel')!
+    const evals = panel.querySelector('.pi-evals')!
+    expect(within(evals as HTMLElement).getByText('Under eval')).toBeInTheDocument()
+    expect(within(evals as HTMLElement).getByText('Quality trend ↗')).toHaveAttribute(
+      'href',
+      'https://snacksnack.github.io/agent-evals/',
+    )
+  })
 })
 
 describe('ProjectIndex teaser (the résumé’s short index)', () => {
@@ -132,13 +161,13 @@ describe('ProjectIndex teaser (the résumé’s short index)', () => {
     )
     expect(screen.queryByText('Job Scout')).not.toBeInTheDocument()
 
-    const more = screen.getByText('See all seven projects →')
+    const more = screen.getByText('See all eight projects →')
     expect(more).toHaveAttribute('href', '/work')
   })
 
-  it('still counts all seven in the thesis, and drops the expand-all control', () => {
+  it('still counts all eight in the thesis, and drops the expand-all control', () => {
     render(<ProjectIndex teaser />)
-    expect(screen.getByText(/^Seven shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Eight shipped systems on one thesis:/)).toBeInTheDocument()
     expect(screen.getByText(/Three of them below\./)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Expand all' })).not.toBeInTheDocument()
   })
