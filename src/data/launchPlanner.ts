@@ -55,7 +55,7 @@ export const launchPlanner = {
     { label: 'GitHub ↗', href: 'https://github.com/snacksnack/launch-planner-agent' },
   ],
 
-  technologies: ['Python', 'FastAPI', 'Pydantic', 'Claude API', 'CPM / Monte Carlo', 'Vite'],
+  technologies: ['Python', 'FastAPI', 'Pydantic', 'Claude API', 'CPM / Monte Carlo', 'Vite', 'agent-evals'],
 
   // An illustrative slice of the flagship plan (On-Prem Jira → Jira Cloud), with
   // the critical path highlighted. Not the full 23-task plan — enough to read.

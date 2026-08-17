@@ -43,6 +43,7 @@ export const concertIntelligence = {
     'Google Calendar',
     'Notion',
     'Gmail',
+    'agent-evals',
   ],
 
   links: [

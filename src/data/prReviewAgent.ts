@@ -25,7 +25,7 @@ export const prReviewAgent = {
     href: 'https://snacksnack.github.io/agent-evals/',
   },
 
-  technologies: ['Python', 'FastAPI', 'GitHub App', 'Claude API', 'Fly.io', 'pytest'],
+  technologies: ['Python', 'FastAPI', 'GitHub App', 'Claude API', 'Fly.io', 'pytest', 'agent-evals'],
 
   links: [{ label: 'GitHub ↗', href: 'https://github.com/snacksnack/pr_agent' }],
 

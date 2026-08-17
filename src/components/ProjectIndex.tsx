@@ -42,6 +42,13 @@ const ENTRIES: Entry[] = [
     visual: <MiniGantt tasks={launchPlanner.gantt} compact />,
     teaser: true,
   },
+  // Directly under the flagship on purpose: the harness that measures five of
+  // the rows on this page, promoted so the grading shows before the graded.
+  {
+    id: 'agent-evals',
+    content: agentEvals,
+    visual: <MiniTrend series={agentEvals.series} caption={agentEvals.trendCaption} />,
+  },
   {
     id: 'drift',
     content: driftDetector,
@@ -97,13 +104,6 @@ const ENTRIES: Entry[] = [
         caption={concertIntelligence.scoreCaption}
       />
     ),
-  },
-  // Last on purpose: the harness that measures five of the rows above it, so
-  // the index closes on how the work is graded rather than on one more system.
-  {
-    id: 'agent-evals',
-    content: agentEvals,
-    visual: <MiniTrend series={agentEvals.series} caption={agentEvals.trendCaption} />,
   },
 ]
 

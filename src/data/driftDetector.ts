@@ -26,7 +26,7 @@ export const driftDetector = {
     href: 'https://snacksnack.github.io/agent-evals/',
   },
 
-  technologies: ['Python', 'FastAPI', 'networkx', 'SQLite', 'Claude API', 'Fly.io'],
+  technologies: ['Python', 'FastAPI', 'networkx', 'SQLite', 'Claude API', 'Fly.io', 'agent-evals'],
 
   links: [
     { label: 'GitHub ↗', href: 'https://github.com/snacksnack/tpm-automation-platform' },

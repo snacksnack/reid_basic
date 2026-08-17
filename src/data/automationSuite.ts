@@ -22,7 +22,7 @@ export const automationSuite = {
     href: 'https://snacksnack.github.io/agent-evals/',
   },
 
-  technologies: ['n8n', 'AWS Lambda', 'SAM', 'Jira API', 'Notion API', 'Claude API', 'Slack'],
+  technologies: ['n8n', 'AWS Lambda', 'SAM', 'Jira API', 'Notion API', 'Claude API', 'Slack', 'agent-evals'],
 
   links: [
     { label: 'Jira ↔ Notion ↗', href: 'https://github.com/snacksnack/n8n-jira-notion-sync' },
