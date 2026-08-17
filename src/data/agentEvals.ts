@@ -15,7 +15,7 @@ export interface TrendSeries {
 export const agentEvals = {
   name: 'Agent Evals',
   kicker: 'Quality engineering',
-  lead: 'The regression suite measuring five systems on this page.',
+  lead: 'The regression suite measuring six systems on this page.',
   tagline:
     'A shared regression suite for LLM systems, built because five were in production and nothing answered "how do you know the output is any good?" Frozen cases scored on named characteristics — never string equality; a deterministic groundedness checker whose hallucination rate gates CI; and an LLM judge allowed to fail a build only where calibration against human labels earned it. Every run lands in an append-only store and renders to a public quality trend page.',
   note: 'Attribution over vibes — each run record carries its model, prompt version, code version and token cost, so a regression is a query, not a hunch.',

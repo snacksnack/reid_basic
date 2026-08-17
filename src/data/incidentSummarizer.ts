@@ -40,8 +40,13 @@ export const incidentSummarizer = {
   principle: 'Fifty alerts become one incident before anyone gets paged.',
   // The index row shows `note`; the overview page reads `principle`.
   note: 'Correlation state lives in DynamoDB TTL, so the Lambdas stay stateless; replies thread back onto the original Slack message.',
+  evals: {
+    blurb:
+      'Prompt-contract gate in CI and golden evals on the incident summary — the model restates the computed severity, it does not re-decide it.',
+    href: 'https://snacksnack.github.io/agent-evals/',
+  },
 
-  technologies: ['AWS Lambda', 'SAM', 'DynamoDB', 'API Gateway', 'Claude API', 'Next.js', 'Vercel'],
+  technologies: ['AWS Lambda', 'SAM', 'DynamoDB', 'API Gateway', 'Claude API', 'Next.js', 'Vercel', 'agent-evals'],
 
   overviewPath: '/projects/incident-summarizer',
   demoUrl: 'https://incidents.hihelloreid.com',

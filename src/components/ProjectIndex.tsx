@@ -42,7 +42,7 @@ const ENTRIES: Entry[] = [
     visual: <MiniGantt tasks={launchPlanner.gantt} compact />,
     teaser: true,
   },
-  // Directly under the flagship on purpose: the harness that measures five of
+  // Directly under the flagship on purpose: the harness that measures six of
   // the rows on this page, promoted so the grading shows before the graded.
   {
     id: 'agent-evals',
