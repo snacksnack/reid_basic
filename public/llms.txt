@@ -1,0 +1,28 @@
+# Reid Collins
+
+> Senior Technical Program Manager / Software Developer in Brooklyn, NY. Hybrid background in software engineering, program leadership, and client-facing technical delivery: large-scale platform migrations, cross-functional initiatives, and scalable systems on AWS.
+
+This site is Reid's resume and project portfolio. The pages are a client-rendered
+React app; this file is the plain-text summary for agents that don't execute
+JavaScript.
+
+## About
+
+- Current: Senior Technical Program Manager / Software Developer at Marigold (acquired by Zeta Global), 2021–2026.
+- Highlights: led migrations from Phabricator to Bitbucket and on-prem Jira to Jira Cloud (20 projects, 15 teams); onboarded 100+ clients to an ML platform; drove zero-downtime Oracle-to-MySQL migration; built an AI-powered incident summarization system (Lambda, DynamoDB, Claude, Slack, Jira).
+- Skills: program governance and release management; Python, Ruby, Bash; AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena); MySQL, PostgreSQL, ClickHouse, DynamoDB; Prometheus, Grafana, distributed tracing.
+- Certifications: AWS Solutions Architect – Associate; Certified Scrum Master (CSM).
+- Previously: Cheetah Digital (2015–2021), CheetahMail / Experian.
+
+## Pages
+
+- [Resume](https://www.hihelloreid.com/): full resume with experience, skills, and an AI chatbot that answers questions about Reid's background.
+- [Work](https://www.hihelloreid.com/work): index of personal AI/agent projects, each with eval coverage noted.
+- [Launch Planner](https://www.hihelloreid.com/projects/launch-planner): flagship project — an agentic planner for migrations and launches. A PRD goes in, a defensible delivery plan comes out: critical-path schedule, risk log, and exec status, with an audit trail. The LLM proposes; deterministic Python validates; a human approves.
+- [AI Incident Summarizer](https://www.hihelloreid.com/projects/incident-summarizer): three observability firehoses land as one incident instead of fifty pages — alerts normalized, deduplicated by fingerprint, and correlated in a time window; an LLM writes the summary that reaches Slack and Jira.
+
+## Contact
+
+- Email: hire.reid.collins@gmail.com
+- LinkedIn: https://linkedin.com/in/reidcollins
+- GitHub: https://github.com/snacksnack
