@@ -898,7 +898,10 @@ def chat():
                     tools=[FIT_CARD_TOOL],
                     tool_choice={"type": "tool", "name": "render_fit_card"},
                     max_tokens=MATCH_MAX_TOKENS,
-                    temperature=0.4,
+                    # anthropic 1.x dropped temperature from the create() signature;
+                    # Haiku 4.5 still accepts it on the wire, so keep the sampling
+                    # behavior unchanged via extra_body.
+                    extra_body={"temperature": 0.4},
                 )
                 tool_block = next(
                     (
@@ -967,7 +970,9 @@ def chat():
                 messages=api_messages,
                 tools=TOOLS,
                 max_tokens=500,
-                temperature=0.7,
+                # See the /match call above: temperature moved to extra_body for
+                # the anthropic 1.x SDK without changing sampling behavior.
+                extra_body={"temperature": 0.7},
             )
 
             tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
