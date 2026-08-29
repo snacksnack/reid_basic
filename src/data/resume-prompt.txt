@@ -32,7 +32,7 @@ Platform & Backend Systems:
 
 Observability & Reliability:
 • Led development of a custom observability framework (structured logging, distributed tracing, Prometheus, Grafana) for high-throughput, time-sensitive systems processing thousands of event-based messages per minute
-• Built AI-powered incident summarization system using AWS Lambda, SAM, DynamoDB, Claude, Slack, and Jira to ingest alerts from CloudWatch, Datadog, and GitHub Actions, consolidating repeat alerts from the same failing service into single incidents and generating operational summaries — cutting post-mortem turnaround from days to hours
+• Built AI-powered incident summarization system using AWS Lambda, SAM, DynamoDB, Claude, Slack, and Jira to ingest CloudWatch alarms and Bitbucket pipeline failures, consolidating repeat alerts from the same failing service into single incidents and generating operational summaries — cutting post-mortem turnaround from days to hours; later rebuilt and extended it as a live personal system with Datadog and GitHub Actions ingestion (incidents.hihelloreid.com)
 
 Cheetah Digital — Technical Program Manager / Software Developer — 2015–2021
 • Led Agile delivery processes as Scrum Master across multiple engineering teams, improving planning accuracy and execution consistency

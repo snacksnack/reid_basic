@@ -60,7 +60,7 @@ const resume: ResumeData = {
           heading: 'Observability & Reliability',
           items: [
             'Led development of a custom observability framework (structured logging, distributed tracing, Prometheus, Grafana) for high-throughput, time-sensitive systems processing thousands of event-based messages per minute',
-            'Built AI-powered incident summarization system using AWS Lambda, SAM, DynamoDB, Claude, Slack, and Jira to ingest alerts from CloudWatch, Datadog, and GitHub Actions, consolidating repeat alerts from the same failing service into single incidents and generating operational summaries — cutting post-mortem turnaround from days to hours',
+            'Built AI-powered incident summarization system using AWS Lambda, SAM, DynamoDB, Claude, Slack, and Jira to ingest CloudWatch alarms and Bitbucket pipeline failures, consolidating repeat alerts from the same failing service into single incidents and generating operational summaries — cutting post-mortem turnaround from days to hours; later rebuilt and extended it as a live personal system with Datadog and GitHub Actions ingestion (incidents.hihelloreid.com)',
           ],
         },
       ],
