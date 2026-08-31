@@ -17,6 +17,7 @@
     "test:server": ".venv/bin/pytest tests/test_server.py -v"
   },
   "dependencies": {
+    "@datadog/browser-rum": "^7.10.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0"
