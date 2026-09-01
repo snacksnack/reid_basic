@@ -1,60 +1,85 @@
-# Heroku builds and releases this site itself on a push to main — entirely
-# outside GitHub Actions, so CI Visibility structurally cannot see the deploy.
-# This workflow closes that gap (RC1-354): it polls the Heroku Platform API for
-# the release of the pushed commit and reports the ACTUAL outcome to Datadog
-# DORA. It deliberately does not fire-and-forget on push: that would record a
-# successful deploy even when the Heroku build fails.
+# Deploys www.hihelloreid.com to Heroku and reports the outcome to Datadog
+# DORA (RC1-354). Runs after CI passes on main, pushes the commit to Heroku's
+# git remote — the build streams back synchronously and a failed build fails
+# the push — then records the release as a DORA deployment.
+#
+# Why Actions-driven and not Heroku auto-deploy + a polling reporter: Heroku's
+# auto-deploy had "wait for CI" on, which waits for ALL GitHub checks — and a
+# polling reporter is itself a check that can't finish until Heroku builds.
+# That deadlocked on the first live run (2026-09-01): Heroku waited on the
+# reporter, the reporter timed out waiting on Heroku, the failed check then
+# blocked the deploy permanently. Auto-deploy is now OFF on the app; this
+# workflow is the deploy path, gated on CI the same way wait-for-CI gated it.
 
 name: Heroku Release
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
 
 jobs:
-  report:
-    name: Report Heroku release to DORA
+  deploy:
+    name: Deploy to Heroku and report to DORA
     runs-on: ubuntu-latest
-    # Rapid consecutive pushes queue rather than interleave; note that Heroku
-    # may skip straight to the newest commit, in which case a superseded run
-    # times out and fails — accurate, since that commit never went live as its
-    # own release.
-    concurrency: heroku-release-report
+    # Only main pushes whose CI passed. PR runs of CI complete too — skip them.
+    if: >
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success'
+    concurrency: heroku-deploy
     steps:
-      # DORA needs the deploy's start time; the push is when delivery began,
-      # mirroring the Fly workflows' definition of started_at.
+      # DORA's started_at should reflect when delivery began — the push that
+      # started CI — not when this gated job got around to running.
       - name: Record deploy start
-        run: echo "DEPLOY_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+        env:
+          CI_STARTED_AT: ${{ github.event.workflow_run.run_started_at }}
+        run: echo "DEPLOY_STARTED_AT=$(date -d "$CI_STARTED_AT" +%s)" >> "$GITHUB_ENV"
 
-      - name: Wait for the Heroku release of this commit
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          # Heroku needs the full history to accept the push.
+          fetch-depth: 0
+
+      # --force because the app's git remote predates the GitHub-integration
+      # era and its history has nothing to do with this repo's; the remote is
+      # build input, not a repository of record. A failed Heroku build rejects
+      # the push, so this step failing means nothing shipped.
+      - name: Push to Heroku (build runs synchronously)
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          set -euo pipefail
+          git push --force "https://heroku:${HEROKU_API_KEY}@git.heroku.com/hihelloreid.git" HEAD:refs/heads/main
+
+      # The push returning 0 means the build succeeded; confirm the release
+      # itself reached "succeeded" before telling Datadog anything.
+      - name: Confirm the release
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
           APP: hihelloreid
+          SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -uo pipefail
-          sha8="${GITHUB_SHA:0:8}"
-          deadline=$((SECONDS + 600))
+          sha8="${SHA:0:8}"
+          deadline=$((SECONDS + 120))
           while :; do
             if [ "$SECONDS" -ge "$deadline" ]; then
-              echo "::error::no successful Heroku release for $sha8 within 10m — the build failed, is stuck, or was superseded. Last response:"
-              echo "$body"
-              exit 1
+              echo "::error::push succeeded but no succeeded release for $sha8 within 120s"; exit 1
             fi
             body=$(curl -s -m 30 "https://api.heroku.com/apps/$APP/releases" \
               -H "Accept: application/vnd.heroku+json; version=3" \
               -H "Authorization: Bearer $HEROKU_API_KEY" \
-              -H "Range: version ..; order=desc, max=25")
-            # Releases for GitHub-integration builds are described "Deploy <sha8>".
-            match=$(jq -r --arg d "Deploy $sha8" \
+              -H "Range: version ..; order=desc, max=10")
+            status=$(jq -r --arg d "Deploy $sha8" \
               '[.[]? | select(.description == $d)] | first // empty | .status' \
               <<<"$body" 2>/dev/null || echo "")
-            case "$match" in
+            case "$status" in
               succeeded) echo "release for $sha8 succeeded"; break;;
-              failed)    echo "::error::Heroku release for $sha8 FAILED — www.hihelloreid.com is still on the previous slug"; exit 1;;
-              pending)   echo "release for $sha8 pending...";;
-              *)         echo "no release for $sha8 yet...";;
+              failed)    echo "::error::Heroku release for $sha8 FAILED after a successful build"; exit 1;;
+              *)         echo "release for $sha8: '${status:-not found}' — waiting"; sleep 10;;
             esac
-            sleep 15
           done
 
       # Same contract as the Fly workflows (RC1-336): the event means the site
@@ -67,10 +92,11 @@ jobs:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           SERVICE: hihelloreid
           REPO_URL: https://github.com/snacksnack/reid_basic
+          SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           payload=$(printf '{"data":{"attributes":{"service":"%s","env":"prod","started_at":%s000000000,"finished_at":%s000000000,"git":{"commit_sha":"%s","repository_url":"%s"}}}}' \
-            "$SERVICE" "$DEPLOY_STARTED_AT" "$(date +%s)" "$GITHUB_SHA" "$REPO_URL")
+            "$SERVICE" "$DEPLOY_STARTED_AT" "$(date +%s)" "$SHA" "$REPO_URL")
           code=$(curl -s -o resp.json -w '%{http_code}' -m 30 -X POST \
             -H "DD-API-KEY: $DD_API_KEY" -H "Content-Type: application/json" \
             -d "$payload" "https://api.datadoghq.com/api/v2/dora/deployment")
