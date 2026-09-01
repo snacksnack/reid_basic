@@ -90,7 +90,8 @@ The chatbot's system prompt is built from two text files, combined at server sta
 
 | File | What it controls | How to change |
 |------|-----------------|---------------|
-| `src/data/chatbot-instructions.txt` | Tone, response style, rules, hidden features (`/match`) | Edit directly |
+| `src/data/chatbot-instructions.txt` | Tone, response style, tool rules | Edit directly |
+| `src/data/match-instructions.txt` | Role-fit (`/match`) accuracy and calibration rules; only sent on `/match` turns | Edit directly |
 | `src/data/resume-prompt.txt` | Resume content the chatbot knows about | Run `npm run update:resume` (auto-generated from PDF) |
 
 **What the agent does when you want a change:**
