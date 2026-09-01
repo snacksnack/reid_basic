@@ -130,7 +130,8 @@ src/
   data/
     resume.ts                    ← Structured resume data (auto-generated from PDF)
     resume-prompt.txt            ← Plain-text resume for chatbot (auto-generated)
-    chatbot-instructions.txt     ← Chatbot behavioral instructions
+    chatbot-instructions.txt     ← Chatbot behavioral instructions (every turn)
+    match-instructions.txt       ← Role-fit rules, sent only on /match
 public/docs/
   reidcollins.pdf                ← Resume PDF (served by download endpoint)
   reidcollins.docx               ← Resume DOCX

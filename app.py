@@ -293,8 +293,13 @@ def _save_message(session_id: str, ip: str, message: dict) -> None:
 # ---------------------------------------------------------------------------
 
 _instructions_path = BASE_DIR / "src" / "data" / "chatbot-instructions.txt"
+_match_instructions_path = BASE_DIR / "src" / "data" / "match-instructions.txt"
 _resume_path = BASE_DIR / "src" / "data" / "resume-prompt.txt"
 _instructions_text = _instructions_path.read_text()
+# RC1-363: the fit-card rules ride only on /match requests. Sending them on
+# every conversational turn cost ~940 input tokens a turn for rules the model
+# could not act on.
+_match_instructions_text = _match_instructions_path.read_text()
 
 # ---------------------------------------------------------------------------
 # RAG: resume chunking, embedding, and retrieval
@@ -572,18 +577,15 @@ TOOLS = [
     {
         "name": "schedule_meeting",
         "description": (
-            "Get a scheduling link for the visitor to book a meeting with Reid Collins. "
-            "Use when someone wants to schedule a call, meeting, or interview with Reid."
+            "Return Reid's scheduling link. Call it as soon as a visitor wants to "
+            "talk to, meet, interview, or reach Reid."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "topic": {
                     "type": "string",
-                    "description": (
-                        "What the visitor wants to discuss "
-                        '(e.g., "engineering role at Acme Corp", "contract opportunity")'
-                    ),
+                    "description": "What the visitor wants to discuss, in a few words.",
                 },
             },
         },
@@ -591,25 +593,16 @@ TOOLS = [
     {
         "name": "send_contact",
         "description": (
-            "Submit a message from the visitor to Reid (same as the Contact Reid form). "
-            "Use only after the visitor has explicitly provided their real name, email, "
-            "and the message they want to send. Never guess or invent email or name."
+            "Deliver a written message from the visitor to Reid, like the site's "
+            "contact form. Call only with the visitor's real name, email, and message "
+            "as they gave them."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Visitor's name as they gave it.",
-                },
-                "email": {
-                    "type": "string",
-                    "description": "Visitor's email address (for Reid to reply).",
-                },
-                "message": {
-                    "type": "string",
-                    "description": "The message body the visitor wants Reid to receive.",
-                },
+                "name": {"type": "string", "description": "Visitor's name."},
+                "email": {"type": "string", "description": "Visitor's email, for Reid's reply."},
+                "message": {"type": "string", "description": "The message for Reid."},
             },
             "required": ["name", "email", "message"],
         },
@@ -882,8 +875,11 @@ def chat():
 
         context = _retrieve_context(retrieval_query, n_results=n_results)
 
+        instructions = _instructions_text
+        if is_match:
+            instructions = f"{instructions}\n\n{_match_instructions_text}"
         system_content = (
-            f"{_instructions_text}\n\n"
+            f"{instructions}\n\n"
             f"---\n\n"
             f"Relevant resume context (retrieved for this query):\n\n{context}"
         )
