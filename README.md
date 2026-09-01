@@ -94,6 +94,7 @@ git push origin main
 | `SMTP_USERNAME` | Email notifications | Gmail address used as the sender |
 | `NOTIFICATION_EMAIL` | No | Recipient for notifications and digest (default: hire.reid.collins@gmail.com) |
 | `SCHEDULING_URL` | No | Calendly/booking link for the chatbot's scheduling tool |
+| `DD_API_KEY` | No | Datadog API key; present, every chatbot model call is traced to LLM Observability (see [docs](documentation/llm-observability.md)) |
 
 ## npm Scripts
 

@@ -13,6 +13,7 @@ from flask import Flask, Response, request, jsonify, send_file, send_from_direct
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from observability import enable_llm_obs
 from openai import OpenAI
 from scripts.emailer import send_notification_email
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -30,6 +31,10 @@ if not IS_PRODUCTION:
     CORS(app)
 
 limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_limits=[])
+
+# RC1-361: before the Anthropic client exists, so every gunicorn worker traces
+# from its first request. No-op without DD_API_KEY.
+enable_llm_obs("hihelloreid-chat", service="web")
 
 anthropic_client = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
 openai_client = OpenAI() if os.environ.get("OPENAI_API_KEY") else None

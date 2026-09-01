@@ -1,4 +1,5 @@
 anthropic>=1,<2
+ddtrace>=4.14,<5
 flask>=3.0
 flask-cors>=4.0
 flask-limiter>=3.0
