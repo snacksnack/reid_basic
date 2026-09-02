@@ -18,6 +18,9 @@ on:
     workflows: [CI]
     types: [completed]
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy to Heroku and report to DORA
