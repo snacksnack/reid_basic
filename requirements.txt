@@ -9,4 +9,10 @@ psycopg2-binary>=2.9
 python-dotenv>=1.0
 pdfplumber>=0.10
 pytest>=8.0
-chromadb>=0.4.0
+# Pinned (RC1-360). 1.5.9 carries five open advisories (CVE-2026-45829/-45830/
+# -45831/-45833) with no fixed release; all are in Chroma's HTTP server (its
+# /api/v2 collection endpoints, tenant checks, SimpleRBACAuthorizationProvider).
+# This app uses chromadb.EphemeralClient in-process and never runs or exposes
+# that server, so they are not reachable here. Re-check OSV before bumping; see
+# documentation/rag-retrieval.md "Security advisories".
+chromadb==1.5.9
