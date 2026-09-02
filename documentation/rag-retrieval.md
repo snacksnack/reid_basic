@@ -312,3 +312,26 @@ python scripts/explore_rag.py
 ```
 
 This is useful for diagnosing retrieval quality — if a question isn't being answered well, run the query through the script to see which chunks are returned and whether the right content is present.
+
+## Security advisories (RC1-360)
+
+As of 2026-09-01 the newest chromadb release, 1.5.9, carries five open
+advisory records with no fixed version, covering four distinct issues:
+CVE-2026-45829 (pre-auth code injection; also filed as PYSEC-2026-311 and
+GHSA-f4j7-r4q5-qw2c), CVE-2026-45833 (authenticated code injection),
+CVE-2026-45830 and CVE-2026-45831 (cross-tenant authorization gaps). Every one of them lives in Chroma's HTTP
+server: the `/api/v2/.../collections` endpoints, the tenant and database
+checks, and `SimpleRBACAuthorizationProvider`.
+
+This app does not run that server. `_build_resume_index` uses
+`chromadb.EphemeralClient()`, an in-process store with no listener, and nothing
+in `app.py` mounts Chroma's API. The only network surface is Flask's own routes,
+so the vulnerable code is present in the wheel but unreachable. The version is
+pinned so a future bump is a deliberate decision, not a side effect of a
+rebuild.
+
+When a dependency scanner flags these (GitHub Dependabot once RC1-359 enables
+it, or OSV), the right disposition is "vulnerable code is not actually used",
+with a pointer here. Revisit only if the app ever switches to
+`chromadb.HttpClient` against a hosted server, at which point the server, not
+this app, is what needs patching.
