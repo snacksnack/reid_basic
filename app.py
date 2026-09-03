@@ -424,6 +424,11 @@ def _build_resume_index() -> None:
     global _resume_collection, _resume_chunks_list, _resume_hash
 
     if not openai_client:
+        # Record the hash even though nothing is indexed, otherwise the
+        # watcher sees a mismatch on every tick and re-logs this warning
+        # once a minute for the life of the process.  The warning fires
+        # again only when the resume text actually changes.
+        _resume_hash = hashlib.sha256(_resume_path.read_bytes()).hexdigest()
         logging.warning(
             "RAG index skipped: OPENAI_API_KEY not set — "
             "falling back to full resume text in system prompt"
@@ -539,12 +544,23 @@ def _watch_resume(interval: int = 60) -> None:
     while True:
         threading.Event().wait(interval)
         try:
-            current_hash = hashlib.sha256(_resume_path.read_bytes()).hexdigest()
-            if current_hash != _resume_hash:
-                logging.info("resume-prompt.txt changed — rebuilding RAG index")
-                _build_resume_index()
+            _rebuild_index_if_resume_changed()
         except Exception as e:
             logging.error("Resume watcher error: %s", e)
+
+
+def _rebuild_index_if_resume_changed() -> bool:
+    """One watcher tick: rebuild the index if resume-prompt.txt changed.
+
+    Returns True when a rebuild was triggered.  Split out of the thread loop
+    so the change detection can be tested without sleeping.
+    """
+    current_hash = hashlib.sha256(_resume_path.read_bytes()).hexdigest()
+    if current_hash == _resume_hash:
+        return False
+    logging.info("resume-prompt.txt changed — rebuilding RAG index")
+    _build_resume_index()
+    return True
 
 
 _watcher = threading.Thread(target=_watch_resume, daemon=True)

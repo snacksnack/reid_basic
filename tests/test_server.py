@@ -428,3 +428,35 @@ class TestRetrieveContext:
     def test_fallback_is_non_empty(self):
         result = _retrieve_context("skills")
         assert result.strip()
+
+
+class TestResumeWatcherWithoutKey:
+    """RC1-381: with no OpenAI key the skip warning must fire once, not every tick."""
+
+    def test_skip_warning_fires_once_until_resume_changes(self, monkeypatch, caplog, tmp_path):
+        import logging
+
+        import app as app_module
+
+        resume_copy = tmp_path / "resume-prompt.txt"
+        resume_copy.write_text("REID COLLINS\n\nSUMMARY\nfirst version\n")
+        monkeypatch.setattr(app_module, "openai_client", None)
+        monkeypatch.setattr(app_module, "_resume_path", resume_copy)
+        monkeypatch.setattr(app_module, "_resume_hash", "")
+
+        def skip_warnings():
+            return [r for r in caplog.records if "RAG index skipped" in r.getMessage()]
+
+        with caplog.at_level(logging.WARNING):
+            app_module._build_resume_index()
+            assert len(skip_warnings()) == 1
+
+            # Two watcher ticks with an unchanged file: no rebuild, no new warning.
+            assert app_module._rebuild_index_if_resume_changed() is False
+            assert app_module._rebuild_index_if_resume_changed() is False
+            assert len(skip_warnings()) == 1
+
+            # A real edit still triggers a rebuild attempt (and one more warning).
+            resume_copy.write_text("REID COLLINS\n\nSUMMARY\nsecond version\n")
+            assert app_module._rebuild_index_if_resume_changed() is True
+            assert len(skip_warnings()) == 2
