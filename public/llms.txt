@@ -10,7 +10,7 @@ JavaScript.
 
 - Current: Senior Technical Program Manager / Software Developer at Zeta Global (acquired Marigold, November 2025), 2021–2026.
 - Highlights: led migrations from Phabricator to Bitbucket and on-prem Jira to Jira Cloud (20 projects, 15 teams); onboarded 100+ clients to an ML platform; drove zero-downtime Oracle-to-MySQL migration; built an AI-powered incident summarization system (Lambda, DynamoDB, Claude, Slack, Jira).
-- Skills: program governance and release management; Python, Ruby, Bash; AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena); MySQL, PostgreSQL, ClickHouse, DynamoDB; Datadog (APM, RUM, SLOs, LLM Observability), Prometheus, Grafana, distributed tracing.
+- Skills: program governance and release management; Python, Ruby, Bash; AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena); MySQL, PostgreSQL, ClickHouse, DynamoDB; Datadog, Prometheus, Grafana, distributed tracing.
 - Certifications: AWS Solutions Architect – Associate; Certified Scrum Master (CSM).
 - Previously: Cheetah Digital (2015–2021), CheetahMail / Experian.
 
