@@ -17,7 +17,7 @@ const resume: ResumeData = {
     { category: 'Languages', items: ['Python', 'Perl', 'Ruby', 'Bash'] },
     { category: 'Cloud & Infrastructure', items: ['AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)'] },
     { category: 'Data', items: ['MySQL', 'PostgreSQL', 'ClickHouse', 'Hive', 'DynamoDB'] },
-    { category: 'Observability', items: ['Prometheus', 'Grafana', 'distributed tracing', 'structured logging'] },
+    { category: 'Observability', items: ['Datadog', 'Prometheus', 'Grafana', 'distributed tracing', 'structured logging'] },
     { category: 'Developer Tools', items: ['Git (GitHub, Bitbucket)', 'Docker', 'OpenAPI', 'Cursor', 'Jira', 'Confluence', 'Notion', 'n8n'] },
     { category: 'Certifications', items: ['AWS Solutions Architect – Associate', 'Certified Scrum Master (CSM)'] },
   ],

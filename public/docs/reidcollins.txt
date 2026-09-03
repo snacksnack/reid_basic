@@ -83,7 +83,7 @@ n8n
 Languages: Python, Perl, Ruby, Bash
 Cloud & Infrastructure: AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)
 Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB
-Observability: Prometheus, Grafana, distributed tracing, structured logging
+Observability: Datadog, Prometheus, Grafana, distributed tracing, structured logging
 Developer Tools: Git (GitHub, Bitbucket), Docker, Swagger/OpenAPI, Cursor
 Education: Bachelor of Arts, International Relations — Tulane University
 Certifications: AWS Solutions Architect – Associate, Certified Scrum Master (CSM)
