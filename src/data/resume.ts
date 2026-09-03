@@ -87,6 +87,25 @@ const resume: ResumeData = {
       ],
     },
   ],
+  // Timeline bar labels only. The experience section and the PDF name Zeta
+  // Global as employer of record; the bar keeps Marigold visible at a glance.
+  timelineEntries: [
+    {
+      company: 'Marigold → Zeta Global',
+      role: 'Senior Technical Program Manager / Software Developer',
+      period: '2021 — 2026',
+    },
+    {
+      company: 'Cheetah Digital',
+      role: 'Technical Program Manager / Software Developer',
+      period: '2015 — 2021',
+    },
+    {
+      company: 'CheetahMail / Experian',
+      role: 'Solutions Developer / Client Solutions Team',
+      period: '2008 — 2015',
+    },
+  ],
   education: [
     {
       school: 'Tulane University',
