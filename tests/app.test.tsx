@@ -67,6 +67,21 @@ describe('Resume component', () => {
     expect(screen.getByText('Led cross-functional initiatives')).toBeInTheDocument()
   })
 
+  it('lets timelineEntries relabel the timeline bar without changing the experience section', () => {
+    const data: ResumeData = {
+      ...fullResume,
+      experience: [
+        { ...fullResume.experience![0], company: 'Zeta Global (acquired Marigold, November 2025)' },
+      ],
+      timelineEntries: [
+        { company: 'Marigold → Zeta Global', role: 'Senior TPM', period: '2021 — 2026' },
+      ],
+    }
+    render(<Resume data={data} />)
+    expect(screen.getByText('Marigold → Zeta Global')).toBeInTheDocument()
+    expect(screen.getByText('Zeta Global (acquired Marigold, November 2025)')).toBeInTheDocument()
+  })
+
   it('renders the contact button when callback provided', () => {
     const handler = vi.fn()
     render(<Resume data={minimalResume} onContactClick={handler} />)
