@@ -58,7 +58,7 @@ The resume is split into semantic chunks based on its natural structure. The chu
 
 The resume is split on double newlines (`\n\n`), which correspond to its logical paragraph boundaries. Additional logic handles two resume-specific patterns:
 
-**Standalone employer headers.** A line like `Marigold (acquired by Zeta Global) — Senior TPM — 2021–2026` is a single-line paragraph that contains no searchable facts on its own. It is not indexed as a chunk — instead it is tracked as context for the sub-sections that follow.
+**Standalone employer headers.** A line like `Zeta Global (acquired Marigold, November 2025) — Senior TPM — 2021–2026` is a single-line paragraph that contains no searchable facts on its own. It is not indexed as a chunk — instead it is tracked as context for the sub-sections that follow.
 
 **Sub-section prefixing (self-containedness).** Marigold's work is divided into sub-sections: `Program Leadership & Delivery:`, `Platform & Backend Systems:`, etc. If a sub-section chunk were stored without its employer header, a query like "what did Reid do at Marigold?" would retrieve a chunk that reads:
 
@@ -70,7 +70,7 @@ Program Leadership & Delivery:
 This chunk is ambiguous — it does not say who or when. The chunker prefixes every sub-section with its employer line:
 
 ```
-Marigold (acquired by Zeta Global) — Senior TPM — 2021–2026
+Zeta Global (acquired Marigold, November 2025) — Senior TPM — 2021–2026
 
 Program Leadership & Delivery:
 • Led delivery of multiple cross-functional initiatives...
@@ -292,7 +292,7 @@ heroku logs --tail --app hihelloreid
 Each line shows chunk number, section, employer, cosine distance, and the query. Lower distance means more similar. Example:
 
 ```
-RAG retrieved chunk 1/4 — section=experience employer=Marigold (acquired by Zeta Global) distance=0.2341 query='AWS experience'
+RAG retrieved chunk 1/4 — section=experience employer=Zeta Global (acquired Marigold, November 2025) distance=0.2341 query='AWS experience'
 RAG retrieved chunk 2/4 — section=skills employer=— distance=0.2891 query='AWS experience'
 ```
 

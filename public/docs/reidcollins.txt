@@ -8,7 +8,7 @@ leadership, and client-facing technical delivery. Proven track record of driving
 cross-functional initiatives, translating business requirements into production systems, and delivering scalable
 solutions on AWS.
 PROFESSIONAL EXPERIENCE
-Marigold (acquired by Zeta Global) 2021 – 2026
+Zeta Global (acquired Marigold, November 2025) 2021 – 2026
 Senior Technical Program Manager / Software Developer
 Program Leadership & Delivery
 · Owned program delivery for a portfolio of platform-migration initiatives, coordinating engineering, SRE, and
@@ -19,17 +19,17 @@ bot/service accounts, and enforcing mandatory code review on all commits to redu
 · Directed migration from on-prem Jira to Jira Cloud across 20 projects and 15 teams, redefining workflows for
 cloud constraints and incompatible plugins, establishing ticket migration cutoffs, and managing external
 contractors within budget
-· Led program governance — roadmap execution, release planning, decision & RAID logs, and dependency tracking —
-while building Jira/Notion/n8n automation that cut manual reporting ~2 hrs/week and stale tickets 20%
+· Led program governance — roadmap execution, release planning, decision & RAID logs, and dependency tracking
+— while building Jira/Notion/n8n automation that cut manual reporting ~2 hrs/week and stale tickets 20%
 Machine Learning / Data Platform
 · Led onboarding of 100+ clients to the ML platform over two quarters, translating client data requirements into
-ClickHouse-to-S3 + EventBridge ingestion for multi-terabyte datasets (10–50GB per client) and coordinating
-cross-account, multi-region (US/APAC/Japan) access — cutting average onboarding time by 30%
+ClickHouse-to-S3 + EventBridge ingestion for multi-terabyte datasets (10–50GB per client) and coordinating cross-
+account, multi-region (US/APAC/Japan) access — cutting average onboarding time by 30%
 · Engineered nightly data pipelines on Athena and S3, coding ClickHouse queries with client-driven export controls
 and cross-team S3 access via AWS SAM, plus monitoring to ensure reliable ingestion
-· Drove release delivery of three production ML models — Propensity-to-Purchase, Discount Optimization, and Send
-Time Optimization — on a serverless platform (Lambda, SQS, EventBridge, SageMaker), owning release planning,
-deployment readiness, and cross-functional dependencies through production launch
+· Drove release delivery of three production ML models — Propensity-to-Purchase, Discount Optimization, and
+Send Time Optimization — on a serverless platform (Lambda, SQS, EventBridge, SageMaker), owning release
+planning, deployment readiness, and cross-functional dependencies through production launch
 · Delivered a queue-driven (SQS) export pipeline on a scheduled cadence to return model scores to clients, safely
 handling concurrent multi-exports
 · Shipped a run-tracking service (Lambda + DynamoDB) storing training/scoring runs by month with a query API,
@@ -44,20 +44,20 @@ licensing and support costs
 · Coordinated seamless migration of image caching infrastructure from Akamai to Cloudflare across 125 client
 domains, updating application code and partnering with clients to manage certificate changes with zero service
 disruption
-· Developed backend services for authentication, campaign data, service health, and DynamoDB integrations in
-high-throughput systems
 
 --- PAGE BREAK ---
 
+· Developed backend services for authentication, campaign data, service health, and DynamoDB integrations in
+high-throughput systems
 · Defined API contracts using Swagger/OpenAPI to support cross-team and client-facing integrations, improving
 implementation clarity across engineering, SRE, and partner teams
 Observability & Reliability
 · Led development of a custom observability framework (structured logging, distributed tracing, Prometheus,
 Grafana) for high-throughput, time-sensitive systems processing thousands of event-based messages per minute
 · Built AI-powered incident summarization system using AWS Lambda, SAM, DynamoDB, Claude, Slack, and Jira to
-ingest CloudWatch alarms and Bitbucket pipeline failures, consolidating repeat alerts from the same failing
-service into single incidents and generating operational summaries — cutting post-mortem turnaround from days
-to hours; later rebuilt and extended it as a live personal system with Datadog and GitHub Actions ingestion
+ingest CloudWatch alarms and Bitbucket pipeline failures, consolidating repeat alerts from the same failing service
+into single incidents and generating operational summaries — cutting post-mortem turnaround from days to
+hours; later rebuilt and extended it as a live personal system with Datadog and GitHub Actions ingestion
 (incidents.hihelloreid.com)
 Cheetah Digital 2015 – 2021
 Technical Program Manager / Software Developer
@@ -77,7 +77,9 @@ into BerkeleyDB/CDB-backed systems
 · Integrated client imports, exports, and APIs, translating business requirements into scalable data workflows and
 third-party platform integrations
 TECHNICAL SKILLS & EDUCATION
-Program Management: Agile, Scrum, Program Governance, Roadmap Execution, Release Planning, Release Management, RAID Management, Dependency Management, Stakeholder Management, Jira, Confluence, Notion, n8n
+Program Management: Agile, Scrum, Program Governance, Roadmap Execution, Release Planning, Release
+Management, RAID Management, Dependency Management, Stakeholder Management, Jira, Confluence, Notion,
+n8n
 Languages: Python, Perl, Ruby, Bash
 Cloud & Infrastructure: AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)
 Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB
