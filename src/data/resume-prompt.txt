@@ -8,7 +8,7 @@ Senior Technical Program Manager / Software Developer with a hybrid background i
 
 PROFESSIONAL EXPERIENCE
 
-Marigold (acquired by Zeta Global) — Senior Technical Program Manager / Software Developer — 2021–2026
+Zeta Global (acquired Marigold, November 2025) — Senior Technical Program Manager / Software Developer — 2021–2026
 
 Program Leadership & Delivery:
 • Owned program delivery for a portfolio of platform-migration initiatives, coordinating engineering, SRE, and product teams to land each on schedule and within budget

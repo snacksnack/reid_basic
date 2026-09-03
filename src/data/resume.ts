@@ -23,7 +23,7 @@ const resume: ResumeData = {
   ],
   experience: [
     {
-      company: 'Marigold (acquired by Zeta Global)',
+      company: 'Zeta Global (acquired Marigold, November 2025)',
       role: 'Senior Technical Program Manager / Software Developer',
       period: '2021 — 2026',
       achievementGroups: [
