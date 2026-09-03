@@ -362,16 +362,16 @@ class TestChunkResume:
 
     def test_marigold_produces_four_subsection_chunks(self, resume_text):
         chunks = _chunk_resume(resume_text)
-        marigold = [c for c in chunks if c["metadata"].get("employer") == "Marigold (acquired by Zeta Global)"]
+        marigold = [c for c in chunks if c["metadata"].get("employer") == "Zeta Global (acquired Marigold, November 2025)"]
         assert len(marigold) == 4
 
     def test_marigold_subsection_chunks_are_prefixed_with_employer_line(self, resume_text):
         # Self-containedness: each sub-section chunk must include the employer
         # header so it is unambiguous when retrieved in isolation.
         chunks = _chunk_resume(resume_text)
-        marigold = [c for c in chunks if c["metadata"].get("employer") == "Marigold (acquired by Zeta Global)"]
+        marigold = [c for c in chunks if c["metadata"].get("employer") == "Zeta Global (acquired Marigold, November 2025)"]
         for chunk in marigold:
-            assert chunk["text"].startswith("Marigold (acquired by Zeta Global)")
+            assert chunk["text"].startswith("Zeta Global (acquired Marigold, November 2025)")
 
     def test_marigold_subsection_names_are_captured_in_metadata(self, resume_text):
         chunks = _chunk_resume(resume_text)
