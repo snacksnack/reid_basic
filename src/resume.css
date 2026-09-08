@@ -120,6 +120,11 @@
 
 .skill-category-items {
   margin: 0;
+  /* The site sets these in a monospace face, so a row that fits one line in the
+     PDF can wrap here — Developer Tools wrapped with only "n8n" on the second
+     line. `pretty` rebalances the break so the last line is never a lone word.
+     Where it is unsupported the row simply wraps as it did before. */
+  text-wrap: pretty;
 }
 
 /* Flat skills fallback */
