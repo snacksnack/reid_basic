@@ -25,7 +25,7 @@ export default function MiniFleet({ apps, caption }: MiniFleetProps) {
   return (
     <div className="mf" role="img" aria-label={label}>
       <div className="mf-head">
-        <span className="mf-title">cost by ml_app · 30 days</span>
+        <span className="mf-title">cost by ml_app · 11 days</span>
         <span className="mf-scope">
           {apps.length} apps · {money(total)}
         </span>

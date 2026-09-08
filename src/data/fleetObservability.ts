@@ -4,7 +4,7 @@
 // The one row on this page that is not a discrete agent: it is the Datadog
 // estate the other rows report into. Figures verified live 2026-09-08 —
 // the roster and shares from ml_obs.span.llm.total.cost by ml_app over 30
-// days, the object count from datadog/ in the platform repo (4 dashboards,
+// days (see RC1-411), the object count from datadog/ in the platform repo (4 dashboards,
 // 11 monitors, 2 SLOs, 5 synthetics), whose drift job runs daily.
 
 import type { ProjectCardContent } from './projectCard'
@@ -35,19 +35,24 @@ export const fleetObservability = {
     { label: 'GitHub ↗', href: 'https://github.com/snacksnack/tpm-automation-platform' },
   ],
 
-  // A real 30-day window, not an illustration: every ml_app reporting cost to
-  // LLM Observability in the 30 days to 2026-09-08, ranked by spend.
+  // A real window, not an illustration: every ml_app reporting cost to LLM
+  // Observability, ranked by spend. The window is every day the data exists —
+  // instrumentation landed 2026-08-28 — so it is 11 days, not a round month.
+  // These are Datadog's per-span estimates and include benchmark and corpus
+  // runs, which RC1-411 is reconciling against the agent's own per-review
+  // metric; the caption says so rather than implying this is the invoice.
   apps: [
-    { app: 'pr-review-agent', cost: 2.4915 },
+    { app: 'pr-review-agent', cost: 34.9377 },
+    { app: 'launch-planner', cost: 1.6977 },
+    { app: 'kpi-agent', cost: 0.2382 },
     { app: 'drift-digest', cost: 0.1994 },
-    { app: 'launch-planner', cost: 0.1914 },
-    { app: 'kpi-agent', cost: 0.1803 },
-    { app: 'tpm-platform', cost: 0.0649 },
-    { app: 'concert-intelligence', cost: 0.0302 },
-    { app: 'hihelloreid-chat', cost: 0.009 },
-    { app: 'agent-evals-harness', cost: 0.0003 },
+    { app: 'tpm-platform', cost: 0.1948 },
+    { app: 'concert-intelligence', cost: 0.0464 },
+    { app: 'hihelloreid-chat', cost: 0.014 },
+    { app: 'agent-evals-harness', cost: 0.0006 },
     { app: 'agent-fleet', cost: 0.00005 },
   ] as FleetApp[],
 
-  fleetCaption: 'Cost by ml_app, 30 days to 2026-09-08, as LLM Observability reports it.',
+  fleetCaption:
+    'Datadog’s estimated cost by ml_app, 2026-08-28 to 09-07 — every run, benchmarks included.',
 } as const satisfies ProjectCardContent & { apps: FleetApp[]; fleetCaption: string }

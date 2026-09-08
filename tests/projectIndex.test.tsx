@@ -135,8 +135,9 @@ describe('ProjectIndex', () => {
     const panel = document.getElementById('fleet-obs-panel')!
     const names = [...panel.querySelectorAll('.mf-name')].map((n) => n.textContent)
     expect(names[0]).toBe('pr-review-agent')
+    expect(names[1]).toBe('launch-planner')
     expect(names).toHaveLength(9)
-    expect(within(panel).getByText('$2.49')).toBeInTheDocument()
+    expect(within(panel).getByText('$34.94')).toBeInTheDocument()
   })
 
   it('keeps the smallest app visible rather than a zero-width bar', () => {
