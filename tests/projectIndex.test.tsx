@@ -124,7 +124,7 @@ describe('ProjectIndex', () => {
     fireEvent.click(rowButton('PR Review Agent'))
     const panel = document.getElementById('pr-agent-panel')!
     const tagline = panel.querySelector('.pi-tagline')!.textContent!
-    expect(tagline).toMatch(/Python router/)
+    expect(tagline).toMatch(/Three reviewers/)
     expect(tagline).not.toMatch(/explores the repository for context first/)
   })
 

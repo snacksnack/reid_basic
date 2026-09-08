@@ -21,10 +21,10 @@ export interface ReviewFinding {
 export const prReviewAgent = {
   name: 'PR Review Agent',
   kicker: 'Code review',
-  lead: 'A GitHub App that reviews every PR on an account, for about a tenth of what it used to cost.',
+  lead: 'Reviews every PR on an account, at a tenth of the cost.',
   tagline:
-    'A GitHub App that reviews every pull request opened across an account — including repositories that do not exist yet. A Python router plans each review from the file list. Python then assembles the context an agent would otherwise pay to discover: the repository’s conventions file, the callers of every changed symbol, the tests that cover them. An exploration scout runs only against what is still missing, on a turn budget that shrinks to zero once the context is complete. Three reviewers — scoped by the kind of evidence a finding needs, not by category — read that shared prefix from cache and call no tools. A verifier reads every finding back against the diff before a single review is posted, advisory by default, escalating to "Request changes" only on a committed secret.',
-  note: 'Three agents, not thirteen. The category list is an output schema; it says nothing about what a reviewer must read. A review has three kinds of evidence — the hunk, the hunk plus the repository around it, the hunk plus what the change claims to be — and every agent has to be defensible.',
+    'A GitHub App that reviews every pull request opened across an account — including repositories that do not exist yet. Python plans each review and hands the agents the context they would otherwise pay to explore for. Three reviewers, scoped by the kind of evidence a finding needs, share one cached prefix and call no tools. A verifier checks every finding against the diff before one review is posted — advisory unless a secret was committed.',
+  note: 'Three agents, not thirteen — one per kind of evidence a finding needs: the hunk, the hunk plus the repository, the hunk plus what the change claims to be. The category list is only an output schema.',
   result:
     'Recall held at 13 of 13 planted defects; cost per review fell from 48¢–$1.10 to 6–21¢ and wall clock from 100s to under a minute. Live since September 2026.',
   evals: {
