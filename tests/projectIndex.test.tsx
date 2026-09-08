@@ -186,10 +186,12 @@ describe('ProjectIndex', () => {
     render(<ProjectIndex />)
     fireEvent.click(rowButton('Agent Evals'))
     const panel = document.getElementById('agent-evals-panel')!
-    expect(within(panel).getByText('status-narrative')).toBeInTheDocument()
+    expect(within(panel).getByText('pr-review')).toBeInTheDocument()
     expect(panel.querySelector('.mt-chart')).toBeInTheDocument()
-    // The flagged run is the story: a regression caught by the gate.
-    expect(within(panel).getByText(/the contract gate failed the build/)).toBeInTheDocument()
+    // The flagged run is the story: a score that fell while every version
+    // column stayed put, so the cause was outside the subject.
+    expect(within(panel).getByText(/every case errored/)).toBeInTheDocument()
+    expect(within(panel).getByText(/pr-review · 20 runs/)).toBeInTheDocument()
     expect(within(panel).getByText('Quality trend ↗')).toHaveAttribute(
       'href',
       'https://snacksnack.github.io/agent-evals/',

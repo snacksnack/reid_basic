@@ -47,7 +47,11 @@ export default function MiniTrend({ series, caption }: MiniTrendProps) {
     <div className="mt" role="img" aria-label={label}>
       <div className="mt-head">
         <span className="mt-title">suite score · per run</span>
-        <span className="mt-scope">two subjects shown</span>
+        <span className="mt-scope">
+          {series.length === 1
+            ? `${series[0].subject} · ${series[0].scores.length} runs`
+            : `${series.length} subjects shown`}
+        </span>
       </div>
 
       <svg className="mt-chart" viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
