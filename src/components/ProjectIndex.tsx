@@ -8,6 +8,7 @@ import MiniStageStrip from './visuals/MiniStageStrip'
 import MiniBoard from './visuals/MiniBoard'
 import MiniScorecard from './visuals/MiniScorecard'
 import MiniTrend from './visuals/MiniTrend'
+import MiniFleet from './visuals/MiniFleet'
 import { launchPlanner } from '../data/launchPlanner'
 import { driftDetector } from '../data/driftDetector'
 import { incidentSummarizer } from '../data/incidentSummarizer'
@@ -16,6 +17,7 @@ import { automationSuite } from '../data/automationSuite'
 import { jobSearchAgent } from '../data/jobSearchAgent'
 import { concertIntelligence } from '../data/concertIntelligence'
 import { agentEvals } from '../data/agentEvals'
+import { fleetObservability } from '../data/fleetObservability'
 import type { ProjectCardContent } from '../data/projectCard'
 import './ProjectIndex.css'
 
@@ -62,6 +64,13 @@ const ENTRIES: Entry[] = [
     id: 'agent-evals',
     content: agentEvals,
     visual: <MiniTrend series={agentEvals.series} caption={agentEvals.trendCaption} />,
+  },
+  // Not an agent but the Datadog estate the other rows report into (RC1-410),
+  // so it sits with the three it is read alongside rather than among the agents.
+  {
+    id: 'fleet-obs',
+    content: fleetObservability,
+    visual: <MiniFleet apps={fleetObservability.apps} caption={fleetObservability.fleetCaption} />,
   },
   {
     id: 'drift',

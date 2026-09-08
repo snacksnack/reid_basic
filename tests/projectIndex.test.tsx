@@ -14,6 +14,7 @@ const ALL_NAMES = [
   'TPM Workflow Automation',
   'Concert Intelligence Agent',
   'Agent Evals',
+  'Fleet Observability',
 ]
 
 const rowButton = (name: string | RegExp) =>
@@ -62,7 +63,7 @@ describe('ProjectIndex', () => {
 
   it('counts the systems in the thesis rather than hardcoding the total', () => {
     render(<ProjectIndex />)
-    expect(screen.getByText(/^Eight shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Nine shipped systems on one thesis:/)).toBeInTheDocument()
   })
 
   it('points each row header at the panel it controls', () => {
@@ -126,6 +127,26 @@ describe('ProjectIndex', () => {
     const tagline = panel.querySelector('.pi-tagline')!.textContent!
     expect(tagline).toMatch(/Three reviewers/)
     expect(tagline).not.toMatch(/explores the repository for context first/)
+  })
+
+  it('ranks the fleet bars by spend and labels every value', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('Fleet Observability'))
+    const panel = document.getElementById('fleet-obs-panel')!
+    const names = [...panel.querySelectorAll('.mf-name')].map((n) => n.textContent)
+    expect(names[0]).toBe('pr-review-agent')
+    expect(names).toHaveLength(9)
+    expect(within(panel).getByText('$2.49')).toBeInTheDocument()
+  })
+
+  it('keeps the smallest app visible rather than a zero-width bar', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('Fleet Observability'))
+    const panel = document.getElementById('fleet-obs-panel')!
+    const bars = [...panel.querySelectorAll<HTMLElement>('.mf-bar')]
+    const last = bars[bars.length - 1]
+    expect(parseFloat(last.style.width)).toBeGreaterThan(0)
+    expect(within(panel).getAllByText('<$0.01').length).toBeGreaterThan(0)
   })
 
   // --- the two projects added in RC1-226 --------------------------------
@@ -196,13 +217,13 @@ describe('ProjectIndex teaser (the résumé’s short index)', () => {
     )
     expect(screen.queryByText('Job Scout')).not.toBeInTheDocument()
 
-    const more = screen.getByText('See all eight projects →')
+    const more = screen.getByText('See all nine projects →')
     expect(more).toHaveAttribute('href', '/work')
   })
 
-  it('still counts all eight in the thesis, and drops the expand-all control', () => {
+  it('still counts all nine in the thesis, and drops the expand-all control', () => {
     render(<ProjectIndex teaser />)
-    expect(screen.getByText(/^Eight shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Nine shipped systems on one thesis:/)).toBeInTheDocument()
     expect(screen.getByText(/Three of them below\./)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Expand all' })).not.toBeInTheDocument()
   })
