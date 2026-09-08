@@ -1,5 +1,11 @@
 // Content for the PR Review Agent card (RC1-216).
 // Source: github.com/snacksnack/pr_agent (epic RC1-106).
+//
+// RC1-410 rewrote this card. It described the single tool-calling loop that
+// RC1-387 → RC1-394 replaced; production has run the multi-agent pipeline
+// since 2026-09-07. Numbers in `result` come from the decision records:
+// recall from docs/rc1-390-multi-agent.md, cost and wall clock from
+// docs/rc1-393-cheap-exploration.md (three merged PRs, verifier on).
 
 import type { ProjectCardContent } from './projectCard'
 
@@ -15,17 +21,28 @@ export interface ReviewFinding {
 export const prReviewAgent = {
   name: 'PR Review Agent',
   kicker: 'Code review',
-  lead: 'A GitHub App that reviews every PR on an account.',
+  lead: 'A GitHub App that reviews every PR on an account, for about a tenth of what it used to cost.',
   tagline:
-    'A GitHub App that reviews every pull request opened across an account — including repos that do not exist yet. On each PR it explores the repository for context first, then posts one structured review: a summary plus severity-tagged inline findings.',
-  note: 'Advisory by default — it escalates to "Request changes" only on a committed secret.',
+    'A GitHub App that reviews every pull request opened across an account — including repositories that do not exist yet. A Python router plans each review from the file list. Python then assembles the context an agent would otherwise pay to discover: the repository’s conventions file, the callers of every changed symbol, the tests that cover them. An exploration scout runs only against what is still missing, on a turn budget that shrinks to zero once the context is complete. Three reviewers — scoped by the kind of evidence a finding needs, not by category — read that shared prefix from cache and call no tools. A verifier reads every finding back against the diff before a single review is posted, advisory by default, escalating to "Request changes" only on a committed secret.',
+  note: 'Three agents, not thirteen. The category list is an output schema; it says nothing about what a reviewer must read. A review has three kinds of evidence — the hunk, the hunk plus the repository around it, the hunk plus what the change claims to be — and every agent has to be defensible.',
+  result:
+    'Recall held at 13 of 13 planted defects; cost per review fell from 48¢–$1.10 to 6–21¢ and wall clock from 100s to under a minute. Live since September 2026.',
   evals: {
     blurb:
-      'Measured on planted-defect recall — seeded bugs the review must find — plus a prompt-contract gate in CI.',
+      'Measured on planted-defect recall and on precision — decoys a competent reviewer would pass — plus a prompt-contract gate in CI.',
     href: 'https://snacksnack.github.io/agent-evals/',
   },
 
-  technologies: ['Python', 'FastAPI', 'GitHub App', 'Claude API', 'Fly.io', 'pytest', 'agent-evals'],
+  technologies: [
+    'Python',
+    'FastAPI',
+    'GitHub App',
+    'Claude API',
+    'Fly.io',
+    'Datadog LLM Observability',
+    'pytest',
+    'agent-evals',
+  ],
 
   links: [{ label: 'GitHub ↗', href: 'https://github.com/snacksnack/pr_agent' }],
 

@@ -151,6 +151,26 @@
   padding-left: 0.6rem;
 }
 
+/* The headline measurement (RC1-410): the eval line's construction in the
+   success accent, so a row's number reads as an outcome rather than a claim. */
+.pi-result {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #6b6b66;
+  border-left: 2px solid #a8cdb5;
+  padding-left: 0.6rem;
+}
+
+.pi-result-kicker {
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--success, #0f7b3f);
+  margin-right: 0.5rem;
+}
+
 /* The continuous-eval line (RC1-266): the note's quiet construction with a
    mono kicker and a soft accent hairline, so the measured rows read as one
    program. Every link lands on the same public trend page. */

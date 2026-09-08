@@ -23,6 +23,9 @@ export interface ProjectCardContent {
   lead: string // the one-line index lead: what the thing is, in one breath
   tagline: string // the full thesis, shown verbatim in the expanded panel
   note?: string // the design principle, shown under the visual
+  // The headline measurement (RC1-410): what the system was measured at, in
+  // one line. Optional — a row without one renders exactly as it did before.
+  result?: string
   evals?: ProjectEvals
   technologies: readonly string[]
   links: readonly ProjectLink[]

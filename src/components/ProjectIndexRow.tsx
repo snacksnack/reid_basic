@@ -49,6 +49,13 @@ export default function ProjectIndexRow({
 
           <div className="pi-visual">{children}</div>
 
+          {content.result && (
+            <p className="pi-result">
+              <span className="pi-result-kicker">Result</span>
+              {content.result}
+            </p>
+          )}
+
           {content.note && <p className="pi-note">{content.note}</p>}
 
           {content.evals && (
