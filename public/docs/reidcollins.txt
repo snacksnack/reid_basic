@@ -3,10 +3,10 @@ Brooklyn, NY | hire.reid.collins@gmail.com | hihelloreid.com
 linkedin.com/in/reidcollins | github.com/snacksnack
 Open to Senior Technical Program Manager and Technical Solutions roles
 SUMMARY
-Senior Technical Program Manager / Software Developer with a hybrid background in software engineering, program
-leadership, and client-facing technical delivery. Proven track record of driving large-scale platform migrations, leading
-cross-functional initiatives, translating business requirements into production systems, and delivering scalable
-solutions on AWS.
+Senior Technical Program Manager / Software Developer building AI agents and workflow automation, on a hybrid
+background in software engineering, program leadership, and client-facing technical delivery. Track record spans
+large-scale platform migrations, ML platform delivery, and cross-functional initiatives on AWS — and production AI
+systems with the evaluation, observability, and cost controls to operate them.
 PROFESSIONAL EXPERIENCE
 Zeta Global (acquired Marigold, November 2025) 2021 – 2026
 Senior Technical Program Manager / Software Developer
@@ -78,12 +78,12 @@ into BerkeleyDB/CDB-backed systems
 third-party platform integrations
 TECHNICAL SKILLS & EDUCATION
 Program Management: Agile, Scrum, Program Governance, Roadmap Execution, Release Planning, Release
-Management, RAID Management, Dependency Management, Stakeholder Management, Jira, Confluence, Notion,
-n8n
+Management, RAID Management, Dependency Management, Stakeholder Management
+AI & Agents: Claude API, multi-agent orchestration, tool use, RAG, evals, cost telemetry
 Languages: Python, Perl, Ruby, Bash
 Cloud & Infrastructure: AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)
 Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB
 Observability: Datadog, Prometheus, Grafana, distributed tracing, structured logging
-Developer Tools: Git (GitHub, Bitbucket), Docker, Swagger/OpenAPI, Cursor
+Developer Tools: Git (GitHub, Bitbucket), Docker, Swagger/OpenAPI, Cursor, Jira, Confluence, Notion, n8n
 Education: Bachelor of Arts, International Relations — Tulane University
 Certifications: AWS Solutions Architect – Associate, Certified Scrum Master (CSM)
