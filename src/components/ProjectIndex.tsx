@@ -42,8 +42,22 @@ const ENTRIES: Entry[] = [
     visual: <MiniGantt tasks={launchPlanner.gantt} compact />,
     teaser: true,
   },
-  // Directly under the flagship on purpose: the harness that measures six of
-  // the rows on this page, promoted so the grading shows before the graded.
+  // Second on purpose (RC1-410): the most engineered system on the page, and
+  // the row whose own numbers the harness below it produced.
+  {
+    id: 'pr-agent',
+    content: prReviewAgent,
+    visual: (
+      <MiniReview
+        summary={prReviewAgent.reviewSummary}
+        findings={prReviewAgent.findings}
+        verdict={prReviewAgent.verdict}
+      />
+    ),
+    teaser: true,
+  },
+  // Still above most of the rows it grades: the harness that measures six of
+  // the systems on this page.
   {
     id: 'agent-evals',
     content: agentEvals,
@@ -62,18 +76,6 @@ const ENTRIES: Entry[] = [
         sources={incidentSummarizer.sources}
         collapse={incidentSummarizer.collapse}
         incident={incidentSummarizer.incident}
-      />
-    ),
-    teaser: true,
-  },
-  {
-    id: 'pr-agent',
-    content: prReviewAgent,
-    visual: (
-      <MiniReview
-        summary={prReviewAgent.reviewSummary}
-        findings={prReviewAgent.findings}
-        verdict={prReviewAgent.verdict}
       />
     ),
     teaser: true,

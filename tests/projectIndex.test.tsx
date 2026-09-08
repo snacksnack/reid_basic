@@ -93,6 +93,41 @@ describe('ProjectIndex', () => {
     expect(detail).not.toHaveAttribute('title')
   })
 
+  // --- the headline measurement and the promoted row (RC1-410) ----------
+
+  it('places the PR Review Agent second, right under the flagship', () => {
+    render(<ProjectIndex />)
+    const names = [...document.querySelectorAll('.pi-row .pi-name')].map((n) => n.textContent)
+    expect(names[0]).toBe('Launch Planner')
+    expect(names[1]).toBe('PR Review Agent')
+  })
+
+  it('renders a result line for a row that carries one', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('PR Review Agent'))
+    const panel = document.getElementById('pr-agent-panel')!
+    const result = panel.querySelector('.pi-result')!
+    expect(result).toBeInTheDocument()
+    expect(within(panel).getByText('Result')).toBeInTheDocument()
+    expect(result.textContent).toMatch(/13 of 13 planted defects/)
+  })
+
+  it('omits the result line on a row without one', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('Dependency Drift Detector'))
+    const panel = document.getElementById('drift-panel')!
+    expect(panel.querySelector('.pi-result')).toBeNull()
+  })
+
+  it('describes the multi-agent pipeline, not the single loop it replaced', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('PR Review Agent'))
+    const panel = document.getElementById('pr-agent-panel')!
+    const tagline = panel.querySelector('.pi-tagline')!.textContent!
+    expect(tagline).toMatch(/Three reviewers/)
+    expect(tagline).not.toMatch(/explores the repository for context first/)
+  })
+
   // --- the two projects added in RC1-226 --------------------------------
 
   it('renders the Job Scout board with its matched and gap chips', () => {
