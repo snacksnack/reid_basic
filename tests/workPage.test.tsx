@@ -11,10 +11,11 @@ describe('WorkPage', () => {
   it('renders the full index, not the résumé teaser', () => {
     render(<WorkPage />)
     expect(screen.getByRole('heading', { name: 'Selected work' })).toBeInTheDocument()
-    expect(document.querySelectorAll('.pi-row')).toHaveLength(8)
+    expect(document.querySelectorAll('.pi-row')).toHaveLength(9)
     expect(screen.getByText('Job Scout')).toBeInTheDocument()
     expect(screen.getByText('Agent Evals')).toBeInTheDocument()
-    expect(screen.queryByText(/See all eight projects/)).not.toBeInTheDocument()
+    expect(screen.getByText('Fleet Observability')).toBeInTheDocument()
+    expect(screen.queryByText(/See all nine projects/)).not.toBeInTheDocument()
   })
 
   it('keeps the thesis framing on the page', () => {

@@ -1,0 +1,91 @@
+/* The fleet spend bars (RC1-410). Same construction as the other mini-visuals:
+   hairline frame, mono type, flat fills — no gradient, no animation. */
+.mf {
+  --mf-hair: #e4e3dd;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  border: 1px solid var(--mf-hair);
+  border-radius: 5px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.mf-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.55rem;
+  background: #f6f5f0;
+  border-bottom: 1px solid var(--mf-hair);
+}
+
+.mf-title {
+  font-size: 0.62rem;
+  color: #16150f;
+}
+
+.mf-scope {
+  font-size: 0.57rem;
+  color: #8a8981;
+}
+
+.mf-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  display: grid;
+  /* 2px of surface between adjacent bars, per the mark spec. */
+  gap: 2px;
+}
+
+.mf-row {
+  display: grid;
+  grid-template-columns: 118px 1fr 46px;
+  align-items: center;
+  gap: 8px;
+  min-height: 13px;
+}
+
+/* Text wears text tokens, never the mark's colour. */
+.mf-name {
+  font-size: 0.57rem;
+  color: #55534c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mf-track {
+  display: block;
+  height: 7px;
+}
+
+.mf-bar {
+  display: block;
+  height: 100%;
+  background: #2f6bff;
+  /* Anchored to the baseline, rounded only at the data end. */
+  border-radius: 0 3px 3px 0;
+}
+
+.mf-val {
+  font-size: 0.57rem;
+  color: #16150f;
+  text-align: right;
+}
+
+.mf-caption {
+  padding: 0.38rem 0.55rem;
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: #6b6b66;
+  background: #f6f5f0;
+  border-top: 1px solid var(--mf-hair);
+}
+
+@media (max-width: 560px) {
+  .mf-row {
+    grid-template-columns: 92px 1fr 42px;
+  }
+}
