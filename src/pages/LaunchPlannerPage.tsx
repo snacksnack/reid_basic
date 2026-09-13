@@ -63,7 +63,7 @@ export default function LaunchPlannerPage() {
       </section>
 
       <section className="pp-section">
-        <h2 className="pp-h2">Eight surfaces</h2>
+        <h2 className="pp-h2">Nine surfaces</h2>
         <div className="pp-surfaces">
           {lp.surfaces.map((s) => (
             <div className="pp-surface" key={s.name}>

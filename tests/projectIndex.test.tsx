@@ -120,6 +120,17 @@ describe('ProjectIndex', () => {
     expect(panel.querySelector('.pi-result')).toBeNull()
   })
 
+  it('gives the PR Review Agent an overview link, same-tab, ahead of GitHub (RC1-412)', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('PR Review Agent'))
+    const panel = document.getElementById('pr-agent-panel')!
+    const overview = within(panel).getByText('Overview →')
+    expect(overview).toHaveAttribute('href', '/projects/pr-review-agent')
+    expect(overview).not.toHaveAttribute('target')
+    const links = [...panel.querySelectorAll('.pi-links a')].map((a) => a.textContent)
+    expect(links[0]).toBe('Overview →')
+  })
+
   it('describes the multi-agent pipeline, not the single loop it replaced', () => {
     render(<ProjectIndex />)
     fireEvent.click(rowButton('PR Review Agent'))

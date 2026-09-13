@@ -90,6 +90,13 @@ export const launchPlanner = {
     { name: 'Baseline', blurb: 'Drift of the current plan against the committed baseline.' },
     { name: 'Status', blurb: 'The weekly update, with a rule-set health badge.' },
     { name: 'Jira', blurb: 'Preview the tickets a run would create — gated, never auto-written.' },
+    // Real, tested, and deliberately unwired: no client is configured for it,
+    // so this says what exists without implying a live integration (RC1-412).
+    {
+      name: 'MCP server',
+      blurb:
+        'Nine read-only planning tools over stdio — plans, critical path, simulate, forecast, drift, status, health — behind an allowlist, with their own tool-selection evals. No client is wired to it yet.',
+    },
   ] as Surface[],
 
   principles: [
