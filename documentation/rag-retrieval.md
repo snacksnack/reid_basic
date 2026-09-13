@@ -335,3 +335,13 @@ it, or OSV), the right disposition is "vulnerable code is not actually used",
 with a pointer here. Revisit only if the app ever switches to
 `chromadb.HttpClient` against a hosted server, at which point the server, not
 this app, is what needs patching.
+
+**Disposition (RC1-439, 2026-09-13).** Dependabot raised the same four
+advisories (GHSA-f4j7-r4q5-qw2c, GHSA-36p7-vc44-83pf, GHSA-2wm9-hf6c-p5cr,
+GHSA-xph7-9rjv-w5fr) as alerts 1–4. 1.5.9 was still the newest release, so the
+alerts were dismissed with reason `not_used` and a pointer to this section.
+That closes the badge, not the exposure question, which was never open: the
+vulnerable code is the server the app does not run. Removing the dependency
+altogether (a numpy cosine store over the same OpenAI embeddings, ~30 chunks)
+is tracked as RC1-440; until then, re-check PyPI before any bump and re-dismiss
+if Chroma ships a new server-only advisory.
