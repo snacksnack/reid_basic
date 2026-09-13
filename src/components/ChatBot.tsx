@@ -32,8 +32,11 @@ const MAX_USER_MESSAGES = 10
 const LIMIT_MESSAGE =
   "Okay, you're clearly very thorough — I respect that. But you've burned through enough OpenAI tokens to buy Reid a coffee, so I'm cutting you off. For anything else, reach out to him directly at hire.reid.collins@gmail.com."
 
+// The session id is the key the server files chat history under, so it has
+// to be unguessable — a CSPRNG UUID, not Date.now() + Math.random()
+// (CodeQL js/insecure-randomness, RC1-368).
 function generateSessionId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  return crypto.randomUUID()
 }
 
 export default function ChatBot() {

@@ -1078,6 +1078,23 @@ def download(fmt):
 # SPA static serving (production only)
 # ---------------------------------------------------------------------------
 
+
+def _static_asset(root: str, path: str) -> str | None:
+    """Return `path` relative to `root` if it names a file inside `root`.
+
+    `path` is user input from the URL. Normalise the joined path and require
+    it to stay under `root` before touching the filesystem; anything else —
+    traversal, an absolute path, a directory, a miss — returns None and the
+    caller serves the SPA shell instead (CodeQL py/path-injection, RC1-368).
+    """
+    if not path:
+        return None
+    candidate = os.path.normpath(os.path.join(root, path))
+    if not candidate.startswith(root + os.sep) or not os.path.isfile(candidate):
+        return None
+    return os.path.relpath(candidate, root)
+
+
 if IS_PRODUCTION:
 
     @app.route("/ui-testbed")
@@ -1090,10 +1107,9 @@ if IS_PRODUCTION:
     @app.route("/")
     @app.route("/<path:path>")
     def serve_spa(path=""):
-        dist = BASE_DIR / "dist"
-        if path and (dist / path).is_file():
-            return send_from_directory(str(dist), path)
-        return send_from_directory(str(dist), "index.html")
+        dist = str(BASE_DIR / "dist")
+        asset = _static_asset(dist, path)
+        return send_from_directory(dist, asset if asset else "index.html")
 
 
 if __name__ == "__main__":
