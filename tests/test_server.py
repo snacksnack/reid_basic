@@ -12,6 +12,7 @@ from app import (
     _chunk_resume,
     _retrieve_context,
     _resume_path,
+    _static_asset,
 )
 
 
@@ -428,6 +429,38 @@ class TestRetrieveContext:
     def test_fallback_is_non_empty(self):
         result = _retrieve_context("skills")
         assert result.strip()
+
+
+class TestStaticAsset:
+    """The SPA catch-all resolves user-supplied paths under dist/ only (RC1-368)."""
+
+    @pytest.fixture
+    def root(self, tmp_path):
+        (tmp_path / "dist" / "assets").mkdir(parents=True)
+        (tmp_path / "dist" / "assets" / "app.js").write_text("// js")
+        (tmp_path / "dist" / "index.html").write_text("<html></html>")
+        (tmp_path / "secret.txt").write_text("outside dist")
+        return str(tmp_path / "dist")
+
+    def test_file_under_root_is_returned_relative(self, root):
+        assert _static_asset(root, "assets/app.js") == os.path.join("assets", "app.js")
+
+    def test_dotdot_that_stays_under_root_is_normalised(self, root):
+        assert _static_asset(root, "assets/../assets/app.js") == os.path.join("assets", "app.js")
+
+    @pytest.mark.parametrize(
+        "path",
+        ["../secret.txt", "assets/../../secret.txt", "..", "/etc/passwd"],
+    )
+    def test_paths_escaping_root_are_rejected(self, root, path):
+        assert _static_asset(root, path) is None
+
+    def test_directory_and_missing_file_are_rejected(self, root):
+        assert _static_asset(root, "assets") is None
+        assert _static_asset(root, "nope.js") is None
+
+    def test_empty_path_is_rejected(self, root):
+        assert _static_asset(root, "") is None
 
 
 class TestResumeWatcherWithoutKey:

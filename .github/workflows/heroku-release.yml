@@ -26,9 +26,15 @@ jobs:
     name: Deploy to Heroku and report to DORA
     runs-on: ubuntu-latest
     # Only main pushes whose CI passed. PR runs of CI complete too — skip them.
+    # workflow_run is a privileged trigger (it can read HEROKU_API_KEY), so the
+    # head_sha checked out below must never come from a fork: event == 'push'
+    # already guarantees that (a fork's pushes run CI in the fork, not here),
+    # and the head_repository check states the same guarantee directly
+    # (CodeQL actions/untrusted-checkout, RC1-368).
     if: >
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.conclusion == 'success'
     concurrency: heroku-deploy
     steps:

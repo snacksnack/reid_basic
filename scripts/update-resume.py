@@ -28,9 +28,10 @@ SECTION_HEADERS_RE = re.compile(
     r"^(?:SUMMARY|PROFESSIONAL EXPERIENCE|TECHNICAL SKILLS(?:\s*&\s*EDUCATION)?|EDUCATION)$"
 )
 
-EXPERIENCE_SUB_HEADERS_RE = re.compile(
-    r"^[A-Z][A-Za-z /&]+(?:\s*[&/]\s*[A-Za-z ]+)*$"
-)
+# One character class: the former trailing `(?:\s*[&/]\s*[A-Za-z ]+)*` group
+# matched only strings the leading class already accepts, and its overlap with
+# it backtracked exponentially on "A &  &  & ..." (CodeQL py/redos, RC1-368).
+EXPERIENCE_SUB_HEADERS_RE = re.compile(r"^[A-Z][A-Za-z /&]+$")
 
 DATE_RE = re.compile(r"^\d{4}\s*[–—\-]\s*(?:\d{4}|Present)$")
 
