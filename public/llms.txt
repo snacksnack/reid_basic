@@ -19,6 +19,7 @@ JavaScript.
 - [Resume](https://www.hihelloreid.com/): full resume with experience, skills, and an AI chatbot that answers questions about Reid's background.
 - [Work](https://www.hihelloreid.com/work): index of personal AI/agent projects, each with eval coverage noted.
 - [Launch Planner](https://www.hihelloreid.com/projects/launch-planner): flagship project — an agentic planner for migrations and launches. A PRD goes in, a defensible delivery plan comes out: critical-path schedule, risk log, and exec status, with an audit trail. The LLM proposes; deterministic Python validates; a human approves.
+- [PR Review Agent](https://www.hihelloreid.com/projects/pr-review-agent): a GitHub App that reviews every pull request across an account. Python plans the review and gathers the evidence by grep; three reviewers judge one cached prefix; a verifier checks every finding against the diff. Recall 13 of 13 planted defects at 6–21¢ a review, down from 48¢–$1.10. The page carries the decisions with their numbers: LangGraph evaluated and declined, the verifier's positional tie-break, the cost sequence, the conventions-file lever.
 - [AI Incident Summarizer](https://www.hihelloreid.com/projects/incident-summarizer): three observability firehoses land as one incident instead of fifty pages — alerts normalized, deduplicated by fingerprint, and correlated in a time window; an LLM writes the summary that reaches Slack and Jira.
 
 ## Contact

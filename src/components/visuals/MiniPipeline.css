@@ -1,0 +1,144 @@
+/* Review pipeline flow (RC1-412) — the stage strip's vocabulary, with the
+   fan-out drawn as a stack and the Python / model split carried by style. */
+.mp {
+  --mp-hair: #e4e3dd;
+  --mp-ink: #16150f;
+  --mp-muted: #55534c;
+  --mp-model: #2f6bff;
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.mp-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 0;
+}
+
+.mp-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* A Python stage: paper, hairline. Deterministic, inspectable, cheap. */
+.mp-stage {
+  display: inline-block;
+  font-size: 0.64rem;
+  color: var(--mp-muted);
+  background: #f6f5f0;
+  border: 1px solid var(--mp-hair);
+  border-radius: 3px;
+  padding: 0.2rem 0.45rem;
+  white-space: nowrap;
+}
+
+/* A model stage: the accent, because it is where the money and the
+   judgement are. */
+.mp-stage.mp-model {
+  color: var(--mp-model);
+  border-color: var(--mp-model);
+  background: #f2f6ff;
+}
+
+/* The fan-out: a labelled bracket holding three reviewers. */
+.mp-fan {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.3rem 0.45rem 0.35rem;
+  border: 1px solid var(--mp-model);
+  border-radius: 4px;
+  background: #f2f6ff;
+}
+.mp-fan-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mp-model);
+}
+.mp-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mp-branch {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.62rem;
+  background: #fff;
+  border: 1px solid #cfdcff;
+  border-radius: 3px;
+  padding: 0.14rem 0.4rem;
+  white-space: nowrap;
+}
+.mp-branch-name {
+  color: var(--mp-model);
+}
+.mp-branch-evidence {
+  color: var(--mp-muted);
+  font-size: 0.58rem;
+}
+
+/* The edge: a short rule with an arrowhead, as the stage strip draws it. */
+.mp-sep {
+  width: 12px;
+  height: 1px;
+  background: #b8b7b0;
+  margin: 0 4px;
+  position: relative;
+  flex: none;
+}
+.mp-sep::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -2.5px;
+  border-left: 5px solid #b8b7b0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.mp-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 8px;
+  font-size: 0.6rem;
+  color: #6b6b66;
+}
+.mp-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.mp-key-note::before {
+  content: '·';
+  margin-right: 6px;
+}
+.mp-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid var(--mp-hair);
+  background: #f6f5f0;
+}
+.mp-swatch.mp-model {
+  border-color: var(--mp-model);
+  background: #f2f6ff;
+}
+
+@media (max-width: 520px) {
+  .mp-sep {
+    width: 8px;
+    margin: 0 3px;
+  }
+  .mp-stage,
+  .mp-branch {
+    font-size: 0.6rem;
+    white-space: normal;
+  }
+  .mp-branch-evidence {
+    display: none;
+  }
+}

@@ -6,6 +6,7 @@ import TestbedStatusBar from './testbed/TestbedStatusBar'
 import TestbedHeader from './testbed/TestbedHeader'
 import LaunchPlannerPage from './pages/LaunchPlannerPage'
 import IncidentSummarizerPage from './pages/IncidentSummarizerPage'
+import PrReviewAgentPage from './pages/PrReviewAgentPage'
 import WorkPage from './pages/WorkPage'
 import resume from './data/resume'
 import './resume.css'
@@ -21,6 +22,7 @@ const PAGES: Record<string, () => React.ReactElement> = {
   '/work': () => <WorkPage />,
   '/projects/launch-planner': () => <LaunchPlannerPage />,
   '/projects/incident-summarizer': () => <IncidentSummarizerPage />,
+  '/projects/pr-review-agent': () => <PrReviewAgentPage />,
 }
 
 function matchPage(): (() => React.ReactElement) | undefined {
