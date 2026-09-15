@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 
@@ -205,6 +206,87 @@ class TestMatchEndpoint:
         assert res.status_code == 200
         sent = fake.messages.calls[0]["messages"][0]["content"]
         assert len(sent) <= MATCH_MAX_CHARS
+
+
+class _SequenceMessages(_FakeMessages):
+    """Returns one queued response per create() call."""
+
+    def __init__(self, responses):
+        super().__init__()
+        self._responses = list(responses)
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        return self._responses.pop(0)
+
+
+class TestChatHallucinationContext:
+    """RC1-444: every chat-loop model call carries the question and the
+    grounding text the hallucination judge compares the answer against."""
+
+    def _patch(self, monkeypatch, responses):
+        import app as app_module
+        import observability
+
+        class RecordingLLMObs:
+            enabled = True
+
+            def __init__(self):
+                self.prompts = []
+
+            def annotation_context(self, prompt, tags):
+                self.prompts.append(prompt)
+                return contextlib.nullcontext()
+
+        llmobs = RecordingLLMObs()
+        monkeypatch.setattr(observability, "LLMObs", llmobs)
+        client = _FakeClient()
+        client.messages = _SequenceMessages(responses)
+        monkeypatch.setattr(app_module, "anthropic_client", client)
+        return llmobs, client
+
+    def test_turn_annotates_question_and_retrieved_context(self, client, monkeypatch):
+        llmobs, fake = self._patch(
+            monkeypatch, [_Resp([_Block("text", text="He was at Marigold.")])]
+        )
+
+        res = client.post(
+            "/api/chat",
+            json={"message": "Where did Reid work before Marigold?", "sessionId": "h1"},
+        )
+
+        assert res.status_code == 200
+        assert len(llmobs.prompts) == 1
+        prompt = llmobs.prompts[0]
+        assert prompt["variables"]["query"] == "Where did Reid work before Marigold?"
+        context = prompt["variables"]["context"]
+        assert context
+        assert context in fake.messages.calls[0]["system"]
+        assert prompt["rag_context_variables"] == ["context"]
+        assert prompt["rag_query_variables"] == ["query"]
+
+    def test_tool_results_join_the_context_for_the_next_call(self, client, monkeypatch):
+        tool_round = _Resp(
+            [_Block("tool_use", name="schedule_meeting", input={})]
+        )
+        tool_round.content[0].id = "tu_1"
+        llmobs, _ = self._patch(
+            monkeypatch,
+            [tool_round, _Resp([_Block("text", text="Here's the link.")])],
+        )
+        monkeypatch.setenv("SCHEDULING_URL", "https://cal.example/reid")
+
+        res = client.post(
+            "/api/chat",
+            json={"message": "Can I book a call with Reid?", "sessionId": "h2"},
+        )
+
+        assert res.status_code == 200
+        first, second = (p["variables"]["context"] for p in llmobs.prompts)
+        assert "cal.example" not in first
+        assert second.startswith(first)
+        assert "Result of tool schedule_meeting" in second
+        assert "cal.example" in second
 
 
 class TestFitCardTool:

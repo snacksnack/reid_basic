@@ -13,7 +13,7 @@ from flask import Flask, Response, request, jsonify, send_file, send_from_direct
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from observability import enable_llm_obs
+from observability import enable_llm_obs, rag_prompt
 from openai import OpenAI
 from scripts.emailer import send_notification_email
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -979,18 +979,23 @@ def chat():
 
         api_messages = trimmed
 
+        # RC1-444: the hallucination judge checks each answer against this
+        # grounding text. Tool results join it as they arrive, so an answer
+        # quoting calendar slots isn't judged unsupported by the resume.
+        grounding = context
         reply = None
         for _ in range(MAX_TOOL_ROUNDS):
-            response = anthropic_client.messages.create(
-                model="claude-haiku-4-5-20251001",
-                system=system_content,
-                messages=api_messages,
-                tools=TOOLS,
-                max_tokens=500,
-                # See the /match call above: temperature moved to extra_body for
-                # the anthropic 1.x SDK without changing sampling behavior.
-                extra_body={"temperature": 0.7},
-            )
+            with rag_prompt(raw_query, grounding):
+                response = anthropic_client.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    system=system_content,
+                    messages=api_messages,
+                    tools=TOOLS,
+                    max_tokens=500,
+                    # See the /match call above: temperature moved to extra_body for
+                    # the anthropic 1.x SDK without changing sampling behavior.
+                    extra_body={"temperature": 0.7},
+                )
 
             tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
 
@@ -1028,6 +1033,10 @@ def chat():
                         [session_id, ip, block.name, json.dumps(args), result],
                     )
 
+                grounding += "".join(
+                    f"\n\n---\n\nResult of tool {b.name}:\n\n{r['content']}"
+                    for b, r in zip(tool_use_blocks, tool_results)
+                )
                 tool_result_msg = {"role": "user", "content": tool_results}
                 api_messages.append(tool_result_msg)
                 _save_message(session_id, ip, tool_result_msg)
