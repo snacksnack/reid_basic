@@ -2,17 +2,24 @@
 import, so an untraced environment (tests, CI, a laptop without DD_API_KEY)
 must go through it without side effects."""
 
+import contextlib
 import os
 
 import observability
 
 
 class FakeLLMObs:
-    def __init__(self):
+    def __init__(self, enabled=False):
+        self.enabled = enabled
         self.enabled_with = None
+        self.annotations = []
 
     def enable(self, **kwargs):
         self.enabled_with = kwargs
+
+    def annotation_context(self, **kwargs):
+        self.annotations.append(kwargs)
+        return contextlib.nullcontext()
 
 
 def test_declines_without_api_key(monkeypatch):
@@ -71,3 +78,36 @@ def test_non_anthropic_integrations_are_defaulted_off(monkeypatch):
     assert "DD_TRACE_ANTHROPIC_ENABLED" not in os.environ
     assert os.environ["DD_TRACE_OPENAI_ENABLED"] == "false"
     assert os.environ["DD_TRACE_GOOGLE_GENAI_ENABLED"] == "true"
+
+
+def test_rag_prompt_is_a_no_op_when_tracing_is_off(monkeypatch):
+    fake = FakeLLMObs(enabled=False)
+    monkeypatch.setattr(observability, "LLMObs", fake)
+    with observability.rag_prompt("q", "c"):
+        pass
+    assert fake.annotations == []
+
+
+def test_rag_prompt_is_a_no_op_without_ddtrace(monkeypatch):
+    monkeypatch.setattr(observability, "LLMObs", None)
+    with observability.rag_prompt("q", "c"):
+        pass
+
+
+def test_rag_prompt_uses_the_hallucination_template_keys(monkeypatch):
+    """RC1-444: Datadog's Hallucination template reads
+    meta.input.prompt.variables.query and .context."""
+    fake = FakeLLMObs(enabled=True)
+    monkeypatch.setattr(observability, "LLMObs", fake)
+    with observability.rag_prompt("Where did Reid work?", "resume chunk"):
+        pass
+    assert fake.annotations == [
+        {
+            "tags": {"rag": "resume"},
+            "prompt": {
+                "variables": {"query": "Where did Reid work?", "context": "resume chunk"},
+                "rag_query_variables": ["query"],
+                "rag_context_variables": ["context"],
+            }
+        }
+    ]

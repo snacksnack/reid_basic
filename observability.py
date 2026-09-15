@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import sys
+from contextlib import AbstractContextManager, nullcontext
 
 try:  # documented optional-dep exception: ddtrace is absent in minimal envs
     from ddtrace.llmobs import LLMObs
@@ -46,6 +47,31 @@ def enable_llm_obs(ml_app: str, *, service: str | None = None) -> bool:
         print(f"llmobs: tracing disabled, enable() failed: {exc}", file=sys.stderr)
         return False
     return True
+
+
+def rag_prompt(query: str, context: str) -> AbstractContextManager:
+    """Attach the visitor's question and the retrieved resume text to every
+    LLM span opened inside the block (RC1-444).
+
+    Datadog's Hallucination judge reads `meta.input.prompt.variables.query`
+    and `.context` and compares `span_output` against them. ddtrace keeps a
+    prompt annotation on LLM spans only and drops it from workflow spans, so
+    the annotation wraps the auto-traced `messages.create` call itself. The
+    rag_* keys are set explicitly because ddtrace defaults the query key to
+    `question`, and the template reads `query`. The `rag:resume` tag is the
+    judge's filter: it keeps un-annotated calls (the /match fit card) from
+    being scored against an empty context. A no-op when tracing is off.
+    """
+    if LLMObs is None or not LLMObs.enabled:
+        return nullcontext()
+    return LLMObs.annotation_context(
+        tags={"rag": "resume"},
+        prompt={
+            "variables": {"query": query, "context": context},
+            "rag_query_variables": ["query"],
+            "rag_context_variables": ["context"],
+        }
+    )
 
 
 def _llm_integration_modules() -> tuple[str, ...]:
