@@ -34,7 +34,11 @@ limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_
 
 # RC1-361: before the Anthropic client exists, so every gunicorn worker traces
 # from its first request. No-op without DD_API_KEY.
-enable_llm_obs("hihelloreid-chat", service="web")
+# RC1-447: the service is the Software Catalog entity's name, which is also
+# what the Heroku Release workflow reports to DORA. It used to be "web" — the
+# Procfile dyno type — so the catalog entry had no telemetry to join, and the
+# site dashboard's one `service:hihelloreid` filter matched nothing.
+enable_llm_obs("hihelloreid-chat", service="hihelloreid")
 
 anthropic_client = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
 openai_client = OpenAI() if os.environ.get("OPENAI_API_KEY") else None
