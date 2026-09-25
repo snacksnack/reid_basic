@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  actions: read   # close_dora_failures.sh lists this workflow's own runs (RC1-465)
 
 jobs:
   deploy:
@@ -91,6 +92,25 @@ jobs:
             esac
           done
 
+      # A succeeded release is still not proof the site serves (RC1-465) — the
+      # same lesson as the Fly boot gate (RC1-355). Unlike a failed release,
+      # which keeps the old dyno, a broken release that reached "succeeded" is
+      # what is serving now, so this failing means production is down. No cold
+      # start here — the dyno is always on — so flapping is a real signal.
+      - name: Gate on the site serving
+        id: serve_gate
+        run: scripts/wait_for_http.sh GET https://www.hihelloreid.com 200
+
+      # A failed serve-gate is a change failure (RC1-465): the release
+      # succeeded but the site does not answer. Keyed to the deployed commit,
+      # which is the workflow_run head_sha, not this run's GITHUB_SHA.
+      - name: Report change failure to Datadog DORA
+        if: failure() && steps.serve_gate.outcome == 'failure'
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: scripts/report_dora_failure.sh hihelloreid "$SHA"
+
       # Same contract as the Fly workflows (RC1-336): the event means the site
       # actually released, commit_sha + repository_url make lead time
       # computable, timestamps are nanoseconds, and a failed POST fails the
@@ -114,3 +134,13 @@ jobs:
             2*) echo "DORA deployment recorded (HTTP $code)";;
             *) echo "::error::DORA deployment POST failed with HTTP $code — this deploy is live but unrecorded"; exit 1;;
           esac
+
+      # Verified before wiring (RC1-465): a workflow_run-triggered run's listed
+      # head_sha equals the deployed workflow_run.head_sha, so the close walk
+      # can key failures off the runs list.
+      - name: Close restored DORA change failures
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: CURRENT_SHA="$SHA" scripts/close_dora_failures.sh hihelloreid heroku-release.yml "Gate on the site serving"
