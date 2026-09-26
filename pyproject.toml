@@ -1,3 +1,10 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+# RC1-468: coverage measures what Heroku runs — the two deployed modules.
+# Module names are valid source entries. Each CI pytest step reports its own
+# session figure: the server suite is the real number; the resume-sync
+# guardrail exercises app only incidentally and reads low by design.
+[tool.coverage.run]
+source = ["app", "observability"]

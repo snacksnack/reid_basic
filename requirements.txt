@@ -9,6 +9,9 @@ psycopg2-binary>=2.9
 python-dotenv>=1.0
 pdfplumber>=0.10
 pytest>=8.0
+# RC1-468: line coverage for the pytest steps; ddtrace reports it as
+# test.code_coverage.lines_pct.
+pytest-cov>=6.0
 # Pinned (RC1-360). 1.5.9 carries five open advisories (CVE-2026-45829/-45830/
 # -45831/-45833) with no fixed release; all are in Chroma's HTTP server (its
 # /api/v2 collection endpoints, tenant checks, SimpleRBACAuthorizationProvider).
