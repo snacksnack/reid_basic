@@ -45,7 +45,9 @@ jobs:
           # vitest needs both: the ESM loader hooks and the CI-mode tracer
           # init. register.js alone installs hooks but never starts reporting.
           NODE_OPTIONS: "--import dd-trace/register.js -r dd-trace/ci/init"
-        run: npm test
+        # RC1-468: --coverage (V8) reports test.code_coverage.lines_pct to
+        # Test Optimization. Signal, not a gate — no threshold fails the step.
+        run: npm test -- --coverage
 
       - name: Server tests
         run: pytest --ddtrace tests/test_server.py tests/test_observability.py -v

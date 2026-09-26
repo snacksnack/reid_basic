@@ -29,3 +29,6 @@ __pycache__
 
 # Local render/preview artifacts
 .render_anthropic_quicklook/
+
+# Coverage output (RC1-468)
+coverage/
