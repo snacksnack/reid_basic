@@ -13,6 +13,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # RC1-452: every suite reports test-level results to Test Optimization,
+    # agentless. One test service per repo. Verified: failing tests still
+    # exit nonzero under both reporters; a missing key logs and runs the
+    # suites untouched.
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_CIVISIBILITY_AGENTLESS_ENABLED: "true"
+      DD_SITE: datadoghq.com
+      DD_SERVICE: reid_basic
+      DD_ENV: ci
+
     steps:
       - uses: actions/checkout@v4
 
@@ -30,10 +41,14 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Frontend tests
+        env:
+          # vitest needs both: the ESM loader hooks and the CI-mode tracer
+          # init. register.js alone installs hooks but never starts reporting.
+          NODE_OPTIONS: "--import dd-trace/register.js -r dd-trace/ci/init"
         run: npm test
 
       - name: Server tests
-        run: pytest tests/test_server.py tests/test_observability.py -v
+        run: pytest --ddtrace tests/test_server.py tests/test_observability.py -v
 
       - name: Resume docx/prompt sync guardrail
-        run: pytest tests/test_resume_sync.py -v
+        run: pytest --ddtrace tests/test_resume_sync.py -v
