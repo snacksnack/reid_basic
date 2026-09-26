@@ -24,5 +24,12 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
+    // RC1-468: line coverage over the app source; CI passes --coverage,
+    // local `npm test` stays uninstrumented. Signal, not a gate — no
+    // thresholds.
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+    },
   },
 })
