@@ -49,8 +49,11 @@ jobs:
         # Test Optimization. Signal, not a gate — no threshold fails the step.
         run: npm test -- --coverage
 
+      # RC1-468: --cov (source = app + observability, pyproject) reports
+      # test.code_coverage.lines_pct per session. Signal, not a gate — no
+      # threshold fails either step.
       - name: Server tests
-        run: pytest --ddtrace tests/test_server.py tests/test_observability.py -v
+        run: pytest --ddtrace tests/test_server.py tests/test_observability.py -v --cov
 
       - name: Resume docx/prompt sync guardrail
-        run: pytest --ddtrace tests/test_resume_sync.py -v
+        run: pytest --ddtrace tests/test_resume_sync.py -v --cov

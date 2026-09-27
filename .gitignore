@@ -32,3 +32,6 @@ __pycache__
 
 # Coverage output (RC1-468)
 coverage/
+.coverage
+.coverage.*
+htmlcov/
