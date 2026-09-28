@@ -309,9 +309,23 @@ _match_instructions_text = _match_instructions_path.read_text()
 # RAG: resume chunking, embedding, and retrieval
 # ---------------------------------------------------------------------------
 
-_resume_collection = None
+# text-embedding-3-small produces 1536-dim vectors; the Pinecone index is
+# created with the same dimension and must match, or upserts are rejected.
+EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_DIMENSIONS = 1536
+PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX", "reid-basic-resume")
+
+_resume_index = None
+_resume_namespace: str = ""
 _resume_chunks_list: list[str] = []
 _resume_hash: str = ""
+
+
+def _embed(texts: list[str]) -> list[list[float]]:
+    """Embed texts with OpenAI directly (RC1-440 dropped the wrapper that used
+    to hide this call inside the vector-DB client)."""
+    response = openai_client.embeddings.create(model=EMBEDDING_MODEL, input=texts)
+    return [item.embedding for item in response.data]
 
 
 def _chunk_resume(text: str) -> list[dict]:
@@ -326,7 +340,7 @@ def _chunk_resume(text: str) -> list[dict]:
     knowing it belongs to Marigold 2021–2026.
 
     Returns a list of dicts with "text" and "metadata" keys.  The metadata
-    is stored in ChromaDB alongside the vector and can be used for filtered
+    is stored in Pinecone alongside the vector and can be used for filtered
     retrieval or debugging (e.g., "show only experience chunks").
     """
     paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
@@ -411,65 +425,102 @@ def _chunk_resume(text: str) -> list[dict]:
 
 def _build_resume_index() -> None:
     """
-    Embed all resume chunks into ChromaDB at application startup.
+    Index the resume chunks in Pinecone at application startup (RC1-440).
 
-    ChromaDB is initialised as an ephemeral (in-memory) client because the
-    deployment environment (Heroku) has an ephemeral filesystem — any data
-    written to disk is lost on dyno restart anyway.  In a production
-    environment with durable storage you would use
-    chromadb.PersistentClient(path=...) or an HTTP client pointed at a hosted
-    vector DB (Pinecone, Weaviate, Qdrant, etc.), and skip re-embedding if the
-    collection already contains the current chunks.
+    Pinecone is a hosted, serverless vector DB, so the index survives dyno
+    restarts — unlike the previous in-process ChromaDB store, which Heroku's
+    ephemeral filesystem forced to re-embed on every boot.  Each resume
+    version gets its own namespace, ``resume-<sha256[:12]>``: when the current
+    version's namespace is already populated, startup skips the embeddings
+    call entirely and just takes a handle; when the resume changes, the new
+    namespace is filled and stale ones are deleted.
 
-    The OpenAIEmbeddingFunction wrapper handles calling the embeddings API
-    transparently: ChromaDB invokes it automatically when documents are added
-    or queried, so we never call the embeddings endpoint directly.
+    Embeddings are computed by calling the OpenAI embeddings API directly
+    (see _embed) — the chunk text rides along as Pinecone metadata so a query
+    returns the text, not just ids.
     """
-    global _resume_collection, _resume_chunks_list, _resume_hash
+    global _resume_index, _resume_namespace, _resume_chunks_list, _resume_hash
 
-    if not openai_client:
+    missing = (
+        "OPENAI_API_KEY"
+        if not openai_client
+        else "PINECONE_API_KEY" if not os.environ.get("PINECONE_API_KEY") else None
+    )
+    if missing:
         # Record the hash even though nothing is indexed, otherwise the
         # watcher sees a mismatch on every tick and re-logs this warning
         # once a minute for the life of the process.  The warning fires
         # again only when the resume text actually changes.
         _resume_hash = hashlib.sha256(_resume_path.read_bytes()).hexdigest()
         logging.warning(
-            "RAG index skipped: OPENAI_API_KEY not set — "
-            "falling back to full resume text in system prompt"
+            "RAG index skipped: %s not set — "
+            "falling back to full resume text in system prompt",
+            missing,
         )
         return
 
     try:
-        import chromadb
-        from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+        from pinecone import Pinecone, ServerlessSpec
 
         resume_bytes = _resume_path.read_bytes()
         chunk_dicts = _chunk_resume(resume_bytes.decode())
-        _resume_chunks_list = [c["text"] for c in chunk_dicts]
+        chunk_texts = [c["text"] for c in chunk_dicts]
+        resume_hash = hashlib.sha256(resume_bytes).hexdigest()
+        namespace = f"resume-{resume_hash[:12]}"
 
-        embedding_fn = OpenAIEmbeddingFunction(
-            api_key=os.environ["OPENAI_API_KEY"],
-            model_name="text-embedding-3-small",
-        )
+        pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+        if not pc.has_index(PINECONE_INDEX_NAME):
+            pc.create_index(
+                PINECONE_INDEX_NAME,
+                dimension=EMBEDDING_DIMENSIONS,
+                # Cosine is standard for text embeddings; OpenAI's vectors are
+                # normalised, so magnitude carries no meaning to preserve.
+                metric="cosine",
+                # us-east-1 on AWS is the one region Pinecone's free tier allows.
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+            )
+        index = pc.Index(PINECONE_INDEX_NAME)
 
-        chroma_client = chromadb.EphemeralClient()
-        _resume_collection = chroma_client.create_collection(
-            name="resume",
-            embedding_function=embedding_fn,
-            # Cosine distance is standard for text embeddings.  The default
-            # ChromaDB distance is L2 (Euclidean), which penalises magnitude
-            # differences that are not meaningful for normalised dense vectors.
-            metadata={"hnsw:space": "cosine"},
-        )
+        stats = index.describe_index_stats()
+        namespaces = dict(stats.namespaces or {})
+        existing = namespaces.get(namespace)
+        if existing is not None and getattr(existing, "vector_count", 0) == len(chunk_dicts):
+            logging.info(
+                "RAG index ready: reusing %d vectors in namespace %s",
+                len(chunk_dicts),
+                namespace,
+            )
+        else:
+            embeddings = _embed(chunk_texts)
+            index.upsert(
+                vectors=[
+                    {
+                        "id": f"chunk_{i}",
+                        "values": embeddings[i],
+                        # The text lives in metadata so retrieval is a single
+                        # query — no side lookup to map ids back to content.
+                        "metadata": {**chunk_dicts[i]["metadata"], "text": chunk_texts[i]},
+                    }
+                    for i in range(len(chunk_dicts))
+                ],
+                namespace=namespace,
+                show_progress=False,
+            )
+            # Namespaces for older resume versions are dead weight; retire
+            # them so the index only ever holds the current resume.
+            for stale in namespaces:
+                if stale != namespace:
+                    index.delete(delete_all=True, namespace=stale)
+            logging.info(
+                "RAG index ready: %d chunks embedded into namespace %s",
+                len(chunk_dicts),
+                namespace,
+            )
 
-        _resume_collection.add(
-            documents=_resume_chunks_list,
-            metadatas=[c["metadata"] for c in chunk_dicts],
-            ids=[f"chunk_{i}" for i in range(len(chunk_dicts))],
-        )
-
-        _resume_hash = hashlib.sha256(resume_bytes).hexdigest()
-        logging.info("RAG index ready: %d chunks indexed", len(chunk_dicts))
+        _resume_index = index
+        _resume_namespace = namespace
+        _resume_chunks_list = chunk_texts
+        _resume_hash = resume_hash
 
     except Exception as e:
         logging.error(
@@ -477,48 +528,58 @@ def _build_resume_index() -> None:
             "falling back to full resume text in system prompt",
             e,
         )
-        _resume_collection = None
+        _resume_index = None
 
 
 def _retrieve_context(query: str, n_results: int = 3) -> str:
     """
     Query the vector index for the top-n most relevant resume chunks.
 
-    ChromaDB embeds the query text using the same OpenAIEmbeddingFunction
-    registered on the collection, computes cosine similarity against all
-    stored chunk vectors via its HNSW index, and returns the closest matches.
+    The query text is embedded with the same OpenAI model as the chunks, and
+    Pinecone returns the nearest stored vectors by cosine similarity — higher
+    score means more similar (the old ChromaDB logs reported *distance*,
+    where lower was better; dashboards reading these lines should use score).
 
-    Falls back to the full resume text if the index is unavailable (no API
-    key in local dev, or if _build_resume_index raised an exception).
+    Falls back to the full resume text if the index is unavailable (missing
+    API key in local dev, or _build_resume_index raised), if the query
+    raises, or if it returns nothing — a fresh upsert is eventually
+    consistent, so the first request after indexing a new resume version can
+    land before the vectors are queryable.
     """
-    if _resume_collection is None:
+    if _resume_index is None:
         return _resume_path.read_text()
 
     try:
         n = min(n_results, len(_resume_chunks_list))
-        results = _resume_collection.query(
-            query_texts=[query],
-            n_results=n,
-            include=["documents", "metadatas", "distances"],
+        results = _resume_index.query(
+            top_k=n,
+            vector=_embed([query])[0],
+            namespace=_resume_namespace,
+            include_metadata=True,
         )
-        # results["documents"] is a list-of-lists — one inner list per
-        # query_text submitted.  We always submit exactly one query.
-        chunks = results["documents"][0]
-        metadatas = results["metadatas"][0]
-        distances = results["distances"][0]
+        matches = list(results.matches or [])
+        if not matches:
+            logging.warning(
+                "RAG query returned no matches (fresh namespace still indexing?) — "
+                "falling back to full resume"
+            )
+            return _resume_path.read_text()
 
-        for i, (meta, dist) in enumerate(zip(metadatas, distances)):
+        chunks: list[str] = []
+        for i, match in enumerate(matches):
+            meta = match.metadata or {}
             logging.info(
-                "RAG retrieved chunk %d/%d — section=%s employer=%s distance=%.4f query=%r",
+                "RAG retrieved chunk %d/%d — section=%s employer=%s score=%.4f query=%r",
                 i + 1,
-                n,
+                len(matches),
                 meta.get("section", "?"),
                 meta.get("employer", "—"),
-                dist,
+                match.score,
                 query[:60],
             )
+            chunks.append(meta.get("text", ""))
 
-        return "\n\n---\n\n".join(chunks)
+        return "\n\n---\n\n".join(c for c in chunks if c)
     except Exception as e:
         logging.error("RAG retrieval error: %s — falling back to full resume", e)
         return _resume_path.read_text()
