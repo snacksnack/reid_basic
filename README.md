@@ -28,8 +28,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Add your API key
+# Add your API keys (Pinecone is optional — without it the chatbot
+# falls back to full-resume context instead of RAG retrieval)
 echo 'OPENAI_API_KEY=sk-your-key-here' > .env
+echo 'PINECONE_API_KEY=pcsk-your-key-here' >> .env
 ```
 
 ### Run locally
@@ -71,6 +73,7 @@ heroku buildpacks:add heroku/python --app hihelloreid
 
 heroku config:set FLASK_ENV=production --app hihelloreid
 heroku config:set OPENAI_API_KEY=sk-your-key --app hihelloreid
+heroku config:set PINECONE_API_KEY=pcsk-your-key --app hihelloreid
 ```
 
 ### Deploy
@@ -85,7 +88,9 @@ git push origin main
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENAI_API_KEY` | Yes | OpenAI API key for the chatbot |
+| `OPENAI_API_KEY` | Yes | OpenAI API key for the chatbot's embeddings |
+| `PINECONE_API_KEY` | For RAG retrieval | Pinecone API key for the resume vector index (RC1-440); without it the chat falls back to full-resume context |
+| `PINECONE_INDEX` | No | Pinecone index name (default `reid-basic-resume`) |
 | `FLASK_ENV` | Production only | Set to `production` on Heroku |
 | `DATABASE_URL` | No | PostgreSQL connection string (auto-set by Heroku Postgres) |
 | `GMAIL_CLIENT_ID` | Email notifications | Google OAuth client ID for Gmail API delivery |

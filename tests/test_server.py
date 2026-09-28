@@ -502,15 +502,107 @@ class TestChunkResume:
 
 class TestRetrieveContext:
     def test_falls_back_to_full_resume_when_index_is_unavailable(self, resume_text):
-        # In the test environment there is no OPENAI_API_KEY, so
-        # _resume_collection is None and _retrieve_context must return the
-        # full resume text rather than raising an exception.
+        # In the test environment there is no OPENAI_API_KEY (or
+        # PINECONE_API_KEY), so _resume_index is None and _retrieve_context
+        # must return the full resume text rather than raising an exception.
         result = _retrieve_context("AWS experience")
         assert result == resume_text
 
     def test_fallback_is_non_empty(self):
         result = _retrieve_context("skills")
         assert result.strip()
+
+
+class _FakeMatch:
+    def __init__(self, text, section, score):
+        self.metadata = {"text": text, "section": section}
+        self.score = score
+
+
+class _FakeQueryResponse:
+    def __init__(self, matches):
+        self.matches = matches
+
+
+class _FakeEmbeddingsClient:
+    """Stands in for the OpenAI client: embeddings.create -> fixed vectors."""
+
+    class _Embeddings:
+        def create(self, model, input):
+            class _Item:
+                embedding = [0.0] * 8
+
+            class _Response:
+                data = [_Item() for _ in input]
+
+            return _Response()
+
+    embeddings = _Embeddings()
+
+
+class TestRetrieveContextWithIndex:
+    """The Pinecone path, offline: a fake index returns canned matches."""
+
+    @pytest.fixture
+    def app_module(self, monkeypatch):
+        import app as app_module
+
+        monkeypatch.setattr(app_module, "openai_client", _FakeEmbeddingsClient())
+        monkeypatch.setattr(app_module, "_resume_namespace", "resume-testhash")
+        monkeypatch.setattr(
+            app_module, "_resume_chunks_list", ["chunk a", "chunk b", "chunk c", "chunk d"]
+        )
+        return app_module
+
+    def test_joins_retrieved_chunk_texts_in_score_order(self, app_module, monkeypatch):
+        class FakeIndex:
+            def query(self, **kwargs):
+                self.kwargs = kwargs
+                return _FakeQueryResponse(
+                    [
+                        _FakeMatch("chunk b", "experience", 0.91),
+                        _FakeMatch("chunk d", "skills", 0.72),
+                    ]
+                )
+
+        fake = FakeIndex()
+        monkeypatch.setattr(app_module, "_resume_index", fake)
+        result = app_module._retrieve_context("AWS experience", n_results=2)
+        assert result == "chunk b\n\n---\n\nchunk d"
+        # The query must stay scoped to the current resume version's
+        # namespace, or a stale version could answer.
+        assert fake.kwargs["namespace"] == "resume-testhash"
+        assert fake.kwargs["top_k"] == 2
+        assert fake.kwargs["include_metadata"] is True
+
+    def test_top_k_is_capped_at_the_chunk_count(self, app_module, monkeypatch):
+        class FakeIndex:
+            def query(self, **kwargs):
+                self.kwargs = kwargs
+                return _FakeQueryResponse([_FakeMatch("chunk a", "summary", 0.5)])
+
+        fake = FakeIndex()
+        monkeypatch.setattr(app_module, "_resume_index", fake)
+        app_module._retrieve_context("everything", n_results=99)
+        assert fake.kwargs["top_k"] == 4
+
+    def test_empty_matches_fall_back_to_full_resume(self, app_module, monkeypatch, resume_text):
+        # A fresh upsert is eventually consistent: a query can land before
+        # the vectors are queryable and legitimately return nothing.
+        class FakeIndex:
+            def query(self, **kwargs):
+                return _FakeQueryResponse([])
+
+        monkeypatch.setattr(app_module, "_resume_index", FakeIndex())
+        assert app_module._retrieve_context("anything") == resume_text
+
+    def test_query_error_falls_back_to_full_resume(self, app_module, monkeypatch, resume_text):
+        class FakeIndex:
+            def query(self, **kwargs):
+                raise RuntimeError("pinecone unavailable")
+
+        monkeypatch.setattr(app_module, "_resume_index", FakeIndex())
+        assert app_module._retrieve_context("anything") == resume_text
 
 
 class TestStaticAsset:
@@ -575,3 +667,29 @@ class TestResumeWatcherWithoutKey:
             resume_copy.write_text("REID COLLINS\n\nSUMMARY\nsecond version\n")
             assert app_module._rebuild_index_if_resume_changed() is True
             assert len(skip_warnings()) == 2
+
+    def test_missing_pinecone_key_also_skips_with_a_named_warning(
+        self, monkeypatch, caplog, tmp_path
+    ):
+        # RC1-440: the index now needs both keys. With OpenAI configured but
+        # Pinecone missing, the build must skip (never raise) and the warning
+        # must name the key that is actually absent.
+        import logging
+
+        import app as app_module
+
+        resume_copy = tmp_path / "resume-prompt.txt"
+        resume_copy.write_text("REID COLLINS\n\nSUMMARY\nonly version\n")
+        monkeypatch.setattr(app_module, "openai_client", _FakeEmbeddingsClient())
+        monkeypatch.setattr(app_module, "_resume_path", resume_copy)
+        monkeypatch.setattr(app_module, "_resume_hash", "")
+        monkeypatch.setattr(app_module, "_resume_index", None)
+        monkeypatch.delenv("PINECONE_API_KEY", raising=False)
+
+        with caplog.at_level(logging.WARNING):
+            app_module._build_resume_index()
+
+        assert app_module._resume_index is None
+        skips = [r for r in caplog.records if "RAG index skipped" in r.getMessage()]
+        assert len(skips) == 1
+        assert "PINECONE_API_KEY" in skips[0].getMessage()

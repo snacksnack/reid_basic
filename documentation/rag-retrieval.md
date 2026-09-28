@@ -2,7 +2,7 @@
 
 ## Overview
 
-The chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about Reid's background. Instead of loading the full resume text into the system prompt on every request, the application embeds the resume into a vector database at startup and retrieves only the most relevant sections for each incoming message. The retrieved text is then injected into the system prompt dynamically, giving the model focused, query-relevant context.
+The chatbot uses **Retrieval-Augmented Generation (RAG)** to answer questions about Reid's background. Instead of loading the full resume text into the system prompt on every request, the application embeds the resume into a hosted vector database (Pinecone) and retrieves only the most relevant sections for each incoming message. The retrieved text is then injected into the system prompt dynamically, giving the model focused, query-relevant context.
 
 This is a deliberate learning exercise — the resume is small enough that full-context injection would work fine. The value here is operational familiarity with the RAG pattern, which is standard practice when working with large corpora (documentation sets, knowledge bases, codebases) where you cannot fit everything into a single prompt.
 
@@ -29,7 +29,7 @@ User message
 Embed query (text-embedding-3-small)
     │
     ▼
-Cosine similarity search (ChromaDB HNSW index)
+Cosine similarity search (Pinecone serverless index)
     │
     ▼
 Top-k most relevant resume chunks
@@ -44,7 +44,7 @@ Anthropic chat completion (Claude Haiku 4.5)
 Response to user
 ```
 
-At startup, the resume is chunked and each chunk is embedded and stored in ChromaDB. At request time, the user's message is embedded and compared against all stored vectors. The closest matches are pulled and placed into the system prompt under a `Relevant resume context` heading.
+At startup, the resume is chunked and — unless the current resume version is already indexed — each chunk is embedded and upserted into Pinecone. At request time, the user's message is embedded and compared against the stored vectors. The closest matches are pulled and placed into the system prompt under a `Relevant resume context` heading.
 
 ---
 
@@ -97,7 +97,7 @@ Education and certifications are merged into a single chunk. Each section is onl
 
 ### Metadata
 
-Each chunk is stored with structured metadata (section, employer, subsection where applicable). ChromaDB stores this alongside the vector and it can be used for **filtered retrieval** — for example, a future feature could restrict queries to `section == "experience"` only. For this implementation it primarily serves debugging: you can inspect ChromaDB's stored documents and see which section each chunk came from.
+Each chunk is stored with structured metadata (section, employer, subsection where applicable, plus the chunk text itself). Pinecone stores this alongside the vector and it can be used for **filtered retrieval** — for example, a future feature could restrict queries to `section == "experience"` only. For this implementation the `text` field is load-bearing (a query returns the chunk content directly, with no side lookup) and the rest primarily serves debugging: you can inspect the stored records and see which section each chunk came from.
 
 ---
 
@@ -115,47 +115,36 @@ An embedding model converts text into a dense numerical vector — a list of flo
 
 ### When embeddings are generated
 
-Embeddings are generated **once at startup** inside `_build_resume_index()`. ChromaDB's `OpenAIEmbeddingFunction` wrapper handles the API call transparently — you register it on the collection, and ChromaDB calls it automatically when documents are added (`collection.add(...)`) or queried (`collection.query(...)`). You never call the embeddings endpoint directly.
+Chunk embeddings are generated **once per resume version** inside `_build_resume_index()` (RC1-440). The application calls the OpenAI embeddings endpoint directly (`_embed()`, one batched request for all chunks) — the wrapper that used to hide this call inside the vector-DB client is gone. Because the Pinecone index is persistent, a restart that finds the current resume version already indexed skips the embeddings call entirely; see the namespace design below.
 
-At query time, the user's message is embedded by the same function before the similarity search runs.
+At query time, the user's message is embedded by the same `_embed()` helper before the similarity search runs — one embeddings call per chat request.
 
 ---
 
-## Step 3: Vector Database (ChromaDB)
+## Step 3: Vector Database (Pinecone)
 
 **File:** `app.py → _build_resume_index()`
 
-ChromaDB is an open-source vector database. It stores embedding vectors alongside the original document text and metadata, and provides fast approximate nearest-neighbor search using an **HNSW index** (Hierarchical Navigable Small World — a graph-based structure optimised for high-dimensional similarity search).
+Pinecone is a managed, serverless vector database (RC1-440 — it replaced an in-process ChromaDB store; see the security-advisories section for why). Vectors are stored with their metadata — including the chunk text — in a hosted index, and queried over HTTPS by cosine similarity. There is no vector-DB code in this application's dependency tree beyond the thin `pinecone` client.
 
-### Client mode: ephemeral (in-memory)
+### Index and namespace design
 
 ```python
-chroma_client = chromadb.EphemeralClient()
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+pc.create_index(PINECONE_INDEX_NAME, dimension=1536, metric="cosine",
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"))
+index = pc.Index(PINECONE_INDEX_NAME)
 ```
 
-The application uses `EphemeralClient`, which keeps all data in memory. There is no disk I/O and the index is rebuilt from scratch on every startup.
+One serverless index (`reid-basic-resume`, overridable via `PINECONE_INDEX`) holds the corpus, on AWS `us-east-1` — the one region Pinecone's free Starter tier allows. The index is created on first boot if missing.
 
-**Why in-memory here:** The deployment target is Heroku, which has an ephemeral filesystem — any file written to disk is wiped on dyno restart. Persisting the ChromaDB index to disk would provide no benefit because it would be gone on the next restart anyway.
+**Each resume version gets its own namespace**, named `resume-<sha256[:12]>` of the resume file. This is the cache-invalidation strategy the previous in-memory implementation could only describe: at startup, if the current version's namespace already holds the expected vector count, the embeddings step is skipped entirely and startup takes a handle; if the resume changed, the new namespace is populated and stale namespaces are deleted. On Heroku — where the old in-memory store was wiped on every dyno restart — this means a deploy that doesn't touch the resume re-embeds nothing.
 
-**What production would use instead:**
-
-| Option | When to use |
-|--------|-------------|
-| `chromadb.PersistentClient(path=...)` | Single-server deployment with a durable volume (e.g., AWS EBS, Docker volume) |
-| `chromadb.HttpClient(host=..., port=...)` | Dedicated ChromaDB server (self-hosted or ChromaDB Cloud) |
-| Pinecone / Weaviate / Qdrant | Managed, hosted vector DB — no infrastructure to run, scales independently of the app server |
-
-For a production system where re-embedding on every startup is expensive (large corpus, expensive model), you would use a persistent or hosted vector DB and implement a **cache invalidation strategy**: store a hash of the source documents alongside the index, and skip re-embedding on startup if the hash matches. This application implements hash-based change detection in the background watcher — see `documentation/automatic-reindexing.md`.
+**Consistency caveat:** Pinecone upserts are eventually consistent. Immediately after indexing a *new* resume version, a query can return zero matches for a short window; `_retrieve_context` treats that as a fallback case (full resume text), so the feature degrades rather than breaks.
 
 ### Distance metric: cosine similarity
 
-```python
-metadata={"hnsw:space": "cosine"}
-```
-
-ChromaDB defaults to **L2 (Euclidean) distance**. For text embeddings, **cosine similarity** is the correct choice.
-
-Cosine similarity measures the angle between two vectors, ignoring their magnitude. L2 measures the straight-line distance between two points, which is sensitive to vector length. OpenAI's embedding vectors are **normalised** (their magnitude is fixed at 1), which means cosine and L2 produce identical rankings for normalised vectors — but explicitly specifying cosine is the correct and conventional thing to do. It signals intent clearly and remains correct if you ever switch to a model that does not normalise its output.
+The index is created with `metric="cosine"`. Cosine similarity measures the angle between two vectors, ignoring magnitude. OpenAI's embedding vectors are **normalised** (magnitude fixed at 1), which makes cosine and dot-product rankings identical for them — but declaring cosine states intent and remains correct if the embedding model ever changes to one that does not normalise. Note the sign convention changed with the migration: Pinecone reports a **similarity score (higher = more similar)** where ChromaDB reported a distance (lower = better); the retrieval logs say `score=` accordingly.
 
 ---
 
@@ -163,16 +152,18 @@ Cosine similarity measures the angle between two vectors, ignoring their magnitu
 
 **File:** `app.py → _retrieve_context()`
 
-On each request, the user's message is submitted as a query:
+On each request, the user's message is embedded and submitted as a query:
 
 ```python
-results = _resume_collection.query(
-    query_texts=[query],
-    n_results=n,
+results = _resume_index.query(
+    top_k=n,
+    vector=_embed([query])[0],
+    namespace=_resume_namespace,
+    include_metadata=True,
 )
 ```
 
-ChromaDB embeds the query using the registered `OpenAIEmbeddingFunction`, runs cosine similarity against all stored chunk vectors via the HNSW index, and returns the `n` closest matches.
+Pinecone runs cosine similarity against the stored chunk vectors in the current resume version's namespace and returns the `n` closest matches; each match carries the chunk text in its metadata, so no second lookup is needed.
 
 ### Why top-3 for normal queries
 
@@ -238,11 +229,11 @@ After the first turn the instruction simply does not exist — there is nothing 
 
 ## Fallback Behavior
 
-The RAG pipeline has two failure modes, both handled gracefully:
+The RAG pipeline's failure modes are all handled gracefully:
 
-**Index build failure** (`_build_resume_index`): If the index cannot be built at startup (no API key, OpenAI outage, ChromaDB import error), `_resume_collection` is left as `None` and a warning is logged. The app continues to start normally.
+**Index build failure** (`_build_resume_index`): If the index cannot be built at startup (missing `OPENAI_API_KEY` or `PINECONE_API_KEY` — the skip warning names which — or an OpenAI/Pinecone outage), `_resume_index` is left as `None` and a warning is logged. The app continues to start normally.
 
-**Retrieval failure** (`_retrieve_context`): If `_resume_collection` is `None` — or if an individual query raises an exception — the function returns the full resume text as a string. This is the same content that was previously hardcoded in the system prompt, so the chatbot continues to answer correctly; it just uses more tokens per request.
+**Retrieval failure** (`_retrieve_context`): If `_resume_index` is `None`, if an individual query raises, or if a query returns zero matches (the eventual-consistency window right after a new resume version is indexed), the function returns the full resume text as a string. This is the same content that was previously hardcoded in the system prompt, so the chatbot continues to answer correctly; it just uses more tokens per request.
 
 The result: RAG is a progressive enhancement. Its absence degrades performance (cost, token usage) but never breaks the user-facing feature.
 
@@ -250,12 +241,7 @@ The result: RAG is a progressive enhancement. Its absence degrades performance (
 
 ## Startup Cost
 
-Re-embedding 11 chunks on every dyno start costs approximately:
-- **API calls:** 11 requests to `text-embedding-3-small`
-- **Token cost:** ~500 tokens total at $0.00002/1K tokens ≈ $0.00001 per startup
-- **Latency:** ~1–2 seconds (parallel requests are batched by ChromaDB internally)
-
-This is negligible. For a corpus of thousands of chunks, startup cost would matter and you would use a persistent vector DB with a freshness check to avoid re-embedding on every restart.
+With the namespace-per-version design, the common dyno restart (resume unchanged) makes **zero embeddings calls** — startup checks the namespace's vector count and takes a handle. Indexing a *new* resume version costs one batched `text-embedding-3-small` request (~500 tokens ≈ $0.00001) plus one Pinecone upsert. Pinecone usage sits deep inside the free Starter tier: ~10 vectors stored, one read unit per chat request.
 
 ---
 
@@ -265,15 +251,15 @@ This implementation is deliberately simplified. Here is what would change at pro
 
 | Concern | This implementation | Production approach |
 |---------|--------------------|--------------------|
-| Vector DB persistence | In-memory, rebuilt on restart | PersistentClient or hosted vector DB |
-| Re-embedding on startup | Always (cheap at 11 chunks) | Skip if chunk hash matches stored hash |
+| Vector DB persistence | Hosted (Pinecone serverless, free tier) | Same pattern; paid tier for scale/SLA |
+| Re-embedding on startup | Skipped via hash-named namespace | Same pattern |
 | Query strategy | Raw user message | Query rewriting or HyDE for large corpora |
 | Retrieval precision | Top-k semantic only | Hybrid search (BM25 + semantic) + reranker |
 | Observability | Logs only | Log retrieval scores, chunk IDs, latency per request |
 | Index updates | Background watcher re-indexes on file change (60s poll) | Same pattern; swap polling for filesystem event or webhook trigger |
 | Embedding model | text-embedding-3-small | Evaluate on retrieval benchmarks before choosing |
 
-**Hybrid search** (combining keyword BM25 with semantic vector search) is the most common production upgrade from pure semantic RAG. It handles cases where the user query contains specific terms (names, acronyms, version numbers) that semantic similarity handles poorly but exact keyword matching handles well. ChromaDB does not natively support hybrid search; systems like Weaviate, Elasticsearch, or Qdrant do.
+**Hybrid search** (combining keyword BM25 with semantic vector search) is the most common production upgrade from pure semantic RAG. It handles cases where the user query contains specific terms (names, acronyms, version numbers) that semantic similarity handles poorly but exact keyword matching handles well. Pinecone supports this natively via sparse-dense vectors; this app has no need for it at 10 chunks.
 
 **Reranking** adds a second-pass relevance model (e.g., a cross-encoder) that rescores the top-k candidates from the vector search before returning them to the LLM. This is typically used when k is large (top-50 from vector search, reranked to top-5 for the prompt).
 
@@ -289,16 +275,16 @@ Every chat request logs one line per retrieved chunk to stdout. In production, s
 heroku logs --tail --app hihelloreid
 ```
 
-Each line shows chunk number, section, employer, cosine distance, and the query. Lower distance means more similar. Example:
+Each line shows chunk number, section, employer, cosine similarity score, and the query. Higher score means more similar (the pre-RC1-440 lines logged ChromaDB distances, where lower was better). Example:
 
 ```
-RAG retrieved chunk 1/4 — section=experience employer=Zeta Global (acquired Marigold, November 2025) distance=0.2341 query='AWS experience'
-RAG retrieved chunk 2/4 — section=skills employer=— distance=0.2891 query='AWS experience'
+RAG retrieved chunk 1/4 — section=experience employer=Zeta Global (acquired Marigold, November 2025) score=0.7659 query='AWS experience'
+RAG retrieved chunk 2/4 — section=skills employer=— score=0.7109 query='AWS experience'
 ```
 
 ### Local index explorer
 
-`scripts/explore_rag.py` builds the index locally and lets you inspect chunks and query results interactively. Requires `OPENAI_API_KEY` in `.env`.
+`scripts/explore_rag.py` connects to the index and lets you inspect chunks and query results interactively. Requires `OPENAI_API_KEY` and `PINECONE_API_KEY` in `.env`.
 
 ```bash
 # List all chunks and their metadata
@@ -345,3 +331,10 @@ vulnerable code is the server the app does not run. Removing the dependency
 altogether (a numpy cosine store over the same OpenAI embeddings, ~30 chunks)
 is tracked as RC1-440; until then, re-check PyPI before any bump and re-dismiss
 if Chroma ships a new server-only advisory.
+
+**Resolution (RC1-440, 2026-09-27).** chromadb is out of the dependency tree
+entirely: the vector store moved to Pinecone serverless (hosted, thin client),
+so the four dismissed alerts can never resurface on a version bump and the
+"vulnerable code present but unreachable" argument no longer needs making. The
+sections above are kept as the record of why the dependency was pinned and how
+the alerts were dispositioned while it shipped.

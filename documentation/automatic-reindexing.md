@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RAG pipeline embeds the resume into ChromaDB at startup. Without automatic re-indexing, updating `resume-prompt.txt` requires restarting the server for the change to take effect — fine in production (a Heroku deploy triggers a dyno restart automatically), but disruptive during local development.
+The RAG pipeline indexes the resume in Pinecone at startup (embedding it only when the resume version isn't already indexed — RC1-440). Without automatic re-indexing, updating `resume-prompt.txt` requires restarting the server for the change to take effect — fine in production (a Heroku deploy triggers a dyno restart automatically), but disruptive during local development.
 
 This feature adds a background thread that watches `resume-prompt.txt` for changes using a **hash-based cache invalidation** pattern. If the file content changes, the index is rebuilt automatically within 60 seconds. No restart required.
 
@@ -48,7 +48,7 @@ App startup
     │
     ├── _build_resume_index()
     │       • Read resume-prompt.txt bytes
-    │       • Chunk, embed, load into ChromaDB
+    │       • Chunk, embed if needed, upsert into Pinecone
     │       • Store SHA-256 hash of file bytes as _resume_hash
     │
     └── _watch_resume() thread starts (daemon=True)
@@ -100,7 +100,7 @@ resume_bytes = _resume_path.read_bytes()
 chunk_dicts = _chunk_resume(resume_bytes.decode())
 ```
 
-After the collection is successfully populated:
+After the index is successfully populated:
 
 ```python
 _resume_hash = hashlib.sha256(resume_bytes).hexdigest()
@@ -159,4 +159,4 @@ In production, the watcher is a no-op — it runs harmlessly every 60 seconds, c
 
 **Why not check on every request?** Hashing the file on every chat request would add a file read and a SHA-256 computation to the hot path. 60-second polling keeps the watcher entirely off the request path.
 
-**Thread safety.** `_build_resume_index()` writes to `_resume_collection`, `_resume_chunks_list`, and `_resume_hash` — three module-level globals. In CPython, the GIL prevents data races at the bytecode level, but an in-flight request that calls `_retrieve_context()` could theoretically see `_resume_collection` pointing to the old collection while `_resume_chunks_list` has already been updated. At the scale of this application (a personal resume site), this is an acceptable transient inconsistency — the worst case is one request that returns slightly mismatched results during the rebuild window. A production system handling concurrent traffic would use a lock or an atomic swap pattern.
+**Thread safety.** `_build_resume_index()` writes to `_resume_index`, `_resume_namespace`, `_resume_chunks_list`, and `_resume_hash` — four module-level globals. In CPython, the GIL prevents data races at the bytecode level, but an in-flight request that calls `_retrieve_context()` could theoretically see `_resume_namespace` pointing to the old version while `_resume_chunks_list` has already been updated. At the scale of this application (a personal resume site), this is an acceptable transient inconsistency — the worst case is one request that returns slightly mismatched results during the rebuild window. A production system handling concurrent traffic would use a lock or an atomic swap pattern.

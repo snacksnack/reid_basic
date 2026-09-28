@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Interactive ChromaDB index explorer.
+Interactive Pinecone index explorer.
 
-Builds the resume index locally (requires OPENAI_API_KEY in .env) and lets
-you query it to inspect which chunks are retrieved and how closely they match.
+Connects to the resume index (requires OPENAI_API_KEY and PINECONE_API_KEY
+in .env) and lets you query it to inspect which chunks are retrieved and how
+closely they match.
 
 Usage:
     python scripts/explore_rag.py
@@ -22,18 +23,20 @@ sys.path.insert(0, str(BASE_DIR))
 from dotenv import load_dotenv
 load_dotenv(BASE_DIR / ".env")
 
-if not os.environ.get("OPENAI_API_KEY"):
-    print("Error: OPENAI_API_KEY not set in .env")
-    sys.exit(1)
+for required in ("OPENAI_API_KEY", "PINECONE_API_KEY"):
+    if not os.environ.get(required):
+        print(f"Error: {required} not set in .env")
+        sys.exit(1)
 
-# Import after env is loaded so the module initialises correctly.
-from app import _chunk_resume, _resume_path, _resume_chunks_list, _resume_collection
+# Import after env is loaded so the module initialises correctly. The module
+# is imported whole (not from-imported) so the index handle is read live.
+import app
 
 
 def list_chunks():
     """Print all chunks with their metadata."""
-    resume_text = _resume_path.read_text()
-    chunks = _chunk_resume(resume_text)
+    resume_text = app._resume_path.read_text()
+    chunks = app._chunk_resume(resume_text)
     print(f"\n{len(chunks)} chunks in index:\n")
     for i, chunk in enumerate(chunks):
         meta = chunk["metadata"]
@@ -52,26 +55,27 @@ def list_chunks():
 
 
 def query_index(query: str, n_results: int = 4):
-    """Query the live index and show retrieved chunks with distances."""
-    if _resume_collection is None:
-        print("Index not available — check that OPENAI_API_KEY is set and the index built successfully.")
+    """Query the live index and show retrieved chunks with scores."""
+    if app._resume_index is None:
+        print(
+            "Index not available — check that OPENAI_API_KEY and "
+            "PINECONE_API_KEY are set and the index built successfully."
+        )
         sys.exit(1)
 
-    n = min(n_results, len(_resume_chunks_list))
-    results = _resume_collection.query(
-        query_texts=[query],
-        n_results=n,
-        include=["documents", "metadatas", "distances"],
+    n = min(n_results, len(app._resume_chunks_list))
+    results = app._resume_index.query(
+        top_k=n,
+        vector=app._embed([query])[0],
+        namespace=app._resume_namespace,
+        include_metadata=True,
     )
 
-    chunks = results["documents"][0]
-    metadatas = results["metadatas"][0]
-    distances = results["distances"][0]
-
     print(f"\nQuery: {query!r}")
-    print(f"Top {n} results (cosine distance — lower = more similar):\n")
+    print(f"Top {n} results (cosine similarity — higher = more similar):\n")
 
-    for i, (doc, meta, dist) in enumerate(zip(chunks, metadatas, distances)):
+    for i, match in enumerate(results.matches or []):
+        meta = match.metadata or {}
         section = meta.get("section", "?")
         employer = meta.get("employer", "")
         subsection = meta.get("subsection", "")
@@ -80,8 +84,8 @@ def query_index(query: str, n_results: int = 4):
             label += f" / {employer}"
         if subsection:
             label += f" / {subsection}"
-        print(f"  [{i+1}] distance={dist:.4f}  [{label}]")
-        for line in doc.splitlines():
+        print(f"  [{i+1}] score={match.score:.4f}  [{label}]")
+        for line in meta.get("text", "").splitlines():
             print(f"      {line}")
         print()
 
