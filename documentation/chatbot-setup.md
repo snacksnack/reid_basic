@@ -117,16 +117,19 @@ Or push to `main` on GitHub — CI runs, and Heroku auto-deploys if tests pass.
 
 ### Model
 
-The chatbot uses Anthropic's **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — fast and affordable. To change the model, edit `app.py`:
-
-```python
-response = anthropic_client.messages.create(
-    model="claude-haiku-4-5-20251001",  # change to "claude-sonnet-4-5-20250929" for higher quality
-    ...
-)
-```
+The chatbot uses Anthropic's **Claude Haiku 4.5** (`claude-haiku-4-5-20251001`) — fast and affordable. The model is set by the `ANTHROPIC_CHAT_MODEL` env var (`CHAT_MODEL` in `app.py`), shared by the conversational path and the `/match` fit card so the two never diverge.
 
 See [anthropic-migration.md](anthropic-migration.md) for full details on the provider switch.
+
+### Generation-seat swap arm (RC1-475, experiment, default off)
+
+`CHAT_PROVIDER=cohere` (plus `COHERE_API_KEY` at boot) routes the conversational path through Cohere's `command-a-plus-05-2026` (`COHERE_CHAT_MODEL` env var) with the same system prompt and retrieved context. Deliberate limits:
+
+- Default is Claude; if the Cohere client is missing, the provider silently stays Claude — the swap arm is never the only way to answer.
+- The Command arm has **no tool loop** (scheduling/contact tools speak the Anthropic tool protocol); prior tool-using turns are flattened to their text parts.
+- `/match` stays on Claude regardless — the forced-tool fit card is Anthropic-protocol.
+- A Cohere API failure surfaces as the same 500 an Anthropic failure does.
+- Each Command call posts a manual LLM Obs span (`cohere.chat`, provider/model identify the arm); `scripts/eval_generation.py` runs the golden set through both arms and reports latency/tokens/cost.
 
 ### Conversation limits
 

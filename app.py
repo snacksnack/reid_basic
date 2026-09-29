@@ -15,7 +15,13 @@ from flask import Flask, Response, request, jsonify, send_file, send_from_direct
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from observability import enable_llm_obs, rag_prompt, retrieval_span
+from observability import (
+    annotate_llm_io,
+    cohere_llm_span,
+    enable_llm_obs,
+    rag_prompt,
+    retrieval_span,
+)
 from openai import OpenAI
 from scripts.emailer import send_notification_email
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -819,6 +825,92 @@ MATCH_MAX_TOKENS = 1200
 # two never silently diverge. Overridable via env for easy upgrades.
 CHAT_MODEL = os.environ.get("ANTHROPIC_CHAT_MODEL", "claude-haiku-4-5-20251001")
 
+# RC1-475: the generation-seat swap arm. CHAT_PROVIDER=cohere routes the
+# conversational path through Command; default (and any failure to have a
+# Cohere client at boot) stays Claude, so the swap arm is never the only way
+# to answer. Env-only pending RC1-476; the env var stays as the kill switch
+# either way. /match stays on Claude regardless — its forced-tool fit card is
+# Anthropic-protocol (follow-up if the chat swap proves out).
+COHERE_CHAT_MODEL = os.environ.get("COHERE_CHAT_MODEL", "command-a-plus-05-2026")
+
+
+def _chat_provider() -> str:
+    if os.environ.get("CHAT_PROVIDER", "").lower() == "cohere" and cohere_client:
+        return "cohere"
+    return "claude"
+
+
+def _chat_system_content(context: str, *, is_match: bool = False) -> str:
+    """The chat system prompt: instructions (+ match rules or the project
+    catalog) + the retrieved context. Extracted from chat() so the
+    generation-seat eval (scripts/eval_generation.py, RC1-475) conditions
+    both arms with byte-identical prompts.
+    """
+    instructions = _instructions_text
+    if is_match:
+        instructions = f"{instructions}\n\n{_match_instructions_text}"
+    elif _project_catalog_text:
+        # Enumeration questions ("what other projects?") can't be answered
+        # from top-k retrieval; the full roster rides along every chat turn
+        # (RC1-479). /match is excluded — it judges the resume.
+        instructions = (
+            f"{instructions}\n\n"
+            f"Full catalog of Reid's projects (the retrieved context below "
+            f"adds depth on any of them):\n{_project_catalog_text}"
+        )
+    return (
+        f"{instructions}\n\n"
+        f"---\n\n"
+        f"Relevant context about Reid, retrieved for this query "
+        f"(resume and/or project write-ups):\n\n{context}"
+    )
+
+
+def _cohere_chat_reply(system_content: str, api_messages: list) -> str | None:
+    """One Command call for the conversational path (RC1-475).
+
+    No tool loop: the scheduling/contact tools speak the Anthropic tool
+    protocol, so the experiment arm answers from context only. History
+    entries holding tool blocks (from earlier Claude turns in the same
+    session) are flattened to their text parts; pure tool plumbing messages
+    are dropped.
+    """
+    messages: list[dict] = [{"role": "system", "content": system_content}]
+    for m in api_messages:
+        content = m.get("content")
+        if isinstance(content, str):
+            messages.append({"role": m["role"], "content": content})
+            continue
+        texts = [
+            b.get("text", "")
+            for b in content
+            if isinstance(b, dict) and b.get("type") == "text"
+        ]
+        if any(texts):
+            messages.append({"role": m["role"], "content": " ".join(texts)})
+
+    with cohere_llm_span(COHERE_CHAT_MODEL):
+        response = cohere_client.chat(
+            model=COHERE_CHAT_MODEL,
+            messages=messages,
+            max_tokens=500,
+            temperature=0.7,
+        )
+        items = getattr(response.message, "content", None) or []
+        reply = " ".join(
+            item.text for item in items if getattr(item, "text", None)
+        ) or None
+        usage = getattr(getattr(response, "usage", None), "billed_units", None)
+        annotate_llm_io(
+            input_data=messages,
+            output_data=[{"role": "assistant", "content": reply or ""}],
+            metrics={
+                "input_tokens": getattr(usage, "input_tokens", 0) or 0,
+                "output_tokens": getattr(usage, "output_tokens", 0) or 0,
+            },
+        )
+    return reply
+
 # ---------------------------------------------------------------------------
 # Tool definitions
 # ---------------------------------------------------------------------------
@@ -1133,24 +1225,7 @@ def chat():
             source="resume" if is_match else None,
         )
 
-        instructions = _instructions_text
-        if is_match:
-            instructions = f"{instructions}\n\n{_match_instructions_text}"
-        elif _project_catalog_text:
-            # Enumeration questions ("what other projects?") can't be answered
-            # from top-k retrieval; the full roster rides along every chat turn
-            # (RC1-479). /match is excluded — it judges the resume.
-            instructions = (
-                f"{instructions}\n\n"
-                f"Full catalog of Reid's projects (the retrieved context below "
-                f"adds depth on any of them):\n{_project_catalog_text}"
-            )
-        system_content = (
-            f"{instructions}\n\n"
-            f"---\n\n"
-            f"Relevant context about Reid, retrieved for this query "
-            f"(resume and/or project write-ups):\n\n{context}"
-        )
+        system_content = _chat_system_content(context, is_match=is_match)
 
         # Role-fit matcher: a single forced-tool call so the model returns
         # structured, schema-validated fields the frontend renders as a fit card,
@@ -1244,10 +1319,23 @@ def chat():
             else context
         )
         reply = None
+
+        # RC1-475: the generation-seat swap arm. Same system prompt, same
+        # retrieved context, different model; a Cohere API failure falls
+        # through to the outer handler — the same 500 an Anthropic failure
+        # produces today.
+        if _chat_provider() == "cohere":
+            with rag_prompt(raw_query, grounding):
+                reply = _cohere_chat_reply(system_content, api_messages)
+            if not reply:
+                reply = "Sorry, I couldn't generate a response."
+            _save_message(session_id, ip, {"role": "assistant", "content": reply})
+            return jsonify({"reply": reply})
+
         for _ in range(MAX_TOOL_ROUNDS):
             with rag_prompt(raw_query, grounding):
                 response = anthropic_client.messages.create(
-                    model="claude-haiku-4-5-20251001",
+                    model=CHAT_MODEL,
                     system=system_content,
                     messages=api_messages,
                     tools=TOOLS,

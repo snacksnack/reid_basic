@@ -14,9 +14,11 @@ import os
 # set, and "" is falsy for the `os.environ.get(...)` gates in app.py.
 for _key in ("OPENAI_API_KEY", "PINECONE_API_KEY", "COHERE_API_KEY"):
     os.environ[_key] = ""
-# RC1-473: the rerank flag defaults off; blank it too so a developer shell
-# that has it exported cannot leak the Cohere path into the unit suite.
+# RC1-473/475: the Cohere flags default off; blank them too so a developer
+# shell that has them exported cannot leak the Cohere paths into the unit
+# suite.
 os.environ["COHERE_RERANK_ENABLED"] = ""
+os.environ["CHAT_PROVIDER"] = ""
 
 import pytest
 
