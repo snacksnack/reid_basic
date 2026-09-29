@@ -261,7 +261,15 @@ class TestChatHallucinationContext:
         assert prompt["variables"]["query"] == "Where did Reid work before Marigold?"
         context = prompt["variables"]["context"]
         assert context
-        assert context in fake.messages.calls[0]["system"]
+        # RC1-480: the grounding is the catalog plus the retrieved context —
+        # the judge must see the same evidence the model saw. Both halves
+        # appear in the system prompt (the catalog under its own label, the
+        # retrieved text under the context heading).
+        catalog_part, retrieved_part = context.split("\n\n---\n\n", 1)
+        assert catalog_part.startswith("Project: Reid Collins's project portfolio")
+        system = fake.messages.calls[0]["system"]
+        assert catalog_part in system
+        assert retrieved_part in system
         assert prompt["rag_context_variables"] == ["context"]
         assert prompt["rag_query_variables"] == ["query"]
 

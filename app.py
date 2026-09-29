@@ -1177,7 +1177,15 @@ def chat():
         # RC1-444: the hallucination judge checks each answer against this
         # grounding text. Tool results join it as they arrive, so an answer
         # quoting calendar slots isn't judged unsupported by the resume.
-        grounding = context
+        # RC1-480: the catalog joins it for the same reason — it rides in the
+        # system prompt, so the judge must see it too, or every enumeration
+        # answer ("all nine projects...") is judged unsupported by the six
+        # retrieved chunks and pages a false-positive P2.
+        grounding = (
+            f"{_project_catalog_text}\n\n---\n\n{context}"
+            if _project_catalog_text
+            else context
+        )
         reply = None
         for _ in range(MAX_TOOL_ROUNDS):
             with rag_prompt(raw_query, grounding):
