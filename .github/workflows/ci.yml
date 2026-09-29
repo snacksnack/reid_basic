@@ -53,7 +53,7 @@ jobs:
       # test.code_coverage.lines_pct per session. Signal, not a gate — no
       # threshold fails either step.
       - name: Server tests
-        run: pytest --ddtrace tests/test_server.py tests/test_observability.py -v --cov
+        run: pytest --ddtrace tests/test_server.py tests/test_observability.py tests/test_eval_retrieval.py -v --cov
 
       - name: Resume docx/prompt sync guardrail
         run: pytest --ddtrace tests/test_resume_sync.py -v --cov

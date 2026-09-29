@@ -832,3 +832,143 @@ class TestResumeWatcherWithoutKey:
         skips = [r for r in caplog.records if "RAG index skipped" in r.getMessage()]
         assert len(skips) == 1
         assert "PINECONE_API_KEY" in skips[0].getMessage()
+
+
+class _FakeRerankClient:
+    """Stands in for cohere.ClientV2: rerank -> a canned index order."""
+
+    def __init__(self, order=None, scores=None, error=None):
+        self.order = order or []
+        self.scores = scores or {}
+        self.error = error
+        self.calls = []
+
+    def rerank(self, *, model, query, documents, top_n):
+        self.calls.append(
+            {"model": model, "query": query, "documents": documents, "top_n": top_n}
+        )
+        if self.error:
+            raise self.error
+
+        class _Result:
+            def __init__(self, index, relevance_score):
+                self.index = index
+                self.relevance_score = relevance_score
+
+        class _Response:
+            results = [
+                _Result(i, self.scores.get(i, 0.5)) for i in self.order[:top_n]
+            ]
+
+        return _Response()
+
+
+class TestRetrieveContextRerank:
+    """RC1-473: the optional Cohere rerank hop in _retrieve_context."""
+
+    @pytest.fixture
+    def app_module(self, monkeypatch):
+        import app as app_module
+
+        monkeypatch.setattr(app_module, "openai_client", _FakeEmbeddingsClient())
+        monkeypatch.setattr(app_module, "_resume_namespace", "kb-testhash")
+        monkeypatch.setattr(
+            app_module, "_resume_chunks_list", ["chunk a", "chunk b", "chunk c"]
+        )
+        monkeypatch.setattr(app_module, "_corpus_chunk_count", 8)
+        monkeypatch.setenv("COHERE_RERANK_ENABLED", "true")
+        return app_module
+
+    def _index_with_matches(self, texts):
+        class FakeIndex:
+            def query(self, **kwargs):
+                self.kwargs = kwargs
+                return _FakeQueryResponse(
+                    [
+                        _FakeMatch(t, "experience", 0.9 - 0.1 * i)
+                        for i, t in enumerate(texts)
+                    ]
+                )
+
+        return FakeIndex()
+
+    def test_widens_first_stage_and_returns_reranked_order(
+        self, app_module, monkeypatch
+    ):
+        fake_index = self._index_with_matches(["m0", "m1", "m2", "m3", "m4"])
+        fake_cohere = _FakeRerankClient(order=[3, 0, 4], scores={3: 0.99, 0: 0.5, 4: 0.2})
+        monkeypatch.setattr(app_module, "_resume_index", fake_index)
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+
+        result = app_module._retrieve_context("AWS experience", n_results=3)
+
+        # First stage widened to RERANK_FIRST_STAGE_K (capped at corpus 8).
+        assert fake_index.kwargs["top_k"] == 8
+        # Context follows the rerank order, not cosine order.
+        assert result == "m3\n\n---\n\nm0\n\n---\n\nm4"
+        assert fake_cohere.calls[0]["top_n"] == 3
+        assert fake_cohere.calls[0]["model"] == app_module.COHERE_RERANK_MODEL
+
+    def test_cohere_failure_degrades_to_cosine_order(self, app_module, monkeypatch):
+        fake_index = self._index_with_matches(["m0", "m1", "m2", "m3", "m4"])
+        fake_cohere = _FakeRerankClient(error=RuntimeError("invalid api token"))
+        monkeypatch.setattr(app_module, "_resume_index", fake_index)
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+
+        result = app_module._retrieve_context("AWS experience", n_results=3)
+
+        # Cosine top-3 of the widened pool == what top_k=3 would have returned.
+        assert result == "m0\n\n---\n\nm1\n\n---\n\nm2"
+
+    def test_flag_off_keeps_the_query_byte_identical(self, app_module, monkeypatch):
+        monkeypatch.setenv("COHERE_RERANK_ENABLED", "")
+        fake_index = self._index_with_matches(["m0", "m1", "m2"])
+        fake_cohere = _FakeRerankClient(order=[2, 1, 0])
+        monkeypatch.setattr(app_module, "_resume_index", fake_index)
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+
+        result = app_module._retrieve_context("AWS experience", n_results=3)
+
+        assert fake_index.kwargs["top_k"] == 3
+        assert fake_cohere.calls == []
+        assert result == "m0\n\n---\n\nm1\n\n---\n\nm2"
+
+    def test_missing_cohere_client_means_no_widening(self, app_module, monkeypatch):
+        # Flag on but no COHERE_API_KEY at boot: behave exactly as flag-off.
+        fake_index = self._index_with_matches(["m0", "m1", "m2"])
+        monkeypatch.setattr(app_module, "_resume_index", fake_index)
+        monkeypatch.setattr(app_module, "cohere_client", None)
+
+        app_module._retrieve_context("AWS experience", n_results=3)
+
+        assert fake_index.kwargs["top_k"] == 3
+
+    def test_full_coverage_match_path_never_reranks(self, app_module, monkeypatch):
+        # /match retrieves every resume chunk (n == cap): reranking would
+        # reorder a full-coverage set — the Cohere call must not happen.
+        fake_index = self._index_with_matches(["chunk a", "chunk b", "chunk c"])
+        fake_cohere = _FakeRerankClient(order=[0, 1, 2])
+        monkeypatch.setattr(app_module, "_resume_index", fake_index)
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+
+        app_module._retrieve_context("job description", n_results=99, source="resume")
+
+        assert fake_index.kwargs["top_k"] == 3
+        assert fake_cohere.calls == []
+
+    def test_rerank_score_joins_the_chunk_log_line(
+        self, app_module, monkeypatch, caplog
+    ):
+        import logging
+
+        fake_index = self._index_with_matches(["m0", "m1", "m2", "m3", "m4"])
+        fake_cohere = _FakeRerankClient(order=[1, 0, 2], scores={1: 0.9876})
+        monkeypatch.setattr(app_module, "_resume_index", fake_index)
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+
+        with caplog.at_level(logging.INFO):
+            app_module._retrieve_context("AWS experience", n_results=3)
+
+        lines = [r.getMessage() for r in caplog.records if "RAG retrieved" in r.getMessage()]
+        assert len(lines) == 3
+        assert "rerank=0.9876" in lines[0]
