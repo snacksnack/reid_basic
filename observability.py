@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 import sys
-from contextlib import AbstractContextManager, nullcontext
+from contextlib import AbstractContextManager, contextmanager, nullcontext
 
 try:  # documented optional-dep exception: ddtrace is absent in minimal envs
     from ddtrace.llmobs import LLMObs
@@ -72,6 +72,29 @@ def rag_prompt(query: str, context: str) -> AbstractContextManager:
             "rag_context_variables": ["context"],
         }
     )
+
+
+def retrieval_span(*, rerank: bool) -> AbstractContextManager:
+    """A manual LLM Obs retrieval span around the RAG lookup (RC1-473).
+
+    Covers the Pinecone query plus, when reranking, the Cohere hop — so the
+    rerank on/off latency delta is readable straight off the span durations,
+    filtered by the `rerank` tag. Manual on purpose: the estate rule
+    (RC1-331) is anthropic-only auto-patching, and
+    `_restrict_patching_to_anthropic` env-defaults the cohere integration
+    off, so an SDK-level trace would never appear. A no-op when tracing is
+    off.
+    """
+    if LLMObs is None or not LLMObs.enabled:
+        return nullcontext()
+    return _retrieval_span(rerank)
+
+
+@contextmanager
+def _retrieval_span(rerank: bool):
+    with LLMObs.retrieval(name="rag.retrieve") as span:
+        LLMObs.annotate(span=span, tags={"rerank": "on" if rerank else "off"})
+        yield span
 
 
 def _llm_integration_modules() -> tuple[str, ...]:

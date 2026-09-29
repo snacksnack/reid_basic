@@ -9,12 +9,13 @@ from functools import wraps
 from pathlib import Path
 
 import anthropic
+import cohere
 from dotenv import load_dotenv
 from flask import Flask, Response, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from observability import enable_llm_obs, rag_prompt
+from observability import enable_llm_obs, rag_prompt, retrieval_span
 from openai import OpenAI
 from scripts.emailer import send_notification_email
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -43,6 +44,13 @@ enable_llm_obs("hihelloreid-chat", service="hihelloreid")
 
 anthropic_client = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
 openai_client = OpenAI() if os.environ.get("OPENAI_API_KEY") else None
+# RC1-473: the Cohere SDK reads CO_API_KEY by default; the estate convention
+# is <VENDOR>_API_KEY, so the key is passed explicitly.
+cohere_client = (
+    cohere.ClientV2(api_key=os.environ["COHERE_API_KEY"])
+    if os.environ.get("COHERE_API_KEY")
+    else None
+)
 
 # ---------------------------------------------------------------------------
 # /ui-testbed basic auth — gates the in-progress redesign preview.
@@ -318,6 +326,19 @@ _match_instructions_text = _match_instructions_path.read_text()
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536
 PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX", "reid-basic-resume")
+
+# RC1-473: optional Cohere rerank between the Pinecone cosine query and the
+# model call. Off by default and off in production; when the env flag is on,
+# the first stage widens to RERANK_FIRST_STAGE_K candidates and rerank keeps
+# the requested n. The env var is the sole switch until RC1-476 decides on
+# Datadog Feature Flags; it stays as the kill-switch fallback either way —
+# the Cohere path must never be reachable only through a healthy flag service.
+COHERE_RERANK_MODEL = "rerank-v4.0-pro"
+RERANK_FIRST_STAGE_K = 10
+
+
+def _rerank_enabled() -> bool:
+    return os.environ.get("COHERE_RERANK_ENABLED", "").lower() in {"1", "true", "yes"}
 
 _resume_index = None
 _resume_namespace: str = ""
@@ -646,6 +667,10 @@ def _retrieve_context(query: str, n_results: int = 3, source: str | None = None)
     passes "resume" so the fit card keeps its full-resume-coverage semantics;
     the chat path passes None and searches the whole corpus.
 
+    With COHERE_RERANK_ENABLED set (RC1-473), the first-stage query widens to
+    RERANK_FIRST_STAGE_K candidates and Cohere rerank keeps the best
+    `n_results`; any Cohere failure degrades to cosine order.
+
     Falls back to the full corpus text if the index is unavailable (missing
     API key in local dev, or _build_resume_index raised), if the query
     raises, or if it returns nothing — a fresh upsert is eventually
@@ -658,15 +683,46 @@ def _retrieve_context(query: str, n_results: int = 3, source: str | None = None)
     try:
         cap = len(_resume_chunks_list) if source == "resume" else _corpus_chunk_count
         n = min(n_results, cap) if cap else n_results
-        results = _resume_index.query(
-            top_k=n,
-            vector=_embed([query])[0],
-            namespace=_resume_namespace,
-            include_metadata=True,
-            **({"filter": {"source": {"$eq": source}}} if source else {}),
-        )
-        matches = list(results.matches or [])
-        if not matches:
+        # RC1-473: rerank only where it can narrow. /match retrieves every
+        # resume chunk (n == cap), so reranking there would reorder a
+        # full-coverage set — quota burn with no membership effect. With the
+        # flag off the query below is exactly top_k=n, byte-identical to the
+        # rerank-free path.
+        first_k = min(RERANK_FIRST_STAGE_K, cap) if cap else RERANK_FIRST_STAGE_K
+        rerank = _rerank_enabled() and cohere_client is not None and first_k > n
+        with retrieval_span(rerank=rerank):
+            results = _resume_index.query(
+                top_k=first_k if rerank else n,
+                vector=_embed([query])[0],
+                namespace=_resume_namespace,
+                include_metadata=True,
+                **({"filter": {"source": {"$eq": source}}} if source else {}),
+            )
+            matches = list(results.matches or [])
+            # Pinecone returns matches sorted by cosine score, so slicing to n
+            # is identical to having queried top_k=n directly — the rerank-off
+            # behavior is also the degraded mode when Cohere fails.
+            scored: list[tuple] = [(m, None) for m in matches]
+            if rerank and len(matches) > n:
+                try:
+                    reranked = cohere_client.rerank(
+                        model=COHERE_RERANK_MODEL,
+                        query=query,
+                        documents=[(m.metadata or {}).get("text", "") for m in matches],
+                        top_n=n,
+                    )
+                    scored = [
+                        (matches[r.index], r.relevance_score)
+                        for r in reranked.results
+                    ]
+                except Exception as exc:
+                    logging.error(
+                        "Cohere rerank failed: %s — keeping cosine order", exc
+                    )
+                    scored = scored[:n]
+            elif rerank:
+                scored = scored[:n]
+        if not scored:
             logging.warning(
                 "RAG query returned no matches (fresh namespace still indexing?) — "
                 "falling back to full corpus text"
@@ -674,18 +730,19 @@ def _retrieve_context(query: str, n_results: int = 3, source: str | None = None)
             return _fallback_text(source)
 
         chunks: list[str] = []
-        for i, match in enumerate(matches):
+        for i, (match, rerank_score) in enumerate(scored):
             meta = match.metadata or {}
             logging.info(
                 "RAG retrieved chunk %d/%d — source=%s section=%s employer=%s "
-                "project=%s score=%.4f query=%r",
+                "project=%s score=%.4f%s query=%r",
                 i + 1,
-                len(matches),
+                len(scored),
                 meta.get("source", "?"),
                 meta.get("section", "?"),
                 meta.get("employer", "—"),
                 meta.get("project", "—"),
                 match.score,
+                "" if rerank_score is None else f" rerank={rerank_score:.4f}",
                 query[:60],
             )
             chunks.append(meta.get("text", ""))

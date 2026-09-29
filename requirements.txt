@@ -1,4 +1,7 @@
 anthropic>=1,<2
+# RC1-473: optional rerank hop (COHERE_RERANK_ENABLED, default off) and the
+# embed-v4.0 arm of scripts/eval_retrieval.py.
+cohere>=5,<6
 ddtrace>=4.14,<5
 flask>=3.0
 flask-cors>=4.0

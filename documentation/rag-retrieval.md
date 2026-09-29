@@ -181,6 +181,22 @@ In large-corpus RAG systems, a preprocessing step often **rewrites the user's qu
 
 For an 11-chunk corpus, query rewriting provides no meaningful benefit. Even a mediocre embedding similarity will correctly identify the 3 most relevant chunks out of 11. Query rewriting becomes worthwhile when the corpus is large enough (hundreds or thousands of documents) that precision matters — a slightly better query meaningfully changes which chunks are returned.
 
+### Optional rerank hop (RC1-473, off by default)
+
+With `COHERE_RERANK_ENABLED` set (and `COHERE_API_KEY` present at boot), `_retrieve_context` runs two-stage retrieval on the chat path: the Pinecone query widens to 10 candidates, Cohere `rerank-v4.0-pro` re-scores them against the raw query, and the best `n_results` survive in rerank order. This is a learning integration, not a production default — on a ~48-chunk corpus first-stage recall barely matters, and the eval (`scripts/eval_retrieval.py`) measures whether it changes anything.
+
+Failure semantics, deliberately layered:
+
+- **Flag off (the default):** the query is exactly `top_k=n` — byte-identical to the rerank-free path.
+- **Cohere call fails** (bad key, timeout, quota): log an error and keep cosine order — the top-`n` slice of the widened pool is the same set a `top_k=n` query would have returned.
+- **`/match` never reranks:** it retrieves every resume chunk (`n == cap`), so a rerank could only reorder a full-coverage set — pure quota burn.
+
+The per-chunk retrieval log line gains ` rerank=<score>` when a rerank happened, and the whole lookup (Pinecone + Cohere hop) is wrapped in a manual LLM Obs retrieval span tagged `rerank:on|off` — manual because the estate rule (RC1-331) keeps ddtrace auto-patching anthropic-only.
+
+### Embedding-model comparison (`scripts/eval_retrieval.py`)
+
+The eval script maintains a parallel serverless index (`reid-basic-resume-cohere`) holding the same chunks embedded with Cohere `embed-v4.0`, and runs the golden set (`scripts/golden_questions.json`, RC1-478) against three arms — OpenAI cosine, Cohere cosine, OpenAI + rerank — reporting hit@3 and MRR from deterministic metadata ground truth. Production never reads the parallel index; switching the serving embedder is a separate decision.
+
 ---
 
 ## Step 5: Context Injection
