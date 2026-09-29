@@ -22,14 +22,20 @@ os.environ["CHAT_PROVIDER"] = ""
 
 import pytest
 
-from app import app as flask_app
+from app import app as flask_app, limiter
 
 
 @pytest.fixture(autouse=True)
 def _disable_rate_limit():
-    flask_app.config["RATELIMIT_ENABLED"] = False
+    # flask-limiter copies RATELIMIT_ENABLED into limiter.enabled once, at
+    # init_app — toggling the config afterwards is a no-op, so the limiter
+    # object itself is switched. The config-only version of this fixture was
+    # a placebo that held only while a CI session stayed under the 20/hour
+    # chat limit; ddtrace Early Flake Detection retrying new tests ~11x
+    # (RC1-475) pushed past it and turned every later /api/chat POST 429.
+    limiter.enabled = False
     yield
-    flask_app.config["RATELIMIT_ENABLED"] = True
+    limiter.enabled = True
 
 
 @pytest.fixture
