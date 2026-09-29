@@ -35,17 +35,21 @@ import app
 
 def list_chunks():
     """Print all chunks with their metadata."""
-    resume_text = app._resume_path.read_text()
-    chunks = app._chunk_resume(resume_text)
+    chunks = app._chunk_resume(app._resume_path.read_text()) + app._chunk_projects(
+        app._projects_path.read_text()
+    )
     print(f"\n{len(chunks)} chunks in index:\n")
     for i, chunk in enumerate(chunks):
         meta = chunk["metadata"]
         section = meta.get("section", "?")
         employer = meta.get("employer", "")
-        subsection = meta.get("subsection", "")
+        subsection = meta.get("subsection", "") or meta.get("aspect", "")
+        project = meta.get("project", "")
         label = section
         if employer:
             label += f" / {employer}"
+        if project:
+            label += f" / {project}"
         if subsection:
             label += f" / {subsection}"
         preview = chunk["text"].replace("\n", " ")[:80]
@@ -63,7 +67,7 @@ def query_index(query: str, n_results: int = 4):
         )
         sys.exit(1)
 
-    n = min(n_results, len(app._resume_chunks_list))
+    n = min(n_results, app._corpus_chunk_count or n_results)
     results = app._resume_index.query(
         top_k=n,
         vector=app._embed([query])[0],
@@ -78,10 +82,13 @@ def query_index(query: str, n_results: int = 4):
         meta = match.metadata or {}
         section = meta.get("section", "?")
         employer = meta.get("employer", "")
-        subsection = meta.get("subsection", "")
+        subsection = meta.get("subsection", "") or meta.get("aspect", "")
+        project = meta.get("project", "")
         label = section
         if employer:
             label += f" / {employer}"
+        if project:
+            label += f" / {project}"
         if subsection:
             label += f" / {subsection}"
         print(f"  [{i+1}] score={match.score:.4f}  [{label}]")

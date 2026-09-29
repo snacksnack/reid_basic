@@ -14,7 +14,8 @@
     "digest": ".venv/bin/python scripts/chat_digest.py",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:server": ".venv/bin/pytest tests/test_server.py -v"
+    "test:server": ".venv/bin/pytest tests/test_server.py -v",
+    "extract:projects": "tsx scripts/extract_projects.ts"
   },
   "dependencies": {
     "@datadog/browser-rum": "^7.10.0",
@@ -36,6 +37,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
     "jsdom": "^29.0.1",
+    "tsx": "^4.23.15",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.0",
     "vite": "^7.1.0",

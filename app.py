@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 import os
+import re
 import threading
 from functools import wraps
 from pathlib import Path
@@ -299,6 +300,9 @@ def _save_message(session_id: str, ip: str, message: dict) -> None:
 _instructions_path = BASE_DIR / "src" / "data" / "chatbot-instructions.txt"
 _match_instructions_path = BASE_DIR / "src" / "data" / "match-instructions.txt"
 _resume_path = BASE_DIR / "src" / "data" / "resume-prompt.txt"
+# RC1-478: rendered from the project TS data files by `npm run extract:projects`;
+# tests/projectsPrompt.test.ts keeps it current with the /work page sources.
+_projects_path = BASE_DIR / "src" / "data" / "projects-prompt.txt"
 _instructions_text = _instructions_path.read_text()
 # RC1-363: the fit-card rules ride only on /match requests. Sending them on
 # every conversational turn cost ~940 input tokens a turn for rules the model
@@ -317,7 +321,13 @@ PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX", "reid-basic-resume")
 
 _resume_index = None
 _resume_namespace: str = ""
+# Resume-only chunk texts: /match retrieves exactly this many chunks with a
+# source=resume filter, so its full-coverage semantics are unchanged by the
+# project corpus (RC1-478).
 _resume_chunks_list: list[str] = []
+_corpus_chunk_count: int = 0
+# Hash of resume-prompt.txt + projects-prompt.txt together — a change to
+# either file rebuilds the index (RC1-478 widened this from resume-only).
 _resume_hash: str = ""
 
 
@@ -423,23 +433,70 @@ def _chunk_resume(text: str) -> list[dict]:
     return chunks
 
 
+_PROJECT_HEADER = re.compile(
+    r"^Project: (?P<name>.+?)(?: — (?P<aspect>.+?))? \[(?P<slug>[a-z0-9-]+)\]$"
+)
+
+
+def _chunk_projects(text: str) -> list[dict]:
+    """
+    Split projects-prompt.txt into chunks for vector indexing (RC1-478).
+
+    The extractor already did the semantic work: every blank-line-separated
+    paragraph is self-contained and opens with a "Project: <name> [<slug>]"
+    header (optionally "— <aspect>" for a facet like decisions or pipeline).
+    This side just splits and parses the header into metadata, mirroring what
+    section/employer are to the resume chunks: `project` is the ground-truth
+    label the retrieval eval keys on.
+    """
+    chunks: list[dict] = []
+    for para in (p.strip() for p in text.split("\n\n")):
+        if not para:
+            continue
+        match = _PROJECT_HEADER.match(para.split("\n", 1)[0])
+        if not match:
+            logging.warning(
+                "projects-prompt paragraph without a Project header skipped: %r",
+                para[:80],
+            )
+            continue
+        metadata = {
+            "section": "project",
+            "project": match["slug"],
+            "project_name": match["name"],
+        }
+        if match["aspect"]:
+            metadata["aspect"] = match["aspect"]
+        chunks.append({"text": para, "metadata": metadata})
+    return chunks
+
+
+def _corpus_hash() -> str:
+    """Fingerprint of everything the index is built from."""
+    return hashlib.sha256(
+        _resume_path.read_bytes() + _projects_path.read_bytes()
+    ).hexdigest()
+
+
 def _build_resume_index() -> None:
     """
     Index the resume chunks in Pinecone at application startup (RC1-440).
 
     Pinecone is a hosted, serverless vector DB, so the index survives dyno
     restarts — unlike the previous in-process ChromaDB store, which Heroku's
-    ephemeral filesystem forced to re-embed on every boot.  Each resume
-    version gets its own namespace, ``resume-<sha256[:12]>``: when the current
-    version's namespace is already populated, startup skips the embeddings
-    call entirely and just takes a handle; when the resume changes, the new
-    namespace is filled and stale ones are deleted.
+    ephemeral filesystem forced to re-embed on every boot.  Each corpus
+    version (resume + projects, RC1-478) gets its own namespace,
+    ``kb-<sha256[:12]>``: when the current version's namespace is already
+    populated, startup skips the embeddings call entirely and just takes a
+    handle; when either source file changes, the new namespace is filled and
+    stale ones are deleted.
 
     Embeddings are computed by calling the OpenAI embeddings API directly
     (see _embed) — the chunk text rides along as Pinecone metadata so a query
     returns the text, not just ids.
     """
     global _resume_index, _resume_namespace, _resume_chunks_list, _resume_hash
+    global _corpus_chunk_count
 
     missing = (
         "OPENAI_API_KEY"
@@ -450,11 +507,11 @@ def _build_resume_index() -> None:
         # Record the hash even though nothing is indexed, otherwise the
         # watcher sees a mismatch on every tick and re-logs this warning
         # once a minute for the life of the process.  The warning fires
-        # again only when the resume text actually changes.
-        _resume_hash = hashlib.sha256(_resume_path.read_bytes()).hexdigest()
+        # again only when the corpus text actually changes.
+        _resume_hash = _corpus_hash()
         logging.warning(
             "RAG index skipped: %s not set — "
-            "falling back to full resume text in system prompt",
+            "falling back to full corpus text in system prompt",
             missing,
         )
         return
@@ -462,11 +519,18 @@ def _build_resume_index() -> None:
     try:
         from pinecone import Pinecone, ServerlessSpec
 
-        resume_bytes = _resume_path.read_bytes()
-        chunk_dicts = _chunk_resume(resume_bytes.decode())
+        resume_chunks = [
+            {**c, "metadata": {**c["metadata"], "source": "resume"}}
+            for c in _chunk_resume(_resume_path.read_text())
+        ]
+        project_chunks = [
+            {**c, "metadata": {**c["metadata"], "source": "project"}}
+            for c in _chunk_projects(_projects_path.read_text())
+        ]
+        chunk_dicts = resume_chunks + project_chunks
         chunk_texts = [c["text"] for c in chunk_dicts]
-        resume_hash = hashlib.sha256(resume_bytes).hexdigest()
-        namespace = f"resume-{resume_hash[:12]}"
+        corpus_hash = _corpus_hash()
+        namespace = f"kb-{corpus_hash[:12]}"
 
         pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
         if not pc.has_index(PINECONE_INDEX_NAME):
@@ -519,8 +583,9 @@ def _build_resume_index() -> None:
 
         _resume_index = index
         _resume_namespace = namespace
-        _resume_chunks_list = chunk_texts
-        _resume_hash = resume_hash
+        _resume_chunks_list = [c["text"] for c in resume_chunks]
+        _corpus_chunk_count = len(chunk_dicts)
+        _resume_hash = corpus_hash
 
     except Exception as e:
         logging.error(
@@ -531,49 +596,70 @@ def _build_resume_index() -> None:
         _resume_index = None
 
 
-def _retrieve_context(query: str, n_results: int = 3) -> str:
+def _fallback_text(source: str | None) -> str:
+    """Full corpus text for when the vector index cannot answer.
+
+    Resume-filtered callers (/match) get the resume alone; the general chat
+    path gets resume + projects so a degraded index still answers project
+    questions — larger prompt, but this is already the degraded mode.
     """
-    Query the vector index for the top-n most relevant resume chunks.
+    if source == "resume":
+        return _resume_path.read_text()
+    return f"{_resume_path.read_text()}\n\n---\n\n{_projects_path.read_text()}"
+
+
+def _retrieve_context(query: str, n_results: int = 3, source: str | None = None) -> str:
+    """
+    Query the vector index for the top-n most relevant corpus chunks.
 
     The query text is embedded with the same OpenAI model as the chunks, and
     Pinecone returns the nearest stored vectors by cosine similarity — higher
     score means more similar (the old ChromaDB logs reported *distance*,
     where lower was better; dashboards reading these lines should use score).
 
-    Falls back to the full resume text if the index is unavailable (missing
+    `source` filters by chunk origin ("resume" or "project", RC1-478): /match
+    passes "resume" so the fit card keeps its full-resume-coverage semantics;
+    the chat path passes None and searches the whole corpus.
+
+    Falls back to the full corpus text if the index is unavailable (missing
     API key in local dev, or _build_resume_index raised), if the query
     raises, or if it returns nothing — a fresh upsert is eventually
-    consistent, so the first request after indexing a new resume version can
+    consistent, so the first request after indexing a new corpus version can
     land before the vectors are queryable.
     """
     if _resume_index is None:
-        return _resume_path.read_text()
+        return _fallback_text(source)
 
     try:
-        n = min(n_results, len(_resume_chunks_list))
+        cap = len(_resume_chunks_list) if source == "resume" else _corpus_chunk_count
+        n = min(n_results, cap) if cap else n_results
         results = _resume_index.query(
             top_k=n,
             vector=_embed([query])[0],
             namespace=_resume_namespace,
             include_metadata=True,
+            **({"filter": {"source": {"$eq": source}}} if source else {}),
         )
         matches = list(results.matches or [])
         if not matches:
             logging.warning(
                 "RAG query returned no matches (fresh namespace still indexing?) — "
-                "falling back to full resume"
+                "falling back to full corpus text"
             )
-            return _resume_path.read_text()
+            return _fallback_text(source)
 
         chunks: list[str] = []
         for i, match in enumerate(matches):
             meta = match.metadata or {}
             logging.info(
-                "RAG retrieved chunk %d/%d — section=%s employer=%s score=%.4f query=%r",
+                "RAG retrieved chunk %d/%d — source=%s section=%s employer=%s "
+                "project=%s score=%.4f query=%r",
                 i + 1,
                 len(matches),
+                meta.get("source", "?"),
                 meta.get("section", "?"),
                 meta.get("employer", "—"),
+                meta.get("project", "—"),
                 match.score,
                 query[:60],
             )
@@ -581,8 +667,8 @@ def _retrieve_context(query: str, n_results: int = 3) -> str:
 
         return "\n\n---\n\n".join(c for c in chunks if c)
     except Exception as e:
-        logging.error("RAG retrieval error: %s — falling back to full resume", e)
-        return _resume_path.read_text()
+        logging.error("RAG retrieval error: %s — falling back to full corpus text", e)
+        return _fallback_text(source)
 
 
 _build_resume_index()
@@ -590,9 +676,10 @@ _build_resume_index()
 
 def _watch_resume(interval: int = 60) -> None:
     """
-    Background thread: check whether resume-prompt.txt has changed every
-    `interval` seconds.  If the SHA-256 hash of the file differs from the
-    hash stored when the index was last built, rebuild the index automatically.
+    Background thread: check whether resume-prompt.txt or projects-prompt.txt
+    has changed every `interval` seconds.  If the combined SHA-256 hash
+    differs from the hash stored when the index was last built, rebuild the
+    index automatically.
 
     This is the hash-based cache invalidation pattern.  A hash uniquely
     represents the file *content* — any edit, however small, produces a
@@ -615,15 +702,15 @@ def _watch_resume(interval: int = 60) -> None:
 
 
 def _rebuild_index_if_resume_changed() -> bool:
-    """One watcher tick: rebuild the index if resume-prompt.txt changed.
+    """One watcher tick: rebuild the index if either corpus file changed.
 
     Returns True when a rebuild was triggered.  Split out of the thread loop
     so the change detection can be tested without sleeping.
     """
-    current_hash = hashlib.sha256(_resume_path.read_bytes()).hexdigest()
+    current_hash = _corpus_hash()
     if current_hash == _resume_hash:
         return False
-    logging.info("resume-prompt.txt changed — rebuilding RAG index")
+    logging.info("RAG corpus text changed — rebuilding index")
     _build_resume_index()
     return True
 
@@ -935,10 +1022,12 @@ def chat():
 
         # Determine retrieval parameters.  The /match command receives a full
         # job description as its query body — that is naturally rich for
-        # semantic search, so we retrieve all chunks to guarantee full resume
-        # coverage.  For ordinary conversational messages, top-3 is enough:
-        # most questions target one area of the resume (e.g. AWS experience,
-        # skills, a specific employer) and returning more chunks adds noise.
+        # semantic search, so we retrieve all resume chunks (source-filtered,
+        # RC1-478: the fit card judges the resume, not the project corpus) to
+        # guarantee full resume coverage.  For ordinary conversational
+        # messages, top-4 over the whole corpus is enough: most questions
+        # target one area (an employer, a skill, a project) and returning
+        # more chunks adds noise.
         if is_match:
             retrieval_query = match_body or raw_query
             n_results = len(_resume_chunks_list) if _resume_chunks_list else 10
@@ -954,7 +1043,11 @@ def chat():
                 retrieval_query = raw_query
             n_results = 4
 
-        context = _retrieve_context(retrieval_query, n_results=n_results)
+        context = _retrieve_context(
+            retrieval_query,
+            n_results=n_results,
+            source="resume" if is_match else None,
+        )
 
         instructions = _instructions_text
         if is_match:
@@ -962,7 +1055,8 @@ def chat():
         system_content = (
             f"{instructions}\n\n"
             f"---\n\n"
-            f"Relevant resume context (retrieved for this query):\n\n{context}"
+            f"Relevant context about Reid, retrieved for this query "
+            f"(resume and/or project write-ups):\n\n{context}"
         )
 
         # Role-fit matcher: a single forced-tool call so the model returns

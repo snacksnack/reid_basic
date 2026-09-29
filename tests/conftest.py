@@ -1,3 +1,20 @@
+import os
+
+# RC1-478: blank the live-service keys BEFORE app.py imports, so the unit
+# suite never builds a real Pinecone index. With keys present, importing app
+# used to embed and upsert against the production index — harmless while the
+# namespace hash matched what production served, destructive the moment a
+# branch changed the corpus (the stale-namespace cleanup deletes what
+# production is querying). Tests exercise the no-index fallback paths, same
+# as CI, which has no keys; scripts/explore_rag.py is the tool for poking the
+# live index deliberately.
+#
+# Set to "" rather than popped: app.py's load_dotenv() would re-load a popped
+# key from .env, but python-dotenv never overrides a variable that is already
+# set, and "" is falsy for the `os.environ.get(...)` gates in app.py.
+for _key in ("OPENAI_API_KEY", "PINECONE_API_KEY"):
+    os.environ[_key] = ""
+
 import pytest
 
 from app import app as flask_app

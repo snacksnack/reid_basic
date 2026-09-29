@@ -1,0 +1,93 @@
+{
+  "_comment": "Golden retrieval set (RC1-478 seeded; consumed by scripts/eval_retrieval.py when RC1-473 lands). Each entry: a visitor-shaped question plus the metadata a correct top-3 retrieval must contain. `expect` matches against chunk metadata: source, and for resume chunks section/employer/subsection, for project chunks project (slug) and optionally aspect.",
+  "questions": [
+    {
+      "question": "What experience does Reid have with AWS?",
+      "expect": { "source": "resume", "section": "skills" }
+    },
+    {
+      "question": "What did Reid do at Zeta Global?",
+      "expect": { "source": "resume", "employer": "Zeta Global (acquired Marigold, November 2025)" }
+    },
+    {
+      "question": "Tell me about the machine learning platform work — how many clients were onboarded?",
+      "expect": { "source": "resume", "subsection": "Machine Learning / Data Platform" }
+    },
+    {
+      "question": "How much money did the Oracle to MySQL migration save?",
+      "expect": { "source": "resume", "subsection": "Platform & Backend Systems" }
+    },
+    {
+      "question": "Where did Reid go to college and what certifications does he hold?",
+      "expect": { "source": "resume", "section": "education_and_certifications" }
+    },
+    {
+      "question": "What did Reid work on at Cheetah Digital?",
+      "expect": { "source": "resume", "employer": "Cheetah Digital" }
+    },
+    {
+      "question": "Does Reid have observability experience with Prometheus or Datadog?",
+      "expect": { "source": "resume", "subsection": "Observability & Reliability" }
+    },
+    {
+      "question": "How long has Reid worked as a technical program manager?",
+      "expect": { "source": "resume", "section": "summary" }
+    },
+    {
+      "question": "What is the Launch Planner project?",
+      "expect": { "source": "project", "project": "launch-planner" }
+    },
+    {
+      "question": "How does the launch planner keep the LLM from hallucinating dependencies into the schedule?",
+      "expect": { "source": "project", "project": "launch-planner" }
+    },
+    {
+      "question": "Which project watches a Jira dependency graph for upstream slips?",
+      "expect": { "source": "project", "project": "drift-detector" }
+    },
+    {
+      "question": "What detection rules does the drift detector fire?",
+      "expect": { "source": "project", "project": "drift-detector", "aspect": "chains" }
+    },
+    {
+      "question": "How does the incident summarizer turn fifty alerts into one incident?",
+      "expect": { "source": "project", "project": "incident-summarizer" }
+    },
+    {
+      "question": "Why are the incident summarizer's Lambdas stateless?",
+      "expect": { "source": "project", "project": "incident-summarizer", "aspect": "principles" }
+    },
+    {
+      "question": "How does the PR review agent decide which reviewer runs on a pull request?",
+      "expect": { "source": "project", "project": "pr-review-agent" }
+    },
+    {
+      "question": "What does a code review cost with Reid's PR agent?",
+      "expect": { "source": "project", "project": "pr-review-agent" }
+    },
+    {
+      "question": "Does Reid have a project that tracks concerts or music?",
+      "expect": { "source": "project", "project": "concert-intelligence" }
+    },
+    {
+      "question": "How does Reid evaluate his AI agents continuously?",
+      "expect": { "source": "project", "project": "agent-evals" }
+    },
+    {
+      "question": "What does the job search agent do?",
+      "expect": { "source": "project", "project": "job-search-agent" }
+    },
+    {
+      "question": "How does Reid monitor his whole fleet of services?",
+      "expect": { "source": "project", "project": "fleet-observability" }
+    },
+    {
+      "question": "Is there a live demo of the incident summarizer I can look at?",
+      "expect": { "source": "project", "project": "incident-summarizer" }
+    },
+    {
+      "question": "What automation does Reid run between Jira, Notion, and n8n?",
+      "expect": { "source": "project", "project": "automation-suite" }
+    }
+  ]
+}

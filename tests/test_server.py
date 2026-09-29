@@ -423,6 +423,19 @@ def resume_text():
     return _resume_path.read_text()
 
 
+@pytest.fixture(scope="module")
+def projects_text():
+    from app import _projects_path
+
+    return _projects_path.read_text()
+
+
+@pytest.fixture(scope="module")
+def corpus_text(resume_text, projects_text):
+    # What _fallback_text(None) returns: the chat path's degraded-mode context.
+    return f"{resume_text}\n\n---\n\n{projects_text}"
+
+
 class TestChunkResume:
     def test_produces_expected_chunk_count(self, resume_text):
         # 10 chunks: contact, summary, 4 Marigold sub-sections, Cheetah Digital,
@@ -500,12 +513,75 @@ class TestChunkResume:
         assert "AWS" in skills_chunk["text"]
 
 
+class TestChunkProjects:
+    """RC1-478: the project corpus rendered from the /work TS data files."""
+
+    EXPECTED_SLUGS = {
+        "launch-planner",
+        "drift-detector",
+        "incident-summarizer",
+        "pr-review-agent",
+        "automation-suite",
+        "job-search-agent",
+        "concert-intelligence",
+        "agent-evals",
+        "fleet-observability",
+    }
+
+    def test_every_paragraph_becomes_a_chunk(self, projects_text):
+        from app import _chunk_projects
+
+        paragraphs = [p for p in projects_text.split("\n\n") if p.strip()]
+        chunks = _chunk_projects(projects_text)
+        assert len(chunks) == len(paragraphs)
+
+    def test_all_nine_projects_are_present(self, projects_text):
+        from app import _chunk_projects
+
+        slugs = {c["metadata"]["project"] for c in _chunk_projects(projects_text)}
+        assert slugs == self.EXPECTED_SLUGS
+
+    def test_chunks_are_self_contained_with_project_headers(self, projects_text):
+        from app import _chunk_projects
+
+        for chunk in _chunk_projects(projects_text):
+            assert chunk["text"].startswith("Project: ")
+            assert chunk["metadata"]["section"] == "project"
+            assert chunk["metadata"]["project_name"]
+
+    def test_aspect_chunks_carry_aspect_metadata(self, projects_text):
+        from app import _chunk_projects
+
+        aspects = {
+            (c["metadata"]["project"], c["metadata"].get("aspect"))
+            for c in _chunk_projects(projects_text)
+        }
+        # Overview chunks have no aspect; facet chunks name theirs.
+        assert ("launch-planner", None) in aspects
+        assert ("launch-planner", "pipeline") in aspects
+        assert ("drift-detector", "chains") in aspects
+
+    def test_headerless_paragraph_is_skipped_not_indexed(self):
+        from app import _chunk_projects
+
+        text = "Project: Real Thing [real-thing]\nA line.\n\nStray paragraph, no header."
+        chunks = _chunk_projects(text)
+        assert len(chunks) == 1
+        assert chunks[0]["metadata"]["project"] == "real-thing"
+
+
 class TestRetrieveContext:
-    def test_falls_back_to_full_resume_when_index_is_unavailable(self, resume_text):
+    def test_falls_back_to_full_corpus_when_index_is_unavailable(self, corpus_text):
         # In the test environment there is no OPENAI_API_KEY (or
         # PINECONE_API_KEY), so _resume_index is None and _retrieve_context
-        # must return the full resume text rather than raising an exception.
+        # must return the full corpus text rather than raising an exception.
         result = _retrieve_context("AWS experience")
+        assert result == corpus_text
+
+    def test_resume_filtered_fallback_returns_resume_only(self, resume_text):
+        # /match passes source="resume"; its degraded mode must not widen the
+        # fit card's evidence to the project corpus (RC1-478).
+        result = _retrieve_context("job description", source="resume")
         assert result == resume_text
 
     def test_fallback_is_non_empty(self):
@@ -548,10 +624,12 @@ class TestRetrieveContextWithIndex:
         import app as app_module
 
         monkeypatch.setattr(app_module, "openai_client", _FakeEmbeddingsClient())
-        monkeypatch.setattr(app_module, "_resume_namespace", "resume-testhash")
+        monkeypatch.setattr(app_module, "_resume_namespace", "kb-testhash")
         monkeypatch.setattr(
             app_module, "_resume_chunks_list", ["chunk a", "chunk b", "chunk c", "chunk d"]
         )
+        # Corpus = 4 resume chunks + 2 project chunks (RC1-478).
+        monkeypatch.setattr(app_module, "_corpus_chunk_count", 6)
         return app_module
 
     def test_joins_retrieved_chunk_texts_in_score_order(self, app_module, monkeypatch):
@@ -569,13 +647,15 @@ class TestRetrieveContextWithIndex:
         monkeypatch.setattr(app_module, "_resume_index", fake)
         result = app_module._retrieve_context("AWS experience", n_results=2)
         assert result == "chunk b\n\n---\n\nchunk d"
-        # The query must stay scoped to the current resume version's
+        # The query must stay scoped to the current corpus version's
         # namespace, or a stale version could answer.
-        assert fake.kwargs["namespace"] == "resume-testhash"
+        assert fake.kwargs["namespace"] == "kb-testhash"
         assert fake.kwargs["top_k"] == 2
         assert fake.kwargs["include_metadata"] is True
+        # The chat path searches the whole corpus: no source filter.
+        assert "filter" not in fake.kwargs
 
-    def test_top_k_is_capped_at_the_chunk_count(self, app_module, monkeypatch):
+    def test_top_k_is_capped_at_the_corpus_chunk_count(self, app_module, monkeypatch):
         class FakeIndex:
             def query(self, **kwargs):
                 self.kwargs = kwargs
@@ -584,9 +664,26 @@ class TestRetrieveContextWithIndex:
         fake = FakeIndex()
         monkeypatch.setattr(app_module, "_resume_index", fake)
         app_module._retrieve_context("everything", n_results=99)
-        assert fake.kwargs["top_k"] == 4
+        assert fake.kwargs["top_k"] == 6
 
-    def test_empty_matches_fall_back_to_full_resume(self, app_module, monkeypatch, resume_text):
+    def test_resume_source_filters_and_caps_at_resume_chunk_count(
+        self, app_module, monkeypatch
+    ):
+        # RC1-478: /match retrieves with source="resume" — the Pinecone query
+        # must carry the metadata filter and cap top_k at the resume chunk
+        # count, not the whole corpus.
+        class FakeIndex:
+            def query(self, **kwargs):
+                self.kwargs = kwargs
+                return _FakeQueryResponse([_FakeMatch("chunk a", "summary", 0.5)])
+
+        fake = FakeIndex()
+        monkeypatch.setattr(app_module, "_resume_index", fake)
+        app_module._retrieve_context("job description", n_results=99, source="resume")
+        assert fake.kwargs["top_k"] == 4
+        assert fake.kwargs["filter"] == {"source": {"$eq": "resume"}}
+
+    def test_empty_matches_fall_back_to_full_corpus(self, app_module, monkeypatch, corpus_text):
         # A fresh upsert is eventually consistent: a query can land before
         # the vectors are queryable and legitimately return nothing.
         class FakeIndex:
@@ -594,15 +691,15 @@ class TestRetrieveContextWithIndex:
                 return _FakeQueryResponse([])
 
         monkeypatch.setattr(app_module, "_resume_index", FakeIndex())
-        assert app_module._retrieve_context("anything") == resume_text
+        assert app_module._retrieve_context("anything") == corpus_text
 
-    def test_query_error_falls_back_to_full_resume(self, app_module, monkeypatch, resume_text):
+    def test_query_error_falls_back_to_full_corpus(self, app_module, monkeypatch, corpus_text):
         class FakeIndex:
             def query(self, **kwargs):
                 raise RuntimeError("pinecone unavailable")
 
         monkeypatch.setattr(app_module, "_resume_index", FakeIndex())
-        assert app_module._retrieve_context("anything") == resume_text
+        assert app_module._retrieve_context("anything") == corpus_text
 
 
 class TestStaticAsset:

@@ -338,3 +338,31 @@ so the four dismissed alerts can never resurface on a version bump and the
 "vulnerable code present but unreachable" argument no longer needs making. The
 sections above are kept as the record of why the dependency was pinned and how
 the alerts were dispositioned while it shipped.
+
+## The project corpus (RC1-478)
+
+The index holds more than the resume now. The nine project data files under
+`src/data/` (the same TypeScript objects the /work index and the overview
+pages render) are the second half of the corpus:
+
+- `npm run extract:projects` renders them to `src/data/projects-prompt.txt`
+  via `src/data/projectsPrompt.ts`. The renderer walks the exported objects
+  generically, so a new field or a new project flows through without renderer
+  changes. Every blank-line-separated paragraph it emits is self-contained
+  and opens with a `Project: <name> [<slug>]` header (facet paragraphs add
+  `— <aspect>`).
+- `app.py → _chunk_projects()` splits on paragraphs and parses the header
+  into metadata: `section=project`, `project=<slug>`, `project_name`, and
+  `aspect` when present. Resume chunks carry `source=resume`, project chunks
+  `source=project`.
+- The namespace fingerprint covers both files (`kb-<sha256[:12]>` over
+  resume-prompt.txt + projects-prompt.txt) and the watcher rebuilds on a
+  change to either.
+- `/match` retrieves with a `source=resume` Pinecone filter so the fit card
+  still judges the resume with full coverage; the chat path searches the
+  whole corpus unfiltered.
+- Freshness is CI-enforced from the TypeScript side:
+  `tests/projectsPrompt.test.ts` fails when the committed txt no longer
+  matches a fresh render. On failure, run the extract script and commit.
+- `scripts/golden_questions.json` holds the labeled retrieval questions
+  (resume + project) for the eval harness planned in RC1-473.
