@@ -34,6 +34,10 @@
       "expect": { "source": "resume", "section": "summary" }
     },
     {
+      "question": "What other projects does Reid have?",
+      "expect": { "source": "project", "project": "portfolio" }
+    },
+    {
       "question": "What is the Launch Planner project?",
       "expect": { "source": "project", "project": "launch-planner" }
     },

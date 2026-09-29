@@ -1,3 +1,15 @@
+Project: Reid Collins's project portfolio [portfolio]
+All 9 personal engineering projects on the /work page (hihelloreid.com/work):
+- Launch Planner [launch-planner]: An agentic delivery planner for migrations and launches.
+- Dependency Drift Detector [drift-detector]: Watches a Jira dependency graph for upstream slips.
+- AI Incident Summarizer [incident-summarizer]: Correlates three alert firehoses into one incident.
+- PR Review Agent [pr-review-agent]: Reviews every PR on an account, at a tenth of the cost.
+- TPM Workflow Automation [automation-suite]: Three scheduled services behind a program's paperwork.
+- Job Scout [job-search-agent]: Scores every new posting against a résumé, daily.
+- Concert Intelligence Agent [concert-intelligence]: Ranks upcoming shows by what you actually listen to.
+- Agent Evals [agent-evals]: The regression suite measuring six systems on this page.
+- Fleet Observability [fleet-observability]: Nine LLM systems under one pane, priced run by run.
+
 Project: Launch Planner [launch-planner]
 Category: Flagship project
 An agentic delivery planner for migrations and launches.

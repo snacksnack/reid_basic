@@ -366,3 +366,13 @@ pages render) are the second half of the corpus:
   matches a fresh render. On failure, run the extract script and commit.
 - `scripts/golden_questions.json` holds the labeled retrieval questions
   (resume + project) for the eval harness planned in RC1-473.
+
+**The catalog chunk (RC1-479).** Corpus-level enumeration questions ("what
+other projects does he have?") cannot be answered from top-k chunk retrieval
+— the classic RAG aggregation weakness, observed live the day RC1-478
+shipped. The extractor therefore opens the file with a portfolio catalog
+paragraph (slug `portfolio`: every project, one line each), and app.py lifts
+that paragraph into the chat system prompt on every turn (`/match` excluded),
+refreshing it whenever the watcher rebuilds. Retrieval supplies per-project
+depth; the catalog supplies breadth. The chat path retrieves `top_k=6` of the
+~49-chunk corpus (was 4 of 10 in the resume-only era).

@@ -146,8 +146,25 @@ function renderAspects(slug: string, content: Record<string, unknown>): string[]
   return paragraphs
 }
 
+// The catalog chunk answers corpus-level enumeration questions ("what other
+// projects does he have?") that top-k retrieval over per-project chunks
+// cannot (RC1-479). app.py also lifts this paragraph into the chat system
+// prompt so the full roster is always in context; its slug is reserved.
+export const CATALOG_SLUG = 'portfolio'
+
+function renderCatalog(): string {
+  const lines = [
+    `Project: Reid Collins's project portfolio [${CATALOG_SLUG}]`,
+    `All ${PROJECTS.length} personal engineering projects on the /work page (hihelloreid.com/work):`,
+  ]
+  for (const { slug, content } of PROJECTS) {
+    lines.push(`- ${content.name} [${slug}]: ${renderScalar(content.lead)}`)
+  }
+  return lines.join('\n')
+}
+
 export function renderProjectsPrompt(): string {
-  const paragraphs: string[] = []
+  const paragraphs: string[] = [renderCatalog()]
   for (const { slug, content } of PROJECTS) {
     paragraphs.push(renderOverview(slug, content))
     paragraphs.push(...renderAspects(slug, content))
