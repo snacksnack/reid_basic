@@ -329,6 +329,12 @@ _corpus_chunk_count: int = 0
 # Hash of resume-prompt.txt + projects-prompt.txt together — a change to
 # either file rebuilds the index (RC1-478 widened this from resume-only).
 _resume_hash: str = ""
+# The portfolio-catalog paragraph (all nine projects, one line each) rides in
+# the chat system prompt every turn: enumeration questions like "what other
+# projects does he have?" cannot be answered from top-k chunk retrieval, so
+# the roster is always in context and RAG supplies the depth (RC1-479).
+_project_catalog_text: str = ""
+_CATALOG_SLUG = "portfolio"
 
 
 def _embed(texts: list[str]) -> list[list[float]]:
@@ -496,7 +502,26 @@ def _build_resume_index() -> None:
     returns the text, not just ids.
     """
     global _resume_index, _resume_namespace, _resume_chunks_list, _resume_hash
-    global _corpus_chunk_count
+    global _corpus_chunk_count, _project_catalog_text
+
+    # The catalog rides in the system prompt independent of the vector index,
+    # so refresh it before the key check: it must be current even in the
+    # no-index fallback mode, and on every watcher-triggered rebuild.
+    all_project_chunks = _chunk_projects(_projects_path.read_text())
+    _project_catalog_text = next(
+        (
+            c["text"]
+            for c in all_project_chunks
+            if c["metadata"]["project"] == _CATALOG_SLUG
+        ),
+        "",
+    )
+    if not _project_catalog_text:
+        logging.warning(
+            "projects-prompt.txt has no %r catalog paragraph — "
+            "enumeration questions will degrade to top-k retrieval",
+            _CATALOG_SLUG,
+        )
 
     missing = (
         "OPENAI_API_KEY"
@@ -525,7 +550,7 @@ def _build_resume_index() -> None:
         ]
         project_chunks = [
             {**c, "metadata": {**c["metadata"], "source": "project"}}
-            for c in _chunk_projects(_projects_path.read_text())
+            for c in all_project_chunks
         ]
         chunk_dicts = resume_chunks + project_chunks
         chunk_texts = [c["text"] for c in chunk_dicts]
@@ -1041,7 +1066,9 @@ def chat():
                 retrieval_query = f"{prior_assistant} {raw_query}"
             else:
                 retrieval_query = raw_query
-            n_results = 4
+            # 6 of 48 corpus chunks (RC1-479 bumped from 4-of-10-resume-era):
+            # project questions often need an overview chunk plus a facet.
+            n_results = 6
 
         context = _retrieve_context(
             retrieval_query,
@@ -1052,6 +1079,15 @@ def chat():
         instructions = _instructions_text
         if is_match:
             instructions = f"{instructions}\n\n{_match_instructions_text}"
+        elif _project_catalog_text:
+            # Enumeration questions ("what other projects?") can't be answered
+            # from top-k retrieval; the full roster rides along every chat turn
+            # (RC1-479). /match is excluded — it judges the resume.
+            instructions = (
+                f"{instructions}\n\n"
+                f"Full catalog of Reid's projects (the retrieved context below "
+                f"adds depth on any of them):\n{_project_catalog_text}"
+            )
         system_content = (
             f"{instructions}\n\n"
             f"---\n\n"

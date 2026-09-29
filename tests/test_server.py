@@ -526,6 +526,7 @@ class TestChunkProjects:
         "concert-intelligence",
         "agent-evals",
         "fleet-observability",
+        "portfolio",  # the catalog chunk (RC1-479)
     }
 
     def test_every_paragraph_becomes_a_chunk(self, projects_text):
@@ -568,6 +569,39 @@ class TestChunkProjects:
         chunks = _chunk_projects(text)
         assert len(chunks) == 1
         assert chunks[0]["metadata"]["project"] == "real-thing"
+
+
+class TestProjectCatalog:
+    """RC1-479: the portfolio catalog rides in the chat system prompt."""
+
+    def test_catalog_is_loaded_and_names_every_project(self):
+        import app as app_module
+
+        assert app_module._project_catalog_text
+        for name in (
+            "Launch Planner",
+            "Dependency Drift Detector",
+            "AI Incident Summarizer",
+            "PR Review Agent",
+            "TPM Workflow Automation",
+            "Job Scout",
+            "Concert Intelligence Agent",
+            "Agent Evals",
+            "Fleet Observability",
+        ):
+            assert name in app_module._project_catalog_text
+
+    def test_catalog_refreshes_when_the_index_rebuilds(self, monkeypatch, tmp_path):
+        import app as app_module
+
+        projects_copy = tmp_path / "projects-prompt.txt"
+        projects_copy.write_text(
+            "Project: New Portfolio [portfolio]\n- Only Project [only]: One line.\n"
+        )
+        monkeypatch.setattr(app_module, "_projects_path", projects_copy)
+        monkeypatch.setattr(app_module, "_project_catalog_text", "stale")
+        app_module._build_resume_index()
+        assert app_module._project_catalog_text.startswith("Project: New Portfolio")
 
 
 class TestRetrieveContext:
