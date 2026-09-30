@@ -28,6 +28,7 @@ Cohere calls (2 batched embeds + one rerank per question).
 Usage:
     python scripts/eval_retrieval.py
     python scripts/eval_retrieval.py --skip-rerank   # embed comparison only
+    python scripts/eval_retrieval.py --post-datadog  # also post gauges (RC1-477)
 """
 
 import argparse
@@ -36,6 +37,8 @@ import os
 import re
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -60,6 +63,13 @@ COHERE_CALL_SPACING_S = 6.5
 
 GOLDEN_PATH = Path(__file__).resolve().parent / "golden_questions.json"
 
+# RC1-477: how each arm's name maps onto the bake-off dashboard's tags.
+ARM_TAGS = {
+    "openai": ["embed_model:openai", "rerank:off"],
+    "cohere": ["embed_model:cohere", "rerank:off"],
+    "openai+rerank": ["embed_model:openai", "rerank:on"],
+}
+
 
 def first_match_rank(metadatas: list[dict], expect: dict) -> int | None:
     """1-based rank of the first chunk whose metadata satisfies `expect`."""
@@ -83,20 +93,72 @@ def score_arm(ranked_metas_per_question: list[list[dict]], expects: list[dict]) 
     }
 
 
-def _cohere_api_key() -> str | None:
-    """COHERE_API_KEY from the environment, else parsed out of ~/.zshrc,
-    where the trial key is exported (this script is run from shells and
-    tools that never sourced it)."""
-    if os.environ.get("COHERE_API_KEY"):
-        return os.environ["COHERE_API_KEY"]
+def _key_from_env_or_zshrc(name: str) -> str | None:
+    """A key from the environment, else parsed out of ~/.zshrc, where the
+    credentials live (this script is run from shells and tools that never
+    sourced it)."""
+    if os.environ.get(name):
+        return os.environ[name]
     zshrc = Path.home() / ".zshrc"
     if zshrc.exists():
         match = re.search(
-            r'^\s*export\s+COHERE_API_KEY=["\']?([^"\'\s]+)', zshrc.read_text(), re.M
+            rf'^\s*export\s+{name}=["\']?([^"\'\s]+)', zshrc.read_text(), re.M
         )
         if match:
             return match.group(1)
     return None
+
+
+def _cohere_api_key() -> str | None:
+    return _key_from_env_or_zshrc("COHERE_API_KEY")
+
+
+def datadog_series(scores: dict[str, dict], timestamp: int) -> dict:
+    """The v2 series payload for a run's scores: hit@3 and MRR gauges per
+    arm, tagged embed_model/rerank. `type` is Datadog's int enum — 3 is
+    gauge (1 would silently record counts)."""
+    series = []
+    for arm, tags in ARM_TAGS.items():
+        if arm not in scores:
+            continue
+        for metric, key in (
+            ("bakeoff.retrieval.hit_at_3", "hit@3"),
+            ("bakeoff.retrieval.mrr", "mrr"),
+        ):
+            series.append(
+                {
+                    "metric": metric,
+                    "type": 3,
+                    "points": [{"timestamp": timestamp, "value": scores[arm][key]}],
+                    "tags": list(tags),
+                }
+            )
+    return {"series": series}
+
+
+def post_datadog(scores: dict[str, dict]) -> bool:
+    """POST the run's gauges; loud on every failure — a swallowed 400 here
+    would look exactly like no eval traffic on the dashboard."""
+    api_key = _key_from_env_or_zshrc("DD_API_KEY")
+    if not api_key:
+        print("datadog: DD_API_KEY not in the environment or ~/.zshrc — not posted")
+        return False
+    payload = datadog_series(scores, int(time.time()))
+    request = urllib.request.Request(
+        "https://api.datadoghq.com/api/v2/series",
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json", "DD-API-KEY": api_key},
+    )
+    try:
+        with urllib.request.urlopen(request) as response:
+            print(f"datadog: {len(payload['series'])} series posted ({response.status})")
+            return True
+    except urllib.error.HTTPError as error:
+        print(f"datadog: POST failed {error.code}: {error.read().decode()[:300]}")
+        return False
+    except urllib.error.URLError as error:
+        print(f"datadog: POST failed: {error.reason}")
+        return False
 
 
 class Paced:
@@ -208,6 +270,11 @@ def main() -> int:
         action="store_true",
         help="embed comparison only (saves ~1 Cohere call per question)",
     )
+    parser.add_argument(
+        "--post-datadog",
+        action="store_true",
+        help="post hit@3 and MRR gauges to Datadog for the RC1-477 dashboard",
+    )
     args = parser.parse_args()
 
     for required in ("OPENAI_API_KEY", "PINECONE_API_KEY"):
@@ -282,6 +349,9 @@ def main() -> int:
     print(f"\n{'arm':<16} {'hit@3':>7} {'MRR':>7}")
     for name, s in scores.items():
         print(f"{name:<16} {s['hit@3']:>7.3f} {s['mrr']:>7.3f}")
+
+    if args.post_datadog and not post_datadog(scores):
+        return 1
 
     print("\nPer-question rank of the first correct chunk (None = not in pool):")
     header = " ".join(f"{name:>14}" for name in scores)
