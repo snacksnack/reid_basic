@@ -66,3 +66,15 @@ class TestFlagEnabled:
 
         monkeypatch.setattr(feature_flags, "_client", _Client())
         assert feature_flags.flag_enabled("rc1-476-probe") is True
+
+
+def test_flags_initialize_before_llm_obs_in_app_boot():
+    """The init order is load-bearing (RC1-476): a provider initialized
+    after LLMObs.enable() never receives configuration and the process
+    serves flag defaults forever. Guard the source order."""
+    from pathlib import Path
+
+    source = Path(__file__).resolve().parent.parent.joinpath("app.py").read_text()
+    assert source.index("init_feature_flags()") < source.index(
+        'enable_llm_obs("hihelloreid-chat"'
+    )
