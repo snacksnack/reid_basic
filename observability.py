@@ -74,6 +74,32 @@ def rag_prompt(query: str, context: str) -> AbstractContextManager:
     )
 
 
+def cohere_llm_span(model_name: str) -> AbstractContextManager:
+    """A manual LLM span for a Cohere generation call (RC1-475).
+
+    Manual for the same reason as `retrieval_span`: RC1-331 keeps ddtrace
+    auto-patching anthropic-only, so the Command arm would otherwise be
+    invisible. The span's model_name/model_provider identify the arm per
+    trace. Opened inside a `rag_prompt` block, it inherits the prompt
+    annotation the hallucination judge reads. A no-op when tracing is off.
+    """
+    if LLMObs is None or not LLMObs.enabled:
+        return nullcontext()
+    return LLMObs.llm(
+        model_name=model_name, model_provider="cohere", name="cohere.chat"
+    )
+
+
+def annotate_llm_io(**kwargs) -> None:
+    """Annotate the active LLM Obs span (input/output/metrics/tags); no-op
+    when tracing is off. Auto-traced anthropic spans get this from ddtrace;
+    manual spans must do it themselves or the judge has no span_output to
+    score."""
+    if LLMObs is None or not LLMObs.enabled:
+        return
+    LLMObs.annotate(**kwargs)
+
+
 def retrieval_span(*, rerank: bool) -> AbstractContextManager:
     """A manual LLM Obs retrieval span around the RAG lookup (RC1-473).
 

@@ -972,3 +972,179 @@ class TestRetrieveContextRerank:
         lines = [r.getMessage() for r in caplog.records if "RAG retrieved" in r.getMessage()]
         assert len(lines) == 3
         assert "rerank=0.9876" in lines[0]
+
+
+class _FakeCohereChat:
+    """Stands in for cohere.ClientV2: chat -> one canned text reply."""
+
+    def __init__(self, reply="Command says hi.", error=None):
+        self._reply = reply
+        self._error = error
+        self.calls = []
+
+    def chat(self, **kwargs):
+        self.calls.append(kwargs)
+        if self._error:
+            raise self._error
+
+        class _Item:
+            text = self._reply
+
+        class _Message:
+            content = [_Item()]
+
+        class _Response:
+            message = _Message()
+            usage = None
+
+        return _Response()
+
+
+class TestChatProviderSwap:
+    """RC1-475: CHAT_PROVIDER routes the conversational path to Command."""
+
+    def test_default_provider_is_claude(self, client, monkeypatch):
+        import app as app_module
+
+        fake_anthropic = _FakeClient(_Resp([_Block("text", text="Claude reply")]))
+        fake_cohere = _FakeCohereChat()
+        monkeypatch.setattr(app_module, "anthropic_client", fake_anthropic)
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+
+        res = client.post("/api/chat", json={"message": "hi", "sessionId": "p1"})
+
+        assert res.status_code == 200
+        assert res.json["reply"] == "Claude reply"
+        assert fake_cohere.calls == []
+
+    def test_cohere_provider_answers_via_command(self, client, monkeypatch):
+        import app as app_module
+
+        fake_anthropic = _FakeClient(_Resp([_Block("text", text="Claude reply")]))
+        fake_cohere = _FakeCohereChat(reply="Command reply")
+        monkeypatch.setattr(app_module, "anthropic_client", fake_anthropic)
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+        monkeypatch.setenv("CHAT_PROVIDER", "cohere")
+
+        res = client.post(
+            "/api/chat", json={"message": "what did Reid build?", "sessionId": "p2"}
+        )
+
+        assert res.status_code == 200
+        assert res.json["reply"] == "Command reply"
+        assert fake_anthropic.messages.calls == []
+        call = fake_cohere.calls[0]
+        assert call["model"] == app_module.COHERE_CHAT_MODEL
+        # Same seat, same conditioning: the system prompt (instructions +
+        # catalog + retrieved context) leads the message list, and the
+        # user's question follows.
+        assert call["messages"][0]["role"] == "system"
+        assert "Relevant context about Reid" in call["messages"][0]["content"]
+        assert call["messages"][-1] == {
+            "role": "user",
+            "content": "what did Reid build?",
+        }
+
+    def test_cohere_selected_without_client_falls_back_to_claude(
+        self, client, monkeypatch
+    ):
+        import app as app_module
+
+        fake_anthropic = _FakeClient(_Resp([_Block("text", text="Claude reply")]))
+        monkeypatch.setattr(app_module, "anthropic_client", fake_anthropic)
+        monkeypatch.setattr(app_module, "cohere_client", None)
+        monkeypatch.setenv("CHAT_PROVIDER", "cohere")
+
+        res = client.post("/api/chat", json={"message": "hi", "sessionId": "p3"})
+
+        assert res.status_code == 200
+        assert res.json["reply"] == "Claude reply"
+
+    def test_cohere_api_failure_uses_the_same_error_path(self, client, monkeypatch):
+        # AC2: parity with an Anthropic failure — the outer handler's 500.
+        import app as app_module
+
+        fake_cohere = _FakeCohereChat(error=RuntimeError("invalid api token"))
+        monkeypatch.setattr(
+            app_module,
+            "anthropic_client",
+            _FakeClient(_Resp([_Block("text", text="unused")])),
+        )
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+        monkeypatch.setenv("CHAT_PROVIDER", "cohere")
+
+        res = client.post("/api/chat", json={"message": "hi", "sessionId": "p4"})
+
+        assert res.status_code == 500
+        assert res.json["error"] == "Failed to generate response"
+
+    def test_match_stays_on_claude_even_with_cohere_provider(
+        self, client, monkeypatch
+    ):
+        # The forced-tool fit card is Anthropic-protocol; the swap arm covers
+        # the conversational path only.
+        import app as app_module
+
+        tool_block = _Block(
+            "tool_use",
+            name="render_fit_card",
+            input={
+                "role_title": "TPM",
+                "verdict": "good",
+                "verdict_label": "Good fit",
+                "strengths": ["a"],
+                "transferable": ["b"],
+                "gaps": ["c"],
+                "summary": "s",
+            },
+        )
+        fake_anthropic = _FakeClient(_Resp([tool_block]))
+        fake_cohere = _FakeCohereChat()
+        monkeypatch.setattr(app_module, "anthropic_client", fake_anthropic)
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+        monkeypatch.setenv("CHAT_PROVIDER", "cohere")
+
+        res = client.post(
+            "/api/chat", json={"message": "/match TPM role", "sessionId": "p5"}
+        )
+
+        assert res.status_code == 200
+        assert "fitCard" in res.json
+        assert fake_cohere.calls == []
+
+    def test_tool_block_history_is_flattened_for_cohere(self, monkeypatch):
+        import app as app_module
+
+        fake_cohere = _FakeCohereChat(reply="ok")
+        monkeypatch.setattr(app_module, "cohere_client", fake_cohere)
+
+        app_module._cohere_chat_reply(
+            "system text",
+            [
+                {"role": "user", "content": "book a call"},
+                {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "text", "text": "Sure —"},
+                        {"type": "tool_use", "id": "t1", "name": "schedule_meeting", "input": {}},
+                    ],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "tool_result", "tool_use_id": "t1", "content": "{}"}
+                    ],
+                },
+                {"role": "user", "content": "thanks"},
+            ],
+        )
+
+        roles_and_texts = [
+            (m["role"], m["content"]) for m in fake_cohere.calls[0]["messages"]
+        ]
+        assert roles_and_texts == [
+            ("system", "system text"),
+            ("user", "book a call"),
+            ("assistant", "Sure —"),
+            ("user", "thanks"),
+        ]
