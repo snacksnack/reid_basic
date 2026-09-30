@@ -7,4 +7,4 @@ pythonpath = ["."]
 # session figure: the server suite is the real number; the resume-sync
 # guardrail exercises app only incidentally and reads low by design.
 [tool.coverage.run]
-source = ["app", "observability"]
+source = ["app", "observability", "feature_flags"]

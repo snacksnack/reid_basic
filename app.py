@@ -15,6 +15,7 @@ from flask import Flask, Response, request, jsonify, send_file, send_from_direct
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from feature_flags import flag_enabled, init_feature_flags
 from observability import (
     annotate_llm_io,
     cohere_llm_span,
@@ -47,6 +48,10 @@ limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_
 # Procfile dyno type — so the catalog entry had no telemetry to join, and the
 # site dashboard's one `service:hihelloreid` filter matched nothing.
 enable_llm_obs("hihelloreid-chat", service="hihelloreid")
+
+# RC1-476: Datadog Feature Flags probe. No-op unless the
+# DD_FEATURE_FLAGS_ENABLED config var opts this process in.
+init_feature_flags()
 
 anthropic_client = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
 openai_client = OpenAI() if os.environ.get("OPENAI_API_KEY") else None
@@ -1147,6 +1152,13 @@ def chat():
             return jsonify({"error": "message is required"}), 400
 
         raw_query = message.strip()
+
+        # RC1-476 probe: one no-op boolean evaluation per chat request, so
+        # flag evaluations show up against real traffic during the MFCR
+        # read week. Behavior is identical either way.
+        if flag_enabled("rc1-476-probe"):
+            logging.info("rc1-476-probe flag is ON for this request")
+
         is_match = raw_query.lower().startswith("/match")
         match_body = raw_query[len("/match"):].strip() if is_match else ""
 

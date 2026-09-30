@@ -19,6 +19,9 @@ for _key in ("OPENAI_API_KEY", "PINECONE_API_KEY", "COHERE_API_KEY"):
 # suite.
 os.environ["COHERE_RERANK_ENABLED"] = ""
 os.environ["CHAT_PROVIDER"] = ""
+# RC1-476: feature flags are opt-in; blank the opt-in so the unit suite
+# never starts the polling provider.
+os.environ["DD_FEATURE_FLAGS_ENABLED"] = ""
 
 import pytest
 
