@@ -1155,9 +1155,12 @@ def chat():
 
         # RC1-476 probe: one no-op boolean evaluation per chat request, so
         # flag evaluations show up against real traffic during the MFCR
-        # read week. Behavior is identical either way.
-        if flag_enabled("rc1-476-probe"):
-            logging.info("rc1-476-probe flag is ON for this request")
+        # read week. Behavior is identical either way; the value rides on
+        # this request's LLM Obs span (bare facet `rc1_476_probe`) because
+        # INFO log lines never reach Heroku's log stream.
+        probe_tags = {
+            "rc1_476_probe": "on" if flag_enabled("rc1-476-probe") else "off"
+        }
 
         is_match = raw_query.lower().startswith("/match")
         match_body = raw_query[len("/match"):].strip() if is_match else ""
@@ -1337,7 +1340,7 @@ def chat():
         # through to the outer handler — the same 500 an Anthropic failure
         # produces today.
         if _chat_provider() == "cohere":
-            with rag_prompt(raw_query, grounding):
+            with rag_prompt(raw_query, grounding, extra_tags=probe_tags):
                 reply = _cohere_chat_reply(system_content, api_messages)
             if not reply:
                 reply = "Sorry, I couldn't generate a response."
@@ -1345,7 +1348,7 @@ def chat():
             return jsonify({"reply": reply})
 
         for _ in range(MAX_TOOL_ROUNDS):
-            with rag_prompt(raw_query, grounding):
+            with rag_prompt(raw_query, grounding, extra_tags=probe_tags):
                 response = anthropic_client.messages.create(
                     model=CHAT_MODEL,
                     system=system_content,
