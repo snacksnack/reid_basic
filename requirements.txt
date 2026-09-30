@@ -8,6 +8,9 @@ flask-cors>=4.0
 flask-limiter>=3.0
 gunicorn>=21.0
 openai>=1.0
+# RC1-476: Datadog Feature Flags (ddtrace's DataDogProvider plugs into the
+# OpenFeature API). Runtime no-op unless DD_FEATURE_FLAGS_ENABLED=true.
+openfeature-sdk>=0.5,<1
 psycopg2-binary>=2.9
 python-dotenv>=1.0
 pdfplumber>=0.10
