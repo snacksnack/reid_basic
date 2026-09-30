@@ -111,3 +111,12 @@ def test_rag_prompt_uses_the_hallucination_template_keys(monkeypatch):
             }
         }
     ]
+
+
+def test_rag_prompt_extra_tags_join_the_annotation(monkeypatch):
+    """RC1-476: the probe flag's value rides the span as a bare facet."""
+    fake = FakeLLMObs(enabled=True)
+    monkeypatch.setattr(observability, "LLMObs", fake)
+    with observability.rag_prompt("q", "c", extra_tags={"rc1_476_probe": "on"}):
+        pass
+    assert fake.annotations[0]["tags"] == {"rag": "resume", "rc1_476_probe": "on"}

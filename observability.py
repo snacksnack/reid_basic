@@ -49,7 +49,9 @@ def enable_llm_obs(ml_app: str, *, service: str | None = None) -> bool:
     return True
 
 
-def rag_prompt(query: str, context: str) -> AbstractContextManager:
+def rag_prompt(
+    query: str, context: str, extra_tags: dict | None = None
+) -> AbstractContextManager:
     """Attach the visitor's question and the retrieved resume text to every
     LLM span opened inside the block (RC1-444).
 
@@ -65,7 +67,10 @@ def rag_prompt(query: str, context: str) -> AbstractContextManager:
     if LLMObs is None or not LLMObs.enabled:
         return nullcontext()
     return LLMObs.annotation_context(
-        tags={"rag": "resume"},
+        # extra_tags: per-request facts a trace query needs, e.g. the
+        # rc1-476-probe flag value (RC1-476 AC2 — evaluations visible in
+        # traces; INFO log lines never reach Heroku's log stream).
+        tags={"rag": "resume", **(extra_tags or {})},
         prompt={
             "variables": {"query": query, "context": context},
             "rag_query_variables": ["query"],
