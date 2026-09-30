@@ -41,6 +41,17 @@ if not IS_PRODUCTION:
 
 limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_limits=[])
 
+# RC1-476: Datadog Feature Flags probe. No-op unless the
+# DD_FEATURE_FLAGS_ENABLED config var opts this process in.
+# ORDER IS LOAD-BEARING: the flags provider must initialize BEFORE
+# LLMObs.enable(). Initialized after it, the provider's agentless config
+# fetch never completes — the process serves flag defaults forever (found
+# in production 2026-09-29: the web dyno evaluated `off` while a one-off
+# dyno without LLM Obs evaluated `on`; flipping the init order fixed it,
+# and a live allocation flip confirmed the poller stays healthy with
+# LLM Obs enabled after).
+init_feature_flags()
+
 # RC1-361: before the Anthropic client exists, so every gunicorn worker traces
 # from its first request. No-op without DD_API_KEY.
 # RC1-447: the service is the Software Catalog entity's name, which is also
@@ -48,10 +59,6 @@ limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_
 # Procfile dyno type — so the catalog entry had no telemetry to join, and the
 # site dashboard's one `service:hihelloreid` filter matched nothing.
 enable_llm_obs("hihelloreid-chat", service="hihelloreid")
-
-# RC1-476: Datadog Feature Flags probe. No-op unless the
-# DD_FEATURE_FLAGS_ENABLED config var opts this process in.
-init_feature_flags()
 
 anthropic_client = anthropic.Anthropic() if os.environ.get("ANTHROPIC_API_KEY") else None
 openai_client = OpenAI() if os.environ.get("OPENAI_API_KEY") else None
