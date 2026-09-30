@@ -15,7 +15,12 @@ from flask import Flask, Response, request, jsonify, send_file, send_from_direct
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from feature_flags import flag_enabled, init_feature_flags
+# ORDER IS LOAD-BEARING: feature_flags self-initializes its provider at
+# import, and that must happen BEFORE observability's import pulls in
+# ddtrace.llmobs — with llmobs imported first, agentless flag delivery
+# silently never starts and every flag serves its default forever
+# (RC1-476). tests/test_feature_flags.py guards this order.
+from feature_flags import flag_enabled
 from observability import (
     annotate_llm_io,
     cohere_llm_span,
@@ -40,17 +45,6 @@ if not IS_PRODUCTION:
     CORS(app)
 
 limiter = Limiter(get_remote_address, app=app, storage_uri="memory://", default_limits=[])
-
-# RC1-476: Datadog Feature Flags probe. No-op unless the
-# DD_FEATURE_FLAGS_ENABLED config var opts this process in.
-# ORDER IS LOAD-BEARING: the flags provider must initialize BEFORE
-# LLMObs.enable(). Initialized after it, the provider's agentless config
-# fetch never completes — the process serves flag defaults forever (found
-# in production 2026-09-29: the web dyno evaluated `off` while a one-off
-# dyno without LLM Obs evaluated `on`; flipping the init order fixed it,
-# and a live allocation flip confirmed the poller stays healthy with
-# LLM Obs enabled after).
-init_feature_flags()
 
 # RC1-361: before the Anthropic client exists, so every gunicorn worker traces
 # from its first request. No-op without DD_API_KEY.

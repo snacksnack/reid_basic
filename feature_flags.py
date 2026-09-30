@@ -27,11 +27,16 @@ import logging
 import os
 
 _client = None
+_initialized = False
 
 
 def init_feature_flags() -> bool:
-    """Start the provider, or quietly decline. Safe to call once at boot."""
-    global _client
+    """Start the provider, or quietly decline. Idempotent; runs once at
+    import (see the module-bottom call and the comment there)."""
+    global _client, _initialized
+    if _initialized:
+        return _client is not None
+    _initialized = True
     if os.environ.get("DD_FEATURE_FLAGS_ENABLED", "").lower() not in {"1", "true"}:
         return False
     if not os.environ.get("DD_API_KEY"):
@@ -75,3 +80,13 @@ def flag_enabled(name: str, default: bool = False) -> bool:
             "flag %r evaluation failed: %s — using default %s", name, exc, default
         )
         return default
+
+
+# Initialize at import, NOT at a later call site. The provider must be
+# constructed before `ddtrace.llmobs` is ever imported: with llmobs imported
+# first, the agentless configuration fetch silently never runs and every
+# evaluation returns its default forever (RC1-476; isolated by bisection —
+# any module order with llmobs before this init reproduces it, and init
+# before the llmobs import is the complete fix, live-flip verified). app.py
+# imports this module before `observability`, and a test guards that order.
+init_feature_flags()

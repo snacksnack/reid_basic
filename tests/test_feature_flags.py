@@ -5,21 +5,30 @@ kill-switch contract: no opt-in means no client, and every failure mode
 answers with the caller's default.
 """
 
+import pytest
+
 import feature_flags
 
 
+@pytest.fixture
+def fresh_init(monkeypatch):
+    """Re-arm init: the module self-initialized (and declined) at import."""
+    monkeypatch.setattr(feature_flags, "_initialized", False)
+    monkeypatch.setattr(feature_flags, "_client", None)
+
+
 class TestInitFeatureFlags:
-    def test_declines_without_opt_in(self, monkeypatch):
+    def test_declines_without_opt_in(self, fresh_init, monkeypatch):
         monkeypatch.setenv("DD_FEATURE_FLAGS_ENABLED", "")
         monkeypatch.setenv("DD_API_KEY", "present")
         assert feature_flags.init_feature_flags() is False
 
-    def test_declines_without_api_key(self, monkeypatch):
+    def test_declines_without_api_key(self, fresh_init, monkeypatch):
         monkeypatch.setenv("DD_FEATURE_FLAGS_ENABLED", "true")
         monkeypatch.setenv("DD_API_KEY", "")
         assert feature_flags.init_feature_flags() is False
 
-    def test_opt_in_pins_the_long_poll_interval(self, monkeypatch):
+    def test_opt_in_pins_the_long_poll_interval(self, fresh_init, monkeypatch):
         # Provider construction is faked to fail fast — the assertion is the
         # env guard that must be in place before any real init.
         monkeypatch.setenv("DD_FEATURE_FLAGS_ENABLED", "true")
@@ -68,13 +77,33 @@ class TestFlagEnabled:
         assert feature_flags.flag_enabled("rc1-476-probe") is True
 
 
-def test_flags_initialize_before_llm_obs_in_app_boot():
-    """The init order is load-bearing (RC1-476): a provider initialized
-    after LLMObs.enable() never receives configuration and the process
-    serves flag defaults forever. Guard the source order."""
+def test_feature_flags_import_precedes_observability_in_app():
+    """The import order is load-bearing (RC1-476): feature_flags
+    self-initializes its provider at import, and that must happen before
+    observability's import pulls in ddtrace.llmobs — llmobs imported first
+    silently kills agentless flag delivery for the life of the process."""
     from pathlib import Path
 
     source = Path(__file__).resolve().parent.parent.joinpath("app.py").read_text()
-    assert source.index("init_feature_flags()") < source.index(
-        'enable_llm_obs("hihelloreid-chat"'
+    assert source.index("from feature_flags import") < source.index(
+        "from observability import"
     )
+
+
+def test_feature_flags_module_self_initializes_at_import():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parent.parent.joinpath("feature_flags.py").read_text()
+    )
+    assert source.rstrip().endswith("init_feature_flags()")
+
+
+def test_init_is_idempotent(monkeypatch):
+    # The module already initialized (declined) at import; later calls must
+    # not attempt a second provider construction.
+    monkeypatch.setattr(feature_flags, "_initialized", True)
+    monkeypatch.setattr(feature_flags, "_client", None)
+    monkeypatch.setenv("DD_FEATURE_FLAGS_ENABLED", "true")
+    monkeypatch.setenv("DD_API_KEY", "present")
+    assert feature_flags.init_feature_flags() is False
