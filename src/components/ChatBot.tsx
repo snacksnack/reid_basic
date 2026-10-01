@@ -33,6 +33,15 @@ const PROMPT_CHIPS: PromptChip[] = [
   { label: "What's his AWS experience?", value: 'What is Reid’s AWS experience?' },
 ]
 
+// The pill label beside the FAB. The default enters role-fit mode on click;
+// a CTA without `match` opens plain chat instead.
+export interface FabCta {
+  label: string
+  match?: boolean
+}
+
+const DEFAULT_FAB_CTA: FabCta = { label: 'See how I fit your role', match: true }
+
 const MAX_USER_MESSAGES = 10
 
 const LIMIT_MESSAGE =
@@ -45,9 +54,15 @@ function generateSessionId() {
   return crypto.randomUUID()
 }
 
-// Pages pass their own starter chips when the résumé-centric defaults don't
-// fit the page's subject (/work leads with a projects question, RC1-481).
-export default function ChatBot({ chips = PROMPT_CHIPS }: { chips?: PromptChip[] }) {
+// Pages pass their own starter chips and FAB label when the résumé-centric
+// defaults don't fit the page's subject (/work is about the projects, RC1-481).
+export default function ChatBot({
+  chips = PROMPT_CHIPS,
+  fabCta = DEFAULT_FAB_CTA,
+}: {
+  chips?: PromptChip[]
+  fabCta?: FabCta
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: GREETING },
@@ -177,9 +192,13 @@ export default function ChatBot({ chips = PROMPT_CHIPS }: { chips?: PromptChip[]
         <div className="chat-fab-wrapper">
           <button
             className="chat-fab-label"
-            onClick={() => window.dispatchEvent(new CustomEvent('open-role-fit'))}
+            onClick={() =>
+              fabCta.match
+                ? window.dispatchEvent(new CustomEvent('open-role-fit'))
+                : setIsOpen(true)
+            }
           >
-            See how I fit your role <span aria-hidden="true">→</span>
+            {fabCta.label} <span aria-hidden="true">→</span>
           </button>
           <button
             className="chat-fab"

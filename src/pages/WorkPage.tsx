@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import TestbedStatusBar from '../testbed/TestbedStatusBar'
 import ProjectIndex from '../components/ProjectIndex'
 import ContactModal from '../components/ContactModal'
-import ChatBot, { type PromptChip } from '../components/ChatBot'
+import ChatBot, { type FabCta, type PromptChip } from '../components/ChatBot'
 import resume from '../data/resume'
 import './ProjectPage.css'
 
@@ -19,6 +19,9 @@ const WORK_CHIPS: PromptChip[] = [
     value: 'Which of Reid’s projects best shows his TPM skills?',
   },
 ]
+
+// No `match`: on this page the pill opens plain chat, not role-fit mode.
+const WORK_FAB_CTA: FabCta = { label: 'Ask about my projects' }
 
 // The project index on its own shareable URL (RC1-226). Unlike the two project
 // overview pages, this one carries the site's status bar rather than the
@@ -66,7 +69,7 @@ export default function WorkPage() {
         </a>
       </footer>
 
-      <ChatBot chips={WORK_CHIPS} />
+      <ChatBot chips={WORK_CHIPS} fabCta={WORK_FAB_CTA} />
       <ContactModal isOpen={contactOpen} onClose={() => setContactOpen(false)} />
     </div>
   )

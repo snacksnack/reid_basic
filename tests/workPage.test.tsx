@@ -59,6 +59,15 @@ describe('WorkPage', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Is he senior enough?' })).not.toBeInTheDocument()
   })
+
+  it('relabels the FAB pill for projects and opens plain chat, not role-fit', () => {
+    render(<WorkPage />)
+    expect(screen.queryByText(/See how I fit your role/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByText(/Ask about my projects/))
+    expect(screen.getByRole('dialog', { name: 'Resume chat' })).toBeInTheDocument()
+    // Role-fit mode would show the Role Fit subheader; plain chat must not.
+    expect(screen.queryByText('Role Fit')).not.toBeInTheDocument()
+  })
 })
 
 describe('routing', () => {
