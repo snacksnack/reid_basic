@@ -44,6 +44,21 @@ describe('WorkPage', () => {
     render(<WorkPage />)
     expect(document.title).toBe('Work — Reid Collins')
   })
+
+  // RC1-481 — the chatbot lives here too, with chips that lead with the
+  // page's subject (projects) instead of the résumé defaults.
+  it('mounts the chatbot with projects-first starter chips', () => {
+    render(<WorkPage />)
+    fireEvent.click(screen.getByLabelText('Open chat'))
+    expect(screen.getByRole('dialog', { name: 'Resume chat' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Walk me through these projects' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'See how he fits your role' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Is he senior enough?' })).not.toBeInTheDocument()
+  })
 })
 
 describe('routing', () => {

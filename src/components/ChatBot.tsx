@@ -21,7 +21,13 @@ const MATCH_PLACEHOLDER = 'Paste the job description here, then press send…'
 // Starter chips shown in the empty state (discoverability — recruiters can't
 // find a hidden slash command). The match chip enters role-fit mode; the rest
 // send immediately.
-const PROMPT_CHIPS: Array<{ label: string; value?: string; match?: boolean }> = [
+export interface PromptChip {
+  label: string
+  value?: string
+  match?: boolean
+}
+
+const PROMPT_CHIPS: PromptChip[] = [
   { label: 'See how he fits your role', match: true },
   { label: 'Is he senior enough?', value: 'Is Reid senior enough for a lead role?' },
   { label: "What's his AWS experience?", value: 'What is Reid’s AWS experience?' },
@@ -39,7 +45,9 @@ function generateSessionId() {
   return crypto.randomUUID()
 }
 
-export default function ChatBot() {
+// Pages pass their own starter chips when the résumé-centric defaults don't
+// fit the page's subject (/work leads with a projects question, RC1-481).
+export default function ChatBot({ chips = PROMPT_CHIPS }: { chips?: PromptChip[] }) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: GREETING },
@@ -146,7 +154,7 @@ export default function ChatBot() {
     }
   }
 
-  const handleChip = (chip: (typeof PROMPT_CHIPS)[number]) => {
+  const handleChip = (chip: PromptChip) => {
     if (chip.match) {
       setMatchMode(true)
       inputRef.current?.focus()
@@ -264,7 +272,7 @@ export default function ChatBot() {
             )}
             {showChips && (
               <div className="chat-chips" role="group" aria-label="Suggested prompts">
-                {PROMPT_CHIPS.filter((chip) => !(matchMode && chip.match)).map((chip) => (
+                {chips.filter((chip) => !(matchMode && chip.match)).map((chip) => (
                   <button
                     key={chip.label}
                     type="button"
