@@ -2,8 +2,23 @@ import { useEffect, useState } from 'react'
 import TestbedStatusBar from '../testbed/TestbedStatusBar'
 import ProjectIndex from '../components/ProjectIndex'
 import ContactModal from '../components/ContactModal'
+import ChatBot, { type PromptChip } from '../components/ChatBot'
 import resume from '../data/resume'
 import './ProjectPage.css'
+
+// This page is about the projects, so the starter chips lead with a projects
+// question; role fit keeps its slot since the FAB label still points to it.
+const WORK_CHIPS: PromptChip[] = [
+  {
+    label: 'Walk me through these projects',
+    value: 'Give me an overview of Reid’s personal projects.',
+  },
+  { label: 'See how he fits your role', match: true },
+  {
+    label: 'Which project shows his TPM skills?',
+    value: 'Which of Reid’s projects best shows his TPM skills?',
+  },
+]
 
 // The project index on its own shareable URL (RC1-226). Unlike the two project
 // overview pages, this one carries the site's status bar rather than the
@@ -51,6 +66,7 @@ export default function WorkPage() {
         </a>
       </footer>
 
+      <ChatBot chips={WORK_CHIPS} />
       <ContactModal isOpen={contactOpen} onClose={() => setContactOpen(false)} />
     </div>
   )
