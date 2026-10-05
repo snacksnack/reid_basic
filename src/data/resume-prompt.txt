@@ -4,7 +4,7 @@ Brooklyn, NY | hire.reid.collins@gmail.com | hihelloreid.com | linkedin.com/in/r
 Open to Senior Technical Program Manager and Technical Solutions roles
 
 SUMMARY
-Senior Technical Program Manager / Software Developer building AI agents and workflow automation, on a hybrid background in software engineering, program leadership, and client-facing technical delivery. Track record spans large-scale platform migrations, ML platform delivery, and cross-functional initiatives on AWS — and production AI systems with the evaluation, observability, and cost controls to operate them.
+Senior Technical Program Manager / Software Developer building AI agents and workflow automation, on a hybrid background in software engineering, program leadership, and client-facing technical delivery. Track record spans large-scale platform migrations, ML/data platform delivery, and cross-functional initiatives on AWS — and production AI systems with the evaluation, observability, and cost controls to operate them.
 
 PROFESSIONAL EXPERIENCE
 
