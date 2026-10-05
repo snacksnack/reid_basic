@@ -11,7 +11,7 @@ const resume: ResumeData = {
     github: 'https://github.com/snacksnack',
   },
   summary:
-    'Senior Technical Program Manager / Software Developer building AI agents and workflow automation, on a hybrid background in software engineering, program leadership, and client-facing technical delivery. Track record spans large-scale platform migrations, ML/data platform delivery, and cross-functional initiatives on AWS — and production AI systems with the evaluation, observability, and cost controls to operate them.',
+    'Senior Technical Program Manager / Software Developer building AI agents and workflow automation, on a hybrid background in software engineering, program leadership, and client-facing technical delivery. Track record spans large-scale platform migrations, ML/data platform delivery, and cross-functional initiatives on AWS, as well as production AI systems with the evaluation, observability, and cost controls to operate them.',
   skillCategories: [
     { category: 'Program Management', items: ['Agile', 'Scrum', 'Program Governance', 'Roadmap Execution', 'Release Planning', 'Release Management', 'RAID Management', 'Dependency Management', 'Stakeholder Management'] },
     { category: 'AI & Agents', items: ['Claude API', 'multi-agent orchestration', 'tool use', 'RAG', 'evals', 'cost telemetry'] },
@@ -34,15 +34,15 @@ const resume: ResumeData = {
             'Owned program delivery for a portfolio of platform-migration initiatives, coordinating engineering, SRE, and product teams to land each on schedule and within budget',
             'Led migration from Phabricator to Bitbucket across engineering, SRE, and client development teams (3 repositories), defining migration strategy, redesigning branching models, enabling automated commits via bot/service accounts, and enforcing mandatory code review on all commits to reduce production issues by 20%',
             'Directed migration from on-prem Jira to Jira Cloud across 20 projects and 15 teams, redefining workflows for cloud constraints and incompatible plugins, establishing ticket migration cutoffs, and managing external contractors within budget',
-            'Led program governance — roadmap execution, release planning, decision & RAID logs, and dependency tracking — while building Jira/Notion/n8n automation that cut manual reporting ~2 hrs/week and stale tickets 20%',
+            'Led program governance (roadmap execution, release planning, decision & RAID logs, and dependency tracking) while building Jira/Notion/n8n automation that cut manual reporting ~2 hrs/week and stale tickets 20%',
           ],
         },
         {
           heading: 'Machine Learning / Data Platform',
           items: [
-            'Led onboarding of 100+ clients to the ML platform over two quarters, translating client data requirements into ClickHouse-to-S3 + EventBridge ingestion for multi-terabyte datasets (10–50GB per client) and coordinating cross-account, multi-region (US/APAC/Japan) access — cutting average onboarding time by 30%',
+            'Led onboarding of 100+ clients to the ML platform over two quarters, translating client data requirements into ClickHouse-to-S3 + EventBridge ingestion for multi-terabyte datasets (10–50GB per client) and coordinating cross-account, multi-region (US/APAC/Japan) access, cutting average onboarding time by 30%',
             'Engineered nightly data pipelines on Athena and S3, coding ClickHouse queries with client-driven export controls and cross-team S3 access via AWS SAM, plus monitoring to ensure reliable ingestion',
-            'Drove release delivery of three production ML models — Propensity-to-Purchase, Discount Optimization, and Send Time Optimization — on a serverless platform (Lambda, SQS, EventBridge, SageMaker), owning release planning, deployment readiness, and cross-functional dependencies through production launch',
+            'Drove release delivery of three production ML models (Propensity-to-Purchase, Discount Optimization, and Send Time Optimization) on a serverless platform (Lambda, SQS, EventBridge, SageMaker), owning release planning, deployment readiness, and cross-functional dependencies through production launch',
             'Delivered a queue-driven (SQS) export pipeline on a scheduled cadence to return model scores to clients, safely handling concurrent multi-exports',
             'Shipped a run-tracking service (Lambda + DynamoDB) storing training/scoring runs by month with a query API, giving teams operational visibility into model-run history',
           ],
@@ -50,7 +50,7 @@ const resume: ResumeData = {
         {
           heading: 'Platform & Backend Systems',
           items: [
-            'Developed a containerized API proxy and token management system on AWS ECS/Fargate, improving authentication reliability and horizontal scalability — sustaining a 400K messages/hour SLA (100K per container across 4 containers)',
+            'Developed a containerized API proxy and token management system on AWS ECS/Fargate, improving authentication reliability and horizontal scalability, sustaining a 400K messages/hour SLA (100K per container across 4 containers)',
             'Drove zero-downtime migration from Oracle to MySQL, including schema redesign, data migration strategy, and implementing code changes to eliminate legacy database dependencies, eliminating over $100K in annual Oracle licensing and support costs',
             'Coordinated seamless migration of image caching infrastructure from Akamai to Cloudflare across 125 client domains, updating application code and partnering with clients to manage certificate changes with zero service disruption',
             'Developed backend services for authentication, campaign data, service health, and DynamoDB integrations in high-throughput systems',
@@ -61,7 +61,7 @@ const resume: ResumeData = {
           heading: 'Observability & Reliability',
           items: [
             'Led development of a custom observability framework (structured logging, distributed tracing, Prometheus, Grafana) for high-throughput, time-sensitive systems processing thousands of event-based messages per minute',
-            'Built AI-powered incident summarization system using AWS Lambda, SAM, DynamoDB, Claude, Slack, and Jira to ingest CloudWatch alarms and Bitbucket pipeline failures, consolidating repeat alerts from the same failing service into single incidents and generating operational summaries — cutting post-mortem turnaround from days to hours; later rebuilt and extended it as a live personal system with Datadog and GitHub Actions ingestion (incidents.hihelloreid.com)',
+            'Built AI-powered incident summarization system using AWS Lambda, SAM, DynamoDB, Claude, Slack, and Jira to ingest CloudWatch alarms and Bitbucket pipeline failures, consolidating repeat alerts from the same failing service into single incidents and generating operational summaries, cutting post-mortem turnaround from days to hours; later rebuilt and extended it as a live personal system with Datadog and GitHub Actions ingestion (incidents.hihelloreid.com)',
           ],
         },
       ],
