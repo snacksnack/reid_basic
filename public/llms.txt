@@ -9,10 +9,19 @@ JavaScript.
 ## About
 
 - Current: Senior Technical Program Manager / Software Developer at Zeta Global (acquired Marigold, November 2025), 2021–2026.
-- Highlights: led migrations from Phabricator to Bitbucket and on-prem Jira to Jira Cloud (20 projects, 15 teams); onboarded 100+ clients to an ML platform; drove zero-downtime Oracle-to-MySQL migration; built an AI-powered incident summarization system (Lambda, DynamoDB, Claude, Slack, Jira).
 - Skills: program governance and release management; AI agents (Claude API, multi-agent orchestration, tool use, RAG, evals, cost telemetry); Python, Ruby, Bash; AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena); MySQL, PostgreSQL, ClickHouse, DynamoDB; Datadog, Prometheus, Grafana, distributed tracing.
 - Certifications: AWS Solutions Architect – Associate; Certified Scrum Master (CSM).
 - Previously: Cheetah Digital (2015–2021), CheetahMail / Experian.
+
+## Selected results (Zeta Global, 2021–2026)
+
+- Throughput: built a containerized API proxy and token-management system on AWS ECS/Fargate sustaining a 400K messages/hour SLA (100K per container across 4 containers).
+- Cost: drove a zero-downtime Oracle-to-MySQL migration — schema redesign, data-migration strategy, and code changes to drop legacy dependencies — eliminating $100K+ in annual Oracle licensing and support.
+- Reliability: migrated image caching from Akamai to Cloudflare across 125 client domains with zero service disruption; enforced mandatory code review on all commits (Phabricator-to-Bitbucket migration) that cut production issues 20%.
+- Observability: built a custom framework (structured logging, distributed tracing, Prometheus, Grafana) for high-throughput, time-sensitive systems processing thousands of event-based messages per minute.
+- ML/data platform: onboarded 100+ clients over two quarters (10–50GB each, ClickHouse-to-S3 + EventBridge ingestion, cross-account multi-region US/APAC/Japan), cutting average onboarding time 30%; delivered three production ML models (Propensity-to-Purchase, Discount Optimization, Send Time Optimization) on Lambda/SQS/EventBridge/SageMaker, plus a queue-driven (SQS) scoring-export pipeline and a Lambda+DynamoDB run-tracking service.
+- Migrations & governance: Phabricator-to-Bitbucket and on-prem Jira-to-Jira Cloud (20 projects, 15 teams); Jira/Notion/n8n automation cut manual reporting ~2 hrs/week and stale tickets 20%.
+- AI incident summarizer: AWS Lambda, SAM, DynamoDB, Claude, Slack, and Jira — deduplicates repeat alerts from a failing service into single incidents, cutting post-mortem turnaround from days to hours; rebuilt as a live personal system with Datadog and GitHub Actions ingestion (incidents.hihelloreid.com).
 
 ## Pages
 
