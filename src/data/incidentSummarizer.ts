@@ -36,7 +36,7 @@ export const incidentSummarizer = {
   kicker: 'Incident response',
   lead: 'Correlates three alert firehoses into one incident.',
   tagline:
-    'Three observability firehoses land as one incident instead of fifty pages. Alerts are normalized to a shared schema, deduplicated by fingerprint, and correlated in a time window; an LLM writes the summary that reaches Slack and Jira.',
+    'Three observability firehoses land as one incident instead of fifty pages. Alerts are normalized to a shared schema, deduplicated by fingerprint, and correlated in a time window; an LLM writes the summary that reaches Slack and Jira. The original production version cut post-mortem turnaround from days to hours.',
   principle: 'Fifty alerts become one incident before anyone gets paged.',
   // The index row shows `note`; the overview page reads `principle`.
   note: 'Correlation state lives in DynamoDB TTL, so the Lambdas stay stateless; replies thread back onto the original Slack message.',

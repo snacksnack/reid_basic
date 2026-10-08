@@ -60,7 +60,7 @@ const REPO = 'https://github.com/snacksnack/pr_agent'
 export const prReviewAgent = {
   name: 'PR Review Agent',
   kicker: 'Code review',
-  lead: 'Reviews every PR on an account, at a tenth of the cost.',
+  lead: 'Reviews every PR on an account, at about a tenth of its former cost.',
   tagline:
     'A GitHub App that reviews every pull request opened across an account — including repositories that do not exist yet. Python plans each review and hands the agents the context they would otherwise pay to explore for. Three reviewers, scoped by the kind of evidence a finding needs, share one cached prefix and call no tools. A verifier checks every finding against the diff before one review is posted — advisory unless a secret was committed.',
   principle:

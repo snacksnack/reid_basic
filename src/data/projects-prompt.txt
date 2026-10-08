@@ -3,7 +3,7 @@ All 9 personal engineering projects on the /work page (hihelloreid.com/work):
 - Launch Planner [launch-planner]: An agentic delivery planner for migrations and launches.
 - Dependency Drift Detector [drift-detector]: Watches a Jira dependency graph for upstream slips.
 - AI Incident Summarizer [incident-summarizer]: Correlates three alert firehoses into one incident.
-- PR Review Agent [pr-review-agent]: Reviews every PR on an account, at a tenth of the cost.
+- PR Review Agent [pr-review-agent]: Reviews every PR on an account, at about a tenth of its former cost.
 - TPM Workflow Automation [automation-suite]: Three scheduled services behind a program's paperwork.
 - Job Scout [job-search-agent]: Scores every new posting against a résumé, daily.
 - Concert Intelligence Agent [concert-intelligence]: Ranks upcoming shows by what you actually listen to.
@@ -75,7 +75,7 @@ Project: Dependency Drift Detector — chains [drift-detector]
 Project: AI Incident Summarizer [incident-summarizer]
 Category: Incident response
 Correlates three alert firehoses into one incident.
-Three observability firehoses land as one incident instead of fifty pages. Alerts are normalized to a shared schema, deduplicated by fingerprint, and correlated in a time window; an LLM writes the summary that reaches Slack and Jira.
+Three observability firehoses land as one incident instead of fifty pages. Alerts are normalized to a shared schema, deduplicated by fingerprint, and correlated in a time window; an LLM writes the summary that reaches Slack and Jira. The original production version cut post-mortem turnaround from days to hours.
 Design principle: Fifty alerts become one incident before anyone gets paged.
 Note: Correlation state lives in DynamoDB TTL, so the Lambdas stay stateless; replies thread back onto the original Slack message.
 Technologies: AWS Lambda, SAM, DynamoDB, API Gateway, Claude API, Next.js, Vercel, agent-evals
@@ -115,7 +115,7 @@ Project: AI Incident Summarizer — principles [incident-summarizer]
 
 Project: PR Review Agent [pr-review-agent]
 Category: Code review
-Reviews every PR on an account, at a tenth of the cost.
+Reviews every PR on an account, at about a tenth of its former cost.
 A GitHub App that reviews every pull request opened across an account — including repositories that do not exist yet. Python plans each review and hands the agents the context they would otherwise pay to explore for. Three reviewers, scoped by the kind of evidence a finding needs, share one cached prefix and call no tools. A verifier checks every finding against the diff before one review is posted — advisory unless a secret was committed.
 Design principle: Python plans the review and gathers the evidence; three reviewers judge one cached prefix; a verifier checks every finding against the diff.
 Note: Three agents, not thirteen — one per kind of evidence a finding needs: the hunk, the hunk plus the repository, the hunk plus what the change claims to be. The category list is only an output schema.
