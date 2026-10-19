@@ -1551,12 +1551,15 @@ def _inject_route_meta(shell: str, path: str) -> str:
         return shell
 
     if "title" in meta:
+        # [^<]* (not .*?) keeps this linear: title text never contains a raw
+        # "<", so the class is unambiguous and can't backtrack across tags —
+        # a lazy ".*?" here is a polynomial-ReDoS on crafted input (CodeQL
+        # py/polynomial-redos).
         shell = re.sub(
-            r"(<title>).*?(</title>)",
+            r"(<title>)[^<]*(</title>)",
             lambda m: m.group(1) + html.escape(meta["title"]) + m.group(2),
             shell,
             count=1,
-            flags=re.DOTALL,
         )
     if "description" in meta:
         shell = _set_tag_content(shell, "name", "description", meta["description"])
