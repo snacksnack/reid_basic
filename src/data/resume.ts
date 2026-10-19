@@ -2,7 +2,7 @@ import type { ResumeData } from '../components/Resume'
 
 const resume: ResumeData = {
   name: 'Reid Collins',
-  title: 'Senior Technical Program Manager / Software Developer',
+  title: 'Senior Technical Program Manager / Platform Engineer',
   contact: {
     location: 'Brooklyn, NY',
     email: 'hire.reid.collins@gmail.com',
@@ -11,7 +11,7 @@ const resume: ResumeData = {
     github: 'https://github.com/snacksnack',
   },
   summary:
-    'Senior Technical Program Manager / Software Developer building AI agents and workflow automation, on a hybrid background in software engineering, program leadership, and client-facing technical delivery. Track record spans large-scale platform migrations, ML/data platform delivery, and cross-functional initiatives on AWS, as well as production AI systems with the evaluation, observability, and cost controls to operate them.',
+    'Senior Technical Program Manager / Platform Engineer building AI agents and workflow automation, on a hybrid background in software engineering, program leadership, and client-facing technical delivery. Track record spans large-scale platform migrations, ML/data platform delivery, and cross-functional initiatives on AWS, as well as production AI systems with the evaluation, observability, and cost controls to operate them.',
   skillCategories: [
     { category: 'Program Management', items: ['Agile', 'Scrum', 'Program Governance', 'Roadmap Execution', 'Release Planning', 'Release Management', 'RAID Management', 'Dependency Management', 'Stakeholder Management'] },
     { category: 'AI & Agents', items: ['Claude API', 'multi-agent orchestration', 'tool use', 'RAG', 'evals', 'cost telemetry'] },
@@ -25,7 +25,7 @@ const resume: ResumeData = {
   experience: [
     {
       company: 'Zeta Global (acquired Marigold, November 2025)',
-      role: 'Senior Technical Program Manager / Software Developer',
+      role: 'Senior Technical Program Manager / Platform Engineer',
       period: '2021 — 2026',
       achievementGroups: [
         {
@@ -93,7 +93,7 @@ const resume: ResumeData = {
   timelineEntries: [
     {
       company: 'Marigold → Zeta Global',
-      role: 'Senior Technical Program Manager / Software Developer',
+      role: 'Senior Technical Program Manager / Platform Engineer',
       period: '2021 — 2026',
     },
     {

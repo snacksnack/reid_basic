@@ -1,6 +1,6 @@
 # Reid Collins
 
-> Senior Technical Program Manager / Software Developer in Brooklyn, NY, building AI agents and workflow automation on a hybrid background in software engineering, program leadership, and client-facing technical delivery: large-scale platform migrations, ML platform delivery, and cross-functional initiatives on AWS.
+> Senior Technical Program Manager / Platform Engineer in Brooklyn, NY, building AI agents and workflow automation on a hybrid background in software engineering, program leadership, and client-facing technical delivery: large-scale platform migrations, ML platform delivery, and cross-functional initiatives on AWS.
 
 This site is Reid's resume and project portfolio. The pages are a client-rendered
 React app; this file is the plain-text summary for agents that don't execute
@@ -8,7 +8,7 @@ JavaScript.
 
 ## About
 
-- Current: Senior Technical Program Manager / Software Developer at Zeta Global (acquired Marigold, November 2025), 2021–2026.
+- Current: Senior Technical Program Manager / Platform Engineer at Zeta Global (acquired Marigold, November 2025), 2021–2026.
 - Skills: program governance and release management; AI agents (Claude API, multi-agent orchestration, tool use, RAG, evals, cost telemetry); Python, Ruby, Bash; AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena); MySQL, PostgreSQL, ClickHouse, DynamoDB; Datadog, Prometheus, Grafana, distributed tracing.
 - Certifications: AWS Solutions Architect – Associate; Certified Scrum Master (CSM).
 - Previously: Cheetah Digital (2015–2021), CheetahMail / Experian.
