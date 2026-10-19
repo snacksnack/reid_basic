@@ -1,14 +1,14 @@
 REID COLLINS
-Senior Technical Program Manager / Software Developer
+Senior Technical Program Manager / Platform Engineer
 Brooklyn, NY | hire.reid.collins@gmail.com | hihelloreid.com | linkedin.com/in/reidcollins | github.com/snacksnack
 Open to Senior Technical Program Manager and Technical Solutions roles
 
 SUMMARY
-Senior Technical Program Manager / Software Developer building AI agents and workflow automation, on a hybrid background in software engineering, program leadership, and client-facing technical delivery. Track record spans large-scale platform migrations, ML/data platform delivery, and cross-functional initiatives on AWS, as well as production AI systems with the evaluation, observability, and cost controls to operate them.
+Senior Technical Program Manager / Platform Engineer building AI agents and workflow automation, on a hybrid background in software engineering, program leadership, and client-facing technical delivery. Track record spans large-scale platform migrations, ML/data platform delivery, and cross-functional initiatives on AWS, as well as production AI systems with the evaluation, observability, and cost controls to operate them.
 
 PROFESSIONAL EXPERIENCE
 
-Zeta Global (acquired Marigold, November 2025) — Senior Technical Program Manager / Software Developer — 2021–2026
+Zeta Global (acquired Marigold, November 2025) — Senior Technical Program Manager / Platform Engineer — 2021–2026
 
 Program Leadership & Delivery:
 • Owned program delivery for a portfolio of platform-migration initiatives, coordinating engineering, SRE, and product teams to land each on schedule and within budget
