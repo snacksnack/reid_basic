@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import html
 import json
 import logging
 import os
@@ -1468,6 +1469,106 @@ def _static_asset(root: str, path: str) -> str | None:
     return os.path.relpath(candidate, root)
 
 
+# ---------------------------------------------------------------------------
+# Per-route social cards (RC1-512)
+# ---------------------------------------------------------------------------
+#
+# The site is a SPA served through one shell (index.html). Scrapers — LinkedIn,
+# Slack, iMessage — read the static <head> without running JS, so without this
+# every route would share the homepage card and LinkedIn would refuse to build
+# a Featured-link preview. For a known route we rewrite the handful of head
+# tags that should differ; the og:image and twitter:card stay shared, so they
+# live in index.html and are never touched here.
+
+SITE_ORIGIN = "https://www.hihelloreid.com"
+
+# One entry per route whose card differs from the homepage. og:url/canonical
+# are derived from the route, so they are not listed here.
+ROUTE_META = {
+    "/work": {
+        "title": "Selected work — Reid Collins",
+        "description": (
+            "Shipped agentic automations on one thesis: the model proposes, "
+            "deterministic code decides, a human approves. Datadog observability, "
+            "PR review, incident summarization, and more."
+        ),
+        "og:title": "Selected work — Reid Collins",
+        "og:description": (
+            "Shipped agentic automations on one thesis: the model proposes, "
+            "deterministic code decides, a human approves."
+        ),
+        "twitter:title": "Selected work — Reid Collins",
+        "twitter:description": (
+            "Shipped agentic automations on one thesis: the model proposes, "
+            "deterministic code decides, a human approves."
+        ),
+    },
+}
+
+
+def _route_url(path: str) -> str:
+    """Absolute canonical URL for the SPA path (leading/trailing slashes OK)."""
+    stripped = path.strip("/")
+    return SITE_ORIGIN + ("/" + stripped if stripped else "/")
+
+
+def _set_tag_content(shell: str, selector: str, attr_val: str, content: str) -> str:
+    """Replace the content="..." of the one <meta {selector}="{attr_val}" ...> tag.
+
+    Matches the managed single-line form in index.html (attribute then
+    content). Only the inner text is swapped, so the tag's structure survives.
+    No match (tag absent or multi-line) leaves the shell unchanged.
+    """
+    pattern = re.compile(
+        r'(<meta ' + selector + r'="' + re.escape(attr_val) + r'" content=")[^"]*(")'
+    )
+    return pattern.sub(
+        lambda m: m.group(1) + html.escape(content, quote=True) + m.group(2),
+        shell,
+        count=1,
+    )
+
+
+def _inject_route_meta(shell: str, path: str) -> str:
+    """Return the SPA shell with social tags rewritten for `path` (RC1-512).
+
+    og:url and canonical always track the requested route (a no-op on "/").
+    A route in ROUTE_META also gets its <title>, description, and the
+    og:/twitter: title+description overridden; unknown routes keep the
+    homepage card. The og:image and twitter:card are intentionally untouched.
+    """
+    url = _route_url(path)
+    shell = _set_tag_content(shell, "property", "og:url", url)
+    shell = re.sub(
+        r'(<link rel="canonical" href=")[^"]*(")',
+        lambda m: m.group(1) + html.escape(url, quote=True) + m.group(2),
+        shell,
+        count=1,
+    )
+
+    meta = ROUTE_META.get("/" + path.strip("/") if path.strip("/") else "/")
+    if not meta:
+        return shell
+
+    if "title" in meta:
+        shell = re.sub(
+            r"(<title>).*?(</title>)",
+            lambda m: m.group(1) + html.escape(meta["title"]) + m.group(2),
+            shell,
+            count=1,
+            flags=re.DOTALL,
+        )
+    if "description" in meta:
+        shell = _set_tag_content(shell, "name", "description", meta["description"])
+    for key in ("og:title", "og:description"):
+        if key in meta:
+            shell = _set_tag_content(shell, "property", key, meta[key])
+    for key in ("twitter:title", "twitter:description"):
+        if key in meta:
+            shell = _set_tag_content(shell, "name", key, meta[key])
+    return shell
+
+
 if IS_PRODUCTION:
 
     @app.route("/ui-testbed")
@@ -1482,7 +1583,12 @@ if IS_PRODUCTION:
     def serve_spa(path=""):
         dist = str(BASE_DIR / "dist")
         asset = _static_asset(dist, path)
-        return send_from_directory(dist, asset if asset else "index.html")
+        if asset:
+            return send_from_directory(dist, asset)
+        # Deep link into the SPA: serve the shell with a route-specific social
+        # card so scrapers get the right preview (RC1-512).
+        shell = (BASE_DIR / "dist" / "index.html").read_text(encoding="utf-8")
+        return Response(_inject_route_meta(shell, path), mimetype="text/html")
 
 
 if __name__ == "__main__":
