@@ -1488,19 +1488,20 @@ ROUTE_META = {
     "/work": {
         "title": "Selected work — Reid Collins",
         "description": (
-            "Shipped agentic automations on one thesis: the model proposes, "
-            "deterministic code decides, a human approves. Datadog observability, "
-            "PR review, incident summarization, and more."
+            "Platform engineering and TPM work from Reid Collins, shipped on one "
+            "thesis: the model proposes, deterministic code decides, a human "
+            "approves. Datadog observability, PR review, incident summarization, "
+            "and more."
         ),
         "og:title": "Selected work — Reid Collins",
         "og:description": (
-            "Shipped agentic automations on one thesis: the model proposes, "
-            "deterministic code decides, a human approves."
+            "Platform engineering and TPM work, shipped on one thesis: the model "
+            "proposes, deterministic code decides, a human approves."
         ),
         "twitter:title": "Selected work — Reid Collins",
         "twitter:description": (
-            "Shipped agentic automations on one thesis: the model proposes, "
-            "deterministic code decides, a human approves."
+            "Platform engineering and TPM work, shipped on one thesis: the model "
+            "proposes, deterministic code decides, a human approves."
         ),
     },
 }
