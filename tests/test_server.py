@@ -14,6 +14,9 @@ from app import (
     _retrieve_context,
     _resume_path,
     _static_asset,
+    _inject_route_meta,
+    ROUTE_META,
+    SITE_ORIGIN,
 )
 
 
@@ -774,6 +777,95 @@ class TestStaticAsset:
 
     def test_empty_path_is_rejected(self, root):
         assert _static_asset(root, "") is None
+
+
+# The source shell is what Vite builds into dist/index.html, so testing it
+# here covers what serve_spa serves without needing a build in CI.
+_INDEX_HTML = os.path.join(os.path.dirname(__file__), "..", "index.html")
+
+
+def _content(html_text, selector, attr_val):
+    """Pull the content="..." of a <meta {selector}="{attr_val}" ...> tag."""
+    import re
+
+    m = re.search(
+        r'<meta ' + selector + r'="' + re.escape(attr_val) + r'" content="([^"]*)"',
+        html_text,
+    )
+    return m.group(1) if m else None
+
+
+class TestSocialMetaStaticShell:
+    """Static OG/Twitter tags must be present in the shell itself (RC1-512)."""
+
+    @pytest.fixture
+    def shell(self):
+        with open(_INDEX_HTML, encoding="utf-8") as f:
+            return f.read()
+
+    def test_og_image_is_absolute_https(self, shell):
+        img = _content(shell, "property", "og:image")
+        assert img is not None
+        assert img.startswith("https://")
+
+    def test_og_image_dimensions_declared(self, shell):
+        assert _content(shell, "property", "og:image:width") == "1200"
+        assert _content(shell, "property", "og:image:height") == "630"
+
+    def test_twitter_card_is_summary_large_image(self, shell):
+        assert _content(shell, "name", "twitter:card") == "summary_large_image"
+
+    def test_twitter_image_present(self, shell):
+        assert _content(shell, "name", "twitter:image", ).startswith("https://")
+
+
+class TestInjectRouteMeta:
+    """serve_spa rewrites the shell's social card per route (RC1-512)."""
+
+    @pytest.fixture
+    def shell(self):
+        with open(_INDEX_HTML, encoding="utf-8") as f:
+            return f.read()
+
+    def test_home_keeps_default_card(self, shell):
+        out = _inject_route_meta(shell, "")
+        assert _content(out, "property", "og:url") == SITE_ORIGIN + "/"
+        assert "Senior Technical Program Manager" in _content(out, "property", "og:title")
+
+    def test_work_gets_route_specific_card(self, shell):
+        out = _inject_route_meta(shell, "work")
+        assert _content(out, "property", "og:url") == SITE_ORIGIN + "/work"
+        assert _content(out, "property", "og:title") == ROUTE_META["/work"]["og:title"]
+        assert _content(out, "property", "og:description") == ROUTE_META["/work"]["og:description"]
+        assert "Selected work" in out[out.index("<title>"): out.index("</title>")]
+
+    def test_work_differs_from_home(self, shell):
+        home = _inject_route_meta(shell, "")
+        work = _inject_route_meta(shell, "work")
+        assert _content(home, "property", "og:title") != _content(work, "property", "og:title")
+        assert _content(home, "name", "description") != _content(work, "name", "description")
+
+    def test_trailing_slash_is_tolerated(self, shell):
+        assert _inject_route_meta(shell, "work/") == _inject_route_meta(shell, "work")
+
+    def test_image_and_card_survive_injection(self, shell):
+        # The shared image and card type must never be clobbered per route.
+        for path in ("", "work", "projects/launch-planner"):
+            out = _inject_route_meta(shell, path)
+            assert _content(out, "property", "og:image") == _content(shell, "property", "og:image")
+            assert _content(out, "name", "twitter:card") == "summary_large_image"
+
+    def test_unknown_route_keeps_home_text_but_own_url(self, shell):
+        out = _inject_route_meta(shell, "projects/launch-planner")
+        # No custom card, so the text stays the homepage default...
+        assert _content(out, "property", "og:title") == _content(shell, "property", "og:title")
+        # ...but og:url and canonical still point at the real route.
+        assert _content(out, "property", "og:url") == SITE_ORIGIN + "/projects/launch-planner"
+        assert 'href="' + SITE_ORIGIN + '/projects/launch-planner"' in out
+
+    def test_canonical_tracks_route(self, shell):
+        out = _inject_route_meta(shell, "work")
+        assert 'rel="canonical" href="' + SITE_ORIGIN + '/work"' in out
 
 
 class TestResumeWatcherWithoutKey:
