@@ -26,7 +26,7 @@ const resume: ResumeData = {
     {
       company: 'Zeta Global (acquired Marigold, November 2025)',
       role: 'Senior Technical Program Manager / Platform Engineer',
-      period: '2021 — 2026',
+      period: '2021 – 2026',
       achievementGroups: [
         {
           heading: 'Program Leadership & Delivery',
@@ -69,7 +69,7 @@ const resume: ResumeData = {
     {
       company: 'Cheetah Digital',
       role: 'Technical Program Manager / Software Developer',
-      period: '2015 — 2021',
+      period: '2015 – 2021',
       achievements: [
         'Led Agile delivery processes as Scrum Master across multiple engineering teams, improving planning accuracy and execution consistency',
         'Built backend services and data-processing systems supporting high-volume client workloads',
@@ -79,7 +79,7 @@ const resume: ResumeData = {
     {
       company: 'CheetahMail / Experian',
       role: 'Solutions Developer / Client Solutions Team',
-      period: '2008 — 2015',
+      period: '2008 – 2015',
       achievements: [
         'Served as developer and Scrum Master across product development and client solutions teams, partnering with clients, account teams, and engineering to deliver custom technical solutions',
         'Designed and implemented client-specific remarketing and personalization campaigns using behavioral data from Coremetrics, Google Analytics, and Omniture, including abandoned-cart and browse-recovery workflows',
@@ -94,17 +94,17 @@ const resume: ResumeData = {
     {
       company: 'Marigold → Zeta Global',
       role: 'Senior Technical Program Manager / Platform Engineer',
-      period: '2021 — 2026',
+      period: '2021 – 2026',
     },
     {
       company: 'Cheetah Digital',
       role: 'Technical Program Manager / Software Developer',
-      period: '2015 — 2021',
+      period: '2015 – 2021',
     },
     {
       company: 'CheetahMail / Experian',
       role: 'Solutions Developer / Client Solutions Team',
-      period: '2008 — 2015',
+      period: '2008 – 2015',
     },
   ],
   education: [
