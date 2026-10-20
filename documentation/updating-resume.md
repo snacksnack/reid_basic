@@ -2,156 +2,78 @@
 
 ## When do I need to follow these steps?
 
-**YES — follow these steps when you changed the resume content** (edited the Word doc, exported new PDF/DOCX, and copied them into `public/docs/`).
+**YES, when you changed resume content** (edited the Word doc and exported a new
+PDF/DOCX into `public/docs/`). The same text has to propagate to the website, the
+chatbot, and the download files.
 
-**NO — skip these steps when only the site code changed** (styles, layout, buttons, components). Code changes take effect automatically with `npm run dev`.
-
----
-
-## Option A: Let the AI Agent Do It (Recommended)
-
-After placing the updated files in `public/docs/`, open Cursor and tell the agent:
-
-> "I updated my resume."
-
-The agent will automatically:
-
-1. **Run `npm run update:resume`** — reads the PDF and generates two files:
-   - `src/data/resume.ts` — structured data that drives the website
-   - `src/data/resume-prompt.txt` — plain text that the chatbot uses as context (loaded by `app.py` at startup)
-2. **Review `resume.ts` for parsing issues** — checks for:
-   - Ligature errors (PDF font glitches where characters like `J` appear instead of `ti`)
-   - Line-break artifacts (e.g. "cross- team" instead of "cross-team")
-   - Empty strings in bullet arrays
-   - Correct company/role/period for each job
-3. **Review `resume-prompt.txt`** — same checks on the chatbot's copy
-4. **Fix any issues** it finds in both files
-5. **Run `npm run extract:pdf`** — updates the plain-text extract
-6. **Run tests** — verifies all tests pass (`npm test` + `npm run test:server`)
-7. **Report what changed** — summarizes differences and fixes applied
-
-The agent will NOT commit or push unless you ask it to. This procedure is defined in `.cursor/rules/resume-update.mdc` so any agent session knows how to do it.
-
-### What you still do manually
-
-- Edit the resume in Word
-- Export to PDF
-- Copy `reidcollins.pdf` and `reidcollins.docx` into `public/docs/`
-- Tell the agent to proceed
-- Review the agent's output and ask it to commit/push when satisfied
+**NO, when only the site code changed** (styles, layout, components). Those take
+effect automatically with `npm run dev`.
 
 ---
 
-## Option B: Do It Yourself (Manual)
+## The fast path: let the agent do it
 
-### Prerequisites (one-time setup)
+The full update procedure (edit the DOCX, regenerate the PDF, carry the text into
+the website data, the chatbot corpus, and the plain-text/LLM files, then verify) is
+codified as the **`update-resume` skill** in `.claude/skills/update-resume/`. A
+Claude Code session working in this repo loads it automatically.
 
-- **Node.js** and **npm** installed ([nodejs.org](https://nodejs.org))
-- **Python 3** installed (comes with macOS or via `brew install python`)
-- **pdfplumber** Python package in a virtual environment:
+What you do by hand:
+
+- Edit the resume in Word (or ask the agent to make a surgical text change).
+- If you exported yourself: save a new `reidcollins.pdf` and `reidcollins.docx` into
+  `public/docs/`.
+- Tell the agent "I updated my resume" and review what it reports.
+- Ask it to commit and open a PR when you are satisfied. You merge.
+
+The canonical source of truth is `public/docs/reidcollins.docx`. `reidcollins.pages`
+is a stale original and is not used.
+
+---
+
+## What the update touches
+
+Changing resume content means the same text lands in all of these, or the site, the
+download buttons, and the chatbot will disagree:
+
+1. `public/docs/reidcollins.docx` and `reidcollins.pdf` (the downloads).
+2. `src/data/resume.ts` (website data).
+3. `src/data/resume-prompt.txt` (chatbot RAG context).
+4. `public/docs/reidcollins.txt` (plain-text extract; regenerate with
+   `npm run extract:pdf`).
+5. `public/llms.txt` (LLM crawl file).
+6. The employer string in `tests/test_server.py`, if the employer line changed.
+
+The `update-resume` skill has the full checklist and the gotchas (for example, the
+`npm run update:resume` generator is lossy, so it is used only to preview a diff, not
+to author the change).
+
+---
+
+## One-time setup
+
+- **Node.js** and **npm** ([nodejs.org](https://nodejs.org)).
+- **Python 3** (macOS ships it, or `brew install python`).
+- **Python venv** with the project deps:
   ```bash
   python3 -m venv .venv
   source .venv/bin/activate
   pip install -r requirements.txt
   ```
-- **npm dependencies** installed:
-  ```bash
-  npm install
-  ```
-
-### Steps (after updating resume content)
-
-#### 1. Edit your resume in Word
-
-Make your changes in the `.docx` file as usual.
-
-#### 2. Export to PDF
-
-In Word: **File → Save As** (or **Export**) → choose **PDF** → save as `reidcollins.pdf`.
-
-#### 3. Copy both files into the repo
-
-```
-public/docs/reidcollins.pdf
-public/docs/reidcollins.docx
-```
-
-These are what the "Download PDF" and "Download DOCX" buttons serve.
-
-#### 4. Generate resume data from the PDF
-
-```bash
-npm run update:resume
-```
-
-This reads the PDF, parses sections (header, summary, experience, skills, education), fixes ligature issues, and writes two files:
-- `src/data/resume.ts` — structured data for the website
-- `src/data/resume-prompt.txt` — plain text for the chatbot system prompt
-
-The chatbot system prompt in `app.py` loads `resume-prompt.txt` at startup, so you do **not** need to manually edit `app.py` when the resume changes.
-
-#### 5. Review the output
-
-Open `src/data/resume.ts` and `src/data/resume-prompt.txt` and verify:
-- Company, role, and period are correct for each job
-- Bullet points aren't truncated or merged together
-- Ligatures rendered correctly (e.g. "workflows" not "workVlows", "ticket" not "Jcket")
-- The `title` field looks right (defaults to your most recent role)
-- Achievement sub-headers (if any) are correctly grouped
-
-Fix anything that looks off by hand in both files.
-
-#### 6. (Optional) Regenerate the text extract
-
-```bash
-npm run extract:pdf
-```
-
-Updates `public/docs/reidcollins.txt` with a plain-text version of the PDF.
-
-#### 7. Run tests
-
-```bash
-npm test
-npm run test:server
-```
-
-Verify all tests pass before committing.
-
-#### 8. Preview locally
-
-```bash
-npm run dev        # Terminal 1: frontend
-npm run dev:server # Terminal 2: backend
-```
-
-Opens a local dev server (usually http://localhost:5173). Check that the site matches your updated resume.
-
-#### 9. Commit and push
-
-```bash
-git add public/docs/ src/data/resume.ts src/data/resume-prompt.txt
-git commit -m "Update resume"
-git push origin main
-```
-
-GitHub Actions will run tests, and Heroku will auto-deploy if they pass.
+- **npm deps**: `npm install`.
 
 ---
 
-## How the chatbot system prompt works
+## Preview locally
 
-The chatbot's system prompt has two parts:
-
-1. **Behavioral instructions** — loaded from `src/data/chatbot-instructions.txt`. These tell the AI how to behave (tone, response length, the `/match` feature, etc.). You only change these when you want to change the chatbot's behavior.
-
-2. **Resume content** — loaded from `src/data/resume-prompt.txt` at server startup. This is auto-generated by `npm run update:resume` from the PDF, so it always matches the website content.
-
-When the server starts, `app.py` combines both into a single `SYSTEM_PROMPT`. This means updating the resume content never requires editing `app.py`.
+```bash
+npm run dev        # frontend (usually http://localhost:5173)
+npm run dev:server # backend
+```
 
 ---
 
-## Quick Reference: Scripts
+## Quick reference: scripts
 
 | Command | What it does |
 |---------|-------------|
@@ -159,25 +81,36 @@ When the server starts, `app.py` combines both into a single `SYSTEM_PROMPT`. Th
 | `npm run dev:server` | Start Flask dev server (backend) |
 | `npm run build` | TypeScript check + production build (output in `dist/`) |
 | `npm run preview` | Serve the production build locally |
-| `npm run update:resume` | Generate `resume.ts` + `resume-prompt.txt` from PDF (Python) |
-| `npm run extract:pdf` | Extract plain text from PDF (Python) |
-| `npm test` | Run frontend tests (vitest) |
-| `npm run test:server` | Run server tests (pytest) |
-| `npm run lint` | Run ESLint |
+| `npm run update:resume` | Generate `resume.ts` + `resume-prompt.txt` from the PDF (lossy; preview only) |
+| `npm run extract:pdf` | Extract plain text from the PDF into `reidcollins.txt` |
+| `npm test` | Frontend tests (vitest) |
+| `npm run test:server` | Server tests (pytest) |
+| `npm run lint` | ESLint |
 
-## Project Structure (key files)
+## Project structure (key files)
 
 ```
-public/docs/reidcollins.pdf       ← your resume PDF (Download PDF button)
-public/docs/reidcollins.docx      ← your resume DOCX (Download DOCX button)
-public/docs/reidcollins.txt       ← plain-text extract of the PDF
-src/data/resume.ts                ← structured resume data (drives the web page)
-src/data/resume-prompt.txt        ← plain-text resume (drives the chatbot)
-src/components/Resume.tsx         ← the React component that renders the resume
-src/resume.css                    ← styling
-app.py                            ← Flask server (loads resume-prompt.txt for chatbot)
-scripts/update-resume.py          ← PDF → resume.ts + resume-prompt.txt generator
-scripts/extract_pdf.py            ← PDF → plain text extractor
-.cursor/rules/resume-update.mdc  ← Cursor rule defining the agent update procedure
-index.html                        ← page shell (contains <title>)
+public/docs/reidcollins.pdf       <- resume PDF (Download PDF button)
+public/docs/reidcollins.docx      <- resume DOCX (canonical source; Download DOCX button)
+public/docs/reidcollins.txt       <- plain-text extract of the PDF
+public/llms.txt                   <- LLM crawl file
+src/data/resume.ts                <- structured resume data (drives the web page)
+src/data/resume-prompt.txt        <- plain-text resume (drives the chatbot)
+src/components/Resume.tsx         <- the React component that renders the resume
+app.py                            <- Flask server (loads resume-prompt.txt for the chatbot)
+scripts/update-resume.py          <- PDF to resume.ts/resume-prompt.txt generator (lossy)
+scripts/extract_pdf.py            <- PDF to plain-text extractor
+index.html                        <- page shell (contains <title>)
+.claude/skills/update-resume/     <- the agent procedure for all of the above
 ```
+
+## How the chatbot system prompt works
+
+`app.py` builds the chatbot system prompt at startup from two parts:
+
+1. **Behavioral instructions**: `src/data/chatbot-instructions.txt` (tone, response
+   length, the `/match` feature). Change these only to change how the chatbot acts;
+   see the `chatbot-personality` skill.
+2. **Resume content**: `src/data/resume-prompt.txt`, kept in sync with the resume.
+
+So updating resume content never requires editing `app.py`.
