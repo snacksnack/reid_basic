@@ -1486,21 +1486,24 @@ SITE_ORIGIN = "https://www.hihelloreid.com"
 # are derived from the route, so they are not listed here.
 ROUTE_META = {
     "/work": {
-        "title": "Selected work — Reid Collins",
+        "title": "TPM automation & client delivery — Reid Collins",
         "description": (
-            "Platform engineering and TPM work from Reid Collins, shipped on one "
-            "thesis: the model proposes, deterministic code decides, a human "
-            "approves. Datadog observability, PR review, incident summarization, "
-            "and more."
+            "Reid Collins pairs TPM-led agentic automation with hands-on client "
+            "delivery. The model proposes, deterministic code decides, a human "
+            "approves, across Datadog observability, PR review, and incident "
+            "summarization, on a track record of large-scale platform migrations "
+            "and cross-functional delivery."
         ),
-        "og:title": "Selected work — Reid Collins",
+        "og:title": "TPM automation & client delivery — Reid Collins",
         "og:description": (
-            "Platform engineering and TPM work, shipped on one thesis: the model "
-            "proposes, deterministic code decides, a human approves."
+            "TPM-led agentic automation and hands-on client delivery, in equal "
+            "measure. The model proposes, deterministic code decides, a human "
+            "approves, built on large-scale platform migrations and "
+            "cross-functional delivery."
         ),
-        "twitter:title": "Selected work — Reid Collins",
+        "twitter:title": "TPM automation & client delivery — Reid Collins",
         "twitter:description": (
-            "Platform engineering and TPM work, shipped on one thesis: the model "
+            "TPM-led agentic automation and hands-on client delivery. The model "
             "proposes, deterministic code decides, a human approves."
         ),
     },

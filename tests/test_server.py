@@ -785,14 +785,19 @@ _INDEX_HTML = os.path.join(os.path.dirname(__file__), "..", "index.html")
 
 
 def _content(html_text, selector, attr_val):
-    """Pull the content="..." of a <meta {selector}="{attr_val}" ...> tag."""
+    """Pull the content="..." of a <meta {selector}="{attr_val}" ...> tag.
+
+    Returns the unescaped value, matching what a scraper actually reads, so an
+    "&" in the source copy compares equal to the "&amp;" written into the tag.
+    """
+    import html
     import re
 
     m = re.search(
         r'<meta ' + selector + r'="' + re.escape(attr_val) + r'" content="([^"]*)"',
         html_text,
     )
-    return m.group(1) if m else None
+    return html.unescape(m.group(1)) if m else None
 
 
 class TestSocialMetaStaticShell:
@@ -837,7 +842,7 @@ class TestInjectRouteMeta:
         assert _content(out, "property", "og:url") == SITE_ORIGIN + "/work"
         assert _content(out, "property", "og:title") == ROUTE_META["/work"]["og:title"]
         assert _content(out, "property", "og:description") == ROUTE_META["/work"]["og:description"]
-        assert "Selected work" in out[out.index("<title>"): out.index("</title>")]
+        assert "TPM automation" in out[out.index("<title>"): out.index("</title>")]
 
     def test_work_differs_from_home(self, shell):
         home = _inject_route_meta(shell, "")
