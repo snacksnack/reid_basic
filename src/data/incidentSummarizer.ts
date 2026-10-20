@@ -42,7 +42,7 @@ export const incidentSummarizer = {
   note: 'Correlation state lives in DynamoDB TTL, so the Lambdas stay stateless; replies thread back onto the original Slack message.',
   evals: {
     blurb:
-      'Prompt-contract gate in CI and golden evals on the incident summary — the model restates the computed severity, it does not re-decide it.',
+      'Prompt-contract gate in CI and golden evals on the incident summary: the model restates the computed severity, it does not re-decide it.',
     href: 'https://snacksnack.github.io/agent-evals/',
   },
 
@@ -77,7 +77,7 @@ export const incidentSummarizer = {
   pipeline: [
     { key: 'ingest', label: 'Arrive', blurb: 'CloudWatch through EventBridge; Datadog and GitHub Actions through signed webhooks.' },
     { key: 'normalize', label: 'Normalize', blurb: 'Three payload shapes are rewritten into one incident schema.' },
-    { key: 'dedup', label: 'Fingerprint', blurb: 'A conditional write drops any alert already seen — the repeat never reaches the pipeline.' },
+    { key: 'dedup', label: 'Fingerprint', blurb: 'A conditional write drops any alert already seen, so the repeat never reaches the pipeline.' },
     { key: 'correlate', label: 'Correlate', blurb: 'Alerts for the same service inside a five-minute window join one incident instead of opening their own.' },
     { key: 'summarize', label: 'Summarize', blurb: 'Claude writes the summary, the likely cause, and the next step.' },
     { key: 'deliver', label: 'Deliver', blurb: 'A threaded Slack message and a Jira ticket, each linking to the other.' },
@@ -98,7 +98,7 @@ export const incidentSummarizer = {
     {
       title: 'Reads scale on the answer, not the archive',
       blurb:
-        'Each service is recorded in a small registry the first time it opens an incident. The dashboard reads that registry, so filtering costs the number of services — about ten — rather than a scan of every incident ever written.',
+        'Each service is recorded in a small registry the first time it opens an incident. The dashboard reads that registry, so filtering costs the number of services, about ten, rather than a scan of every incident ever written.',
     },
     {
       title: 'Secrets are never environment variables',

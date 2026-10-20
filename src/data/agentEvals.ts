@@ -17,8 +17,8 @@ export const agentEvals = {
   kicker: 'Quality engineering',
   lead: 'The regression suite measuring six systems on this page.',
   tagline:
-    'A shared regression suite for LLM systems, built because five were in production and nothing answered "how do you know the output is any good?" Frozen cases scored on named characteristics — never string equality; a deterministic groundedness checker whose hallucination rate gates CI; and an LLM judge allowed to fail a build only where calibration earned it. Every run is priced from a pinned table, prompt-cache tokens included, into an append-only store.',
-  note: 'Attribution over vibes — each run record carries its model, prompt version, code version and token cost, so a regression is a query, not a hunch. An unpriced model raises rather than costing zero.',
+    'A shared regression suite for LLM systems, built because five were in production and nothing answered "how do you know the output is any good?" Frozen cases scored on named characteristics, never string equality; a deterministic groundedness checker whose hallucination rate gates CI; and an LLM judge allowed to fail a build only where calibration earned it. Every run is priced from a pinned table, prompt-cache tokens included, into an append-only store.',
+  note: 'Attribution over vibes: each run record carries its model, prompt version, code version and token cost, so a regression is a query, not a hunch. An unpriced model raises rather than costing zero.',
   result:
     'Seventeen subjects and 155 runs since August 2026. Pricing cache tokens caught a subject recording its work at roughly 40% of real cost.',
 
@@ -43,7 +43,7 @@ export const agentEvals = {
       ],
       flag: {
         at: 7,
-        note: 'every case errored — model, prompt and code version unchanged, so the cause was outside the subject.',
+        note: 'every case errored: model, prompt and code version unchanged, so the cause was outside the subject.',
       },
     },
   ] as TrendSeries[],

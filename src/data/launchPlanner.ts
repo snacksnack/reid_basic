@@ -33,7 +33,7 @@ export const launchPlanner = {
   kicker: 'Flagship project',
   lead: 'An agentic delivery planner for migrations and launches.',
   tagline:
-    'An agentic planner for migrations and launches: a PRD goes in, a defensible delivery plan comes out — critical-path schedule, risk log, and exec status — with a first-class audit trail.',
+    'An agentic planner for migrations and launches: a PRD goes in, a defensible delivery plan comes out: critical-path schedule, risk log, and exec status, with a first-class audit trail.',
   principle: 'The LLM proposes; deterministic Python validates; a human approves.',
   // The index row shows `note`; the overview page still reads `principle`.
   note: 'The LLM proposes; deterministic Python validates; a human approves.',
@@ -77,7 +77,7 @@ export const launchPlanner = {
     { key: 'schedule', label: 'Schedule', blurb: 'Deterministic CPM: float, critical path, deadlines.' },
     { key: 'whatif', label: 'What-if & forecast', blurb: 'Slip simulator + a Monte Carlo confidence band.' },
     { key: 'raid', label: 'RAID', blurb: 'Risks/assumptions/issues/decisions, evidence-backed.' },
-    { key: 'status', label: 'Status', blurb: 'A weekly exec update — health set by rule, not the LLM.' },
+    { key: 'status', label: 'Status', blurb: 'A weekly exec update, health set by rule, not the LLM.' },
     { key: 'jira', label: 'Jira', blurb: 'Generates tickets behind an explicit approval gate.' },
   ] as PipelineStage[],
 
@@ -89,13 +89,13 @@ export const launchPlanner = {
     { name: 'Forecast', blurb: 'Monte Carlo the launch date: P50/P80/P90 + a criticality index.' },
     { name: 'Baseline', blurb: 'Drift of the current plan against the committed baseline.' },
     { name: 'Status', blurb: 'The weekly update, with a rule-set health badge.' },
-    { name: 'Jira', blurb: 'Preview the tickets a run would create — gated, never auto-written.' },
+    { name: 'Jira', blurb: 'Preview the tickets a run would create, gated, never auto-written.' },
     // Real, tested, and deliberately unwired: no client is configured for it,
     // so this says what exists without implying a live integration (RC1-412).
     {
       name: 'MCP server',
       blurb:
-        'Nine read-only planning tools over stdio — plans, critical path, simulate, forecast, drift, status, health — behind an allowlist, with their own tool-selection evals. No client is wired to it yet.',
+        'Nine read-only planning tools over stdio: plans, critical path, simulate, forecast, drift, status, health, all behind an allowlist, with their own tool-selection evals. No client is wired to it yet.',
     },
   ] as Surface[],
 
@@ -108,7 +108,7 @@ export const launchPlanner = {
     {
       title: 'Deterministic math, not a black box',
       blurb:
-        'The critical-path scheduling, float, and Monte Carlo run in pure Python — inspectable and unit-tested. Hallucinated dependencies can never reach the schedule.',
+        'The critical-path scheduling, float, and Monte Carlo run in pure Python, inspectable and unit-tested. Hallucinated dependencies can never reach the schedule.',
     },
     {
       title: 'Side effects are gated',

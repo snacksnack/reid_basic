@@ -19,8 +19,8 @@ export const fleetObservability = {
   kicker: 'Platform',
   lead: 'Nine LLM systems under one pane, priced run by run.',
   tagline:
-    'Every agent on this page reports into one Datadog estate. Traces and token counts reach LLM Observability, where a run is priced at the end of its own trace rather than estimated from a monthly bill, and spend has guardrails that fire before a runaway loop becomes an invoice. Twenty-two dashboards, monitors, SLOs and synthetics are code, and a daily job goes red when the console and the repository disagree — in either direction, for a human to reconcile.',
-  note: 'A daily aggregate cannot date a regression. Every number resolves to the raw event behind it — which is how a cost metric in nanodollars, scaled by a billion twice, was caught showing the largest spend as 0.00.',
+    'Every agent on this page reports into one Datadog estate. Traces and token counts reach LLM Observability, where a run is priced at the end of its own trace rather than estimated from a monthly bill, and spend has guardrails that fire before a runaway loop becomes an invoice. Twenty-two dashboards, monitors, SLOs and synthetics are code, and a daily job goes red when the console and the repository disagree, in either direction, for a human to reconcile.',
+  note: 'A daily aggregate cannot date a regression. Every number resolves to the raw event behind it, which is how a cost metric in nanodollars, scaled by a billion twice, was caught showing the largest spend as 0.00.',
   result:
     'Nine apps traced and 22 Datadog objects under daily drift detection; every run priced from its own trace rather than a monthly estimate.',
 
@@ -54,5 +54,5 @@ export const fleetObservability = {
   ] as FleetApp[],
 
   fleetCaption:
-    'Datadog’s estimated cost by ml_app, 2026-08-28 to 09-07 — every run, benchmarks included.',
+    'Datadog’s estimated cost by ml_app, 2026-08-28 to 09-07, every run, benchmarks included.',
 } as const satisfies ProjectCardContent & { apps: FleetApp[]; fleetCaption: string }
