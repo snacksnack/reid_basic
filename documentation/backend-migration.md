@@ -76,16 +76,10 @@ This is a standard architecture pattern (React SPA + Python API) used by compani
 | `documentation/agentic-tool-use.md` | Backend | Architecture diagram: "Express" → "Flask". All JavaScript code examples → Python. File references: `server.js` → `app.py`. "How to add a new tool" section rewritten with Python examples. Test references: `server.test.ts` → `test_server.py`. Scaling section uses Python module structure. |
 | `documentation/testing-and-ci.md` | Both | Server tests section rewritten for pytest + Flask test client. CI section updated to describe dual-language pipeline (Node.js + Python). Dependencies section split into Python and JavaScript. |
 | `documentation/updating-resume.md` | Backend | References to `server.js` → `app.py`. Test commands updated to include `npm run test:server`. Script references updated. Project structure listing updated. |
-| `documentation/cursor-rules.md` | Both | Rule descriptions updated — server conventions now reference Flask/Python patterns, troubleshooting references gunicorn/buildpacks, test commands include pytest. |
 
-### Cursor Rules
-
-| File | Layer | What changed |
-|------|-------|-------------|
-| `.cursor/rules/project-conventions.mdc` | Both | "Server Endpoints" section rewritten for Flask (decorator-based routes, `jsonify`, `flask-limiter`, `_db_execute` helper). Added new "Python" conventions section (type hints, f-strings, `logging`, `pathlib`). Naming section updated with Python snake_case conventions alongside React PascalCase. |
-| `.cursor/rules/deploy-troubleshooting.mdc` | Backend | Diagnostic commands updated (added `heroku buildpacks`, `pytest`). Common issues updated for Python (missing pip dependency, `ModuleNotFoundError`, buildpack order, `runtime.txt`). Required env vars now include `FLASK_ENV=production`. |
-| `.cursor/rules/resume-update.mdc` | Backend | Test step updated to run both `npm test` and `npm run test:server`. File reference `server.js` → `app.py`. |
-| `.cursor/rules/chatbot-personality.mdc` | Backend | File reference `server.js` → `app.py`. Test step updated to include `npm run test:server`. |
+> Note: the repo also carried a set of agent rule files at the time of this
+> migration. Those were later retired and their guidance moved into `CLAUDE.md` and
+> `.claude/skills/` (RC1-518).
 
 ---
 
