@@ -18,11 +18,11 @@ export const driftDetector = {
   kicker: 'Delivery risk',
   lead: 'Watches a Jira dependency graph for upstream slips.',
   tagline:
-    "Launch Planner plans the critical path; this watches it drift. It walks a Jira project's dependency graph and flags upstream slips the downstream schedule hasn't absorbed — before the collision lands.",
+    "Launch Planner plans the critical path; this watches it drift. It walks a Jira project's dependency graph and flags upstream slips the downstream schedule hasn't absorbed, before the collision lands.",
   note: 'Deterministic Python decides what is drifting; Claude only writes the narrative.',
   evals: {
     blurb:
-      'Drift-digest goldens in the shared agent-evals harness — a template edit that changes the digest fails CI.',
+      'Drift-digest goldens in the shared agent-evals harness: a template edit that changes the digest fails CI.',
     href: 'https://snacksnack.github.io/agent-evals/',
   },
 
@@ -39,7 +39,7 @@ export const driftDetector = {
       nodes: ['RC1-157', 'RC1-158'],
       severity: 'red',
       rule: 'timeline inversion',
-      detail: 'Upstream due 07-20 lands after downstream due 07-16 — a 12d overlap.',
+      detail: 'Upstream due 07-20 lands after downstream due 07-16, a 12d overlap.',
     },
     {
       nodes: ['RC1-159', 'RC1-160'],

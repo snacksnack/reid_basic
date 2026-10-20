@@ -16,7 +16,7 @@ export const automationSuite = {
   lead: "Three scheduled services behind a program's paperwork.",
   tagline:
     "Three scheduled services that keep a program's paperwork honest: a two-way Jira ↔ Notion sync with echo suppression and an append-only audit log, a Friday stakeholder status email drafted by Claude, and a weekday stale-ticket nudge into Slack.",
-  note: 'The status email is the reason the platform exists — hitting n8n’s ceiling here is what motivated the typed, tested rewrite next door.',
+  note: 'The status email is the reason the platform exists: hitting n8n’s ceiling here is what motivated the typed, tested rewrite next door.',
   evals: {
     blurb: 'Prompt-contract and golden evals on the status email draft, in the shared agent-evals harness.',
     href: 'https://snacksnack.github.io/agent-evals/',

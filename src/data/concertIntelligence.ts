@@ -27,8 +27,8 @@ export const concertIntelligence = {
   kicker: 'Personal automation',
   lead: 'Ranks upcoming shows by what you actually listen to.',
   tagline:
-    'An n8n workflow that reads a Spotify listening history every morning, sweeps Ticketmaster for the next six months within fifty miles, matches events to artists on normalized names, and scores each show out of 100. What clears the bar becomes an email digest, a calendar event and a Notion row — each carrying a Claude-written preview of what the band has been playing live.',
-  note: 'Ticketmaster refuses to page past 1,000 results, so the search is split into month-sized windows and matched page by page inside the loop — the workflow never holds thousands of raw events in one node.',
+    'An n8n workflow that reads a Spotify listening history every morning, sweeps Ticketmaster for the next six months within fifty miles, matches events to artists on normalized names, and scores each show out of 100. What clears the bar becomes an email digest, a calendar event and a Notion row, each carrying a Claude-written preview of what the band has been playing live.',
+  note: 'Ticketmaster refuses to page past 1,000 results, so the search is split into month-sized windows and matched page by page inside the loop, so the workflow never holds thousands of raw events in one node.',
   evals: {
     blurb: 'Prompt-contract and golden evals on the Claude-written concert preview.',
     href: 'https://snacksnack.github.io/agent-evals/',
@@ -63,11 +63,11 @@ export const concertIntelligence = {
   } as ScoredShow,
 
   dimensions: [
-    { label: 'Recency', points: 30, max: 30, detail: 'Played today — full marks; the score decays by band to 0 past 90 days.' },
+    { label: 'Recency', points: 30, max: 30, detail: 'Played today, full marks; the score decays by band to 0 past 90 days.' },
     { label: 'Frequency', points: 20, max: 25, detail: 'Recent plays at 2 pts each, plus rank bonuses across all three Spotify windows.' },
     { label: 'Distance', points: 15, max: 20, detail: 'Inside 15 miles of home.' },
     { label: 'Price', points: 10, max: 15, detail: 'Minimum ticket under $100.' },
-    { label: 'Venue fit', points: 10, max: 10, detail: 'A ~250-cap room — the top tier of a personal venue list.' },
+    { label: 'Venue fit', points: 10, max: 10, detail: 'A ~250-cap room, the top tier of a personal venue list.' },
   ] as ScoreDimension[],
 
   scoreCaption:

@@ -26,7 +26,7 @@ export const jobSearchAgent = {
   lead: 'Scores every new posting against a résumé, daily.',
   tagline:
     'A Claude plugin that runs a personalized job search every morning: it sweeps five ATS APIs across a watchlist, ingests a browser-driven LinkedIn pass, then filters, deduplicates and scores what it finds against a résumé and a set of preferences. The survivors land on a local board where one dropdown records the decision. Local JSON is the source of truth, and nothing is hardcoded to one candidate.',
-  note: 'The fetch, filter, dedup and score are standard-library Python — no tokens. Claude is spent only on the judgment call: the résumé-to-JD skill match, cached on a role the first time it is seen and never recomputed.',
+  note: 'The fetch, filter, dedup and score are standard-library Python, no tokens. Claude is spent only on the judgment call: the résumé-to-JD skill match, cached on a role the first time it is seen and never recomputed.',
 
   technologies: [
     'Python (stdlib only)',
@@ -65,7 +65,7 @@ export const jobSearchAgent = {
   boardSortNote: 'sorted by match percent',
 
   boardCaption:
-    'A "Technical Project Manager" scores 60 at the title where a true program-manager role scores 95 — adjacent enough to surface, never enough to outrank.',
+    'A "Technical Project Manager" scores 60 at the title where a true program-manager role scores 95: adjacent enough to surface, never enough to outrank.',
 } as const satisfies ProjectCardContent & {
   roles: BoardRole[]
   boardSortNote: string
