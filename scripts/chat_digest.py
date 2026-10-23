@@ -51,7 +51,7 @@ def run():
         download_rows = cur.fetchall()
 
         cur.execute(
-            "SELECT ip_address, referrer, created_at "
+            "SELECT ip_address, path, referrer, created_at "
             "FROM page_views WHERE created_at >= NOW() - INTERVAL '24 hours' "
             "ORDER BY created_at"
         )
@@ -71,8 +71,10 @@ def run():
         return
 
     unique_visitors = len({v["ip_address"] for v in view_rows})
+    paths: dict[str, int] = defaultdict(int)
     referrers: dict[str, int] = defaultdict(int)
     for v in view_rows:
+        paths[v["path"] or "/"] += 1
         referrers[v["referrer"] or "Direct"] += 1
 
     today = datetime.now().strftime("%A, %B %d, %Y")
@@ -83,8 +85,12 @@ def run():
         suffix = "" if unique_visitors == 1 else "s"
         text += f"PAGE VIEWS: {len(view_rows)} views, {unique_visitors} unique visitor{suffix}\n"
         text += "-" * 40 + "\n"
+        text += "  By page:\n"
+        for path, count in sorted(paths.items(), key=lambda x: -x[1]):
+            text += f"    {path} - {count}\n"
+        text += "  By source:\n"
         for ref, count in sorted(referrers.items(), key=lambda x: -x[1]):
-            text += f"  {ref} — {count}\n"
+            text += f"    {ref} - {count}\n"
         text += "\n"
 
     if download_rows:
