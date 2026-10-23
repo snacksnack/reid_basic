@@ -8,6 +8,36 @@ class FakeConnection:
         pass
 
 
+class FakeCursor:
+    """Returns queued fetchall results in order, one per execute()."""
+
+    def __init__(self, results):
+        self._results = list(results)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def execute(self, *_args, **_kwargs):
+        pass
+
+    def fetchall(self):
+        return self._results.pop(0)
+
+
+class FakeDigestConnection:
+    def __init__(self, results):
+        self._results = results
+
+    def cursor(self, *_args, **_kwargs):
+        return FakeCursor(self._results)
+
+    def close(self):
+        pass
+
+
 class FakeResponse:
     def __init__(self, body=b"{}"):
         self.body = body
@@ -50,6 +80,45 @@ def test_gmail_api_send_uses_refresh_token_and_message_endpoint(monkeypatch):
     assert requests[1][0].full_url == "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
     assert requests[1][0].headers["Authorization"] == "Bearer access-token"
     assert json.loads(requests[1][0].data.decode())["raw"]
+
+
+def test_digest_groups_page_views_by_path_and_source(monkeypatch):
+    digest = importlib.reload(importlib.import_module("scripts.chat_digest"))
+    ts = datetime(2026, 10, 22, 14, 30)
+    # Order matches run(): chat_logs, download_logs, page_views, contact_submissions.
+    results = [
+        [],
+        [],
+        [
+            {"ip_address": "203.0.113.1", "path": "/work", "referrer": "https://www.linkedin.com/", "created_at": ts},
+            {"ip_address": "203.0.113.2", "path": "/work", "referrer": "", "created_at": ts},
+            {"ip_address": "203.0.113.3", "path": "/", "referrer": "", "created_at": ts},
+        ],
+        [],
+    ]
+    sent = {}
+
+    monkeypatch.setattr(digest, "DATABASE_URL", "postgres://example")
+    monkeypatch.setattr(
+        digest.psycopg2, "connect", lambda *_a, **_k: FakeDigestConnection(results)
+    )
+
+    def fake_send(*, subject, body, from_name):
+        sent["subject"] = subject
+        sent["body"] = body
+        return "reid@example.com"
+
+    monkeypatch.setattr(digest, "send_notification_email", fake_send)
+
+    digest.run()
+
+    body = sent["body"]
+    assert "By page:" in body
+    assert "/work - 2" in body
+    assert "/ - 1" in body
+    assert "By source:" in body
+    assert "https://www.linkedin.com/ - 1" in body
+    assert "Direct - 2" in body
 
 
 def test_summarizer_saves_summary_only_after_email_succeeds(monkeypatch):
