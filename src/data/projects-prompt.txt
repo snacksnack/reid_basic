@@ -268,7 +268,7 @@ Design principle: The suppression invariant is held by the schema, not the model
 Headline result: 4,255 of 4,255 contacts reconciled on a live Brevo run, 411 of 411 suppressions held, and a second executor pass converged to zero writes.
 Technologies: Python, pydantic, Claude API, Listmonk, Brevo, Datadog LLM Observability, pytest, agent-evals
 Continuous evals: Measured on flag recall and precision over frozen proposer payloads: the three seeded ambiguities must come back flagged, never guessed.
-Links: Engagement writeup: https://github.com/snacksnack/esp-migration-agent/blob/main/docs/engagement.md; GitHub: https://github.com/snacksnack/esp-migration-agent
+Links: Live demo: https://esp.hihelloreid.com; Engagement writeup: https://github.com/snacksnack/esp-migration-agent/blob/main/docs/engagement.md; GitHub: https://github.com/snacksnack/esp-migration-agent
 
 Project: ESP Migration Agent — checks [esp-migration-agent]
 - Consent counts, per state — measured: 4,255 of 4,255
