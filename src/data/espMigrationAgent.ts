@@ -44,7 +44,11 @@ export const espMigrationAgent = {
   ],
 
   links: [
-    { label: 'Engagement writeup ↗', href: `${REPO}/blob/main/docs/engagement.md`, primary: true },
+    // The hosted review gate (esp repo RC1-560/562): browse the real review
+    // surface and trip the approval gate's refusal; only the named approver
+    // can sign off. Fixture-seeded, nothing real behind it.
+    { label: 'Live demo ↗', href: 'https://esp.hihelloreid.com', primary: true },
+    { label: 'Engagement writeup ↗', href: `${REPO}/blob/main/docs/engagement.md` },
     { label: 'GitHub ↗', href: REPO },
   ],
 
