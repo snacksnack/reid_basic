@@ -9,6 +9,7 @@ import MiniBoard from './visuals/MiniBoard'
 import MiniScorecard from './visuals/MiniScorecard'
 import MiniTrend from './visuals/MiniTrend'
 import MiniFleet from './visuals/MiniFleet'
+import MiniReconcile from './visuals/MiniReconcile'
 import { launchPlanner } from '../data/launchPlanner'
 import { driftDetector } from '../data/driftDetector'
 import { incidentSummarizer } from '../data/incidentSummarizer'
@@ -18,6 +19,7 @@ import { jobSearchAgent } from '../data/jobSearchAgent'
 import { concertIntelligence } from '../data/concertIntelligence'
 import { agentEvals } from '../data/agentEvals'
 import { fleetObservability } from '../data/fleetObservability'
+import { espMigrationAgent } from '../data/espMigrationAgent'
 import type { ProjectCardContent } from '../data/projectCard'
 import './ProjectIndex.css'
 
@@ -44,7 +46,19 @@ const ENTRIES: Entry[] = [
     visual: <MiniGantt tasks={launchPlanner.gantt} compact />,
     teaser: true,
   },
-  // Second on purpose (RC1-410): the most engineered system on the page, and
+  // Second on purpose (RC1-549): the lead FDE project, the engagement story
+  // applications now open with, and the newest system on the page.
+  {
+    id: 'esp-migration',
+    content: espMigrationAgent,
+    visual: (
+      <MiniReconcile
+        checks={espMigrationAgent.checks}
+        caption={espMigrationAgent.reconcileCaption}
+      />
+    ),
+  },
+  // Third (was second, RC1-410): the most engineered system on the page, and
   // the row whose own numbers the harness below it produced.
   {
     id: 'pr-agent',
@@ -58,8 +72,8 @@ const ENTRIES: Entry[] = [
     ),
     teaser: true,
   },
-  // Still above most of the rows it grades: the harness that measures six of
-  // the systems on this page.
+  // Still above most of the rows it grades: the harness that measures seven
+  // of the systems on this page.
   {
     id: 'agent-evals',
     content: agentEvals,

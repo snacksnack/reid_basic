@@ -1,4 +1,4 @@
-// Renders the nine /work project data files into the plain-text RAG corpus
+// Renders the ten /work project data files into the plain-text RAG corpus
 // (projects-prompt.txt) the chatbot indexes alongside the resume (RC1-478).
 //
 // The TS files under src/data/ are the single source of truth for the /work
@@ -21,6 +21,7 @@ import { jobSearchAgent } from './jobSearchAgent'
 import { concertIntelligence } from './concertIntelligence'
 import { agentEvals } from './agentEvals'
 import { fleetObservability } from './fleetObservability'
+import { espMigrationAgent } from './espMigrationAgent'
 
 export const PROJECTS: ReadonlyArray<{ slug: string; content: Record<string, unknown> }> = [
   { slug: 'launch-planner', content: launchPlanner },
@@ -32,6 +33,7 @@ export const PROJECTS: ReadonlyArray<{ slug: string; content: Record<string, unk
   { slug: 'concert-intelligence', content: concertIntelligence },
   { slug: 'agent-evals', content: agentEvals },
   { slug: 'fleet-observability', content: fleetObservability },
+  { slug: 'esp-migration-agent', content: espMigrationAgent },
 ]
 
 // Card/overview fields folded into the single overview paragraph, in this
