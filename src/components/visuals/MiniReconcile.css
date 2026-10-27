@@ -1,0 +1,103 @@
+/* Reconciliation acceptance table (RC1-549): the report a customer signs,
+   drawn as it prints. One success hue; the counts carry the argument. */
+.mr {
+  --mr-hair: #e4e3dd;
+  --mr-pass: #0f7b3f;
+  margin: 0;
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.mr-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--mr-hair);
+}
+
+.mr-title {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #55534c;
+}
+
+.mr-pass {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--mr-pass);
+  border: 1px solid var(--mr-pass);
+  border-radius: 3px;
+  padding: 0.08rem 0.36rem;
+  background: #f0f7f2;
+}
+
+.mr-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mr-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0.26rem 0;
+  border-bottom: 1px solid var(--mr-hair);
+  font-size: 0.66rem;
+}
+
+.mr-row:last-child {
+  border-bottom: 0;
+}
+
+/* A small square tick in the pass hue, not an emoji checkmark. */
+.mr-check {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  align-self: center;
+  border: 1.5px solid var(--mr-pass);
+  border-radius: 2px;
+  background: #f0f7f2;
+}
+
+.mr-label {
+  color: #55534c;
+  min-width: 0;
+}
+
+/* Dotted leader between the check's name and its count, like a ledger. */
+.mr-row::after {
+  content: '';
+  order: 2;
+  flex: 1;
+  border-bottom: 1px dotted #c9c8c0;
+  margin: 0 2px;
+  transform: translateY(-3px);
+}
+
+.mr-label {
+  order: 1;
+}
+
+.mr-measured {
+  order: 3;
+  color: #2a2924;
+  white-space: nowrap;
+}
+
+.mr-caption {
+  margin-top: 0.4rem;
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: #8a887f;
+}
+
+@media (max-width: 520px) {
+  .mr-row {
+    font-size: 0.62rem;
+  }
+}

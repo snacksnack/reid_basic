@@ -1,5 +1,5 @@
 Project: Reid Collins's project portfolio [portfolio]
-All 9 personal engineering projects on the /work page (hihelloreid.com/work):
+All 10 personal engineering projects on the /work page (hihelloreid.com/work):
 - Launch Planner [launch-planner]: An agentic delivery planner for migrations and launches.
 - Dependency Drift Detector [drift-detector]: Watches a Jira dependency graph for upstream slips.
 - AI Incident Summarizer [incident-summarizer]: Correlates three alert firehoses into one incident.
@@ -7,8 +7,9 @@ All 9 personal engineering projects on the /work page (hihelloreid.com/work):
 - TPM Workflow Automation [automation-suite]: Three scheduled services behind a program's paperwork.
 - Job Scout [job-search-agent]: Scores every new posting against a résumé, daily.
 - Concert Intelligence Agent [concert-intelligence]: Ranks upcoming shows by what you actually listen to.
-- Agent Evals [agent-evals]: The regression suite measuring six systems on this page.
+- Agent Evals [agent-evals]: The regression suite measuring seven systems on this page.
 - Fleet Observability [fleet-observability]: Nine LLM systems under one pane, priced run by run.
+- ESP Migration Agent [esp-migration-agent]: Migrates an email platform behind human-approved gates.
 
 Project: Launch Planner [launch-planner]
 Category: Flagship project
@@ -223,7 +224,7 @@ Deterministic arithmetic decides the ranking; Claude only writes the setlist pre
 
 Project: Agent Evals [agent-evals]
 Category: Quality engineering
-The regression suite measuring six systems on this page.
+The regression suite measuring seven systems on this page.
 A shared regression suite for LLM systems, built because five were in production and nothing answered "how do you know the output is any good?" Frozen cases scored on named characteristics, never string equality; a deterministic groundedness checker whose hallucination rate gates CI; and an LLM judge allowed to fail a build only where calibration earned it. Every run is priced from a pinned table, prompt-cache tokens included, into an append-only store.
 Design principle: Attribution over vibes: each run record carries its model, prompt version, code version and token cost, so a regression is a query, not a hunch. An unpriced model raises rather than costing zero.
 Headline result: Seventeen subjects and 155 runs since August 2026. Pricing cache tokens caught a subject recording its work at roughly 40% of real cost.
@@ -258,3 +259,23 @@ Project: Fleet Observability — apps [fleet-observability]
 
 Project: Fleet Observability — fleetCaption [fleet-observability]
 Datadog’s estimated cost by ml_app, 2026-08-28 to 09-07, every run, benchmarks included.
+
+Project: ESP Migration Agent [esp-migration-agent]
+Category: Platform migration
+Migrates an email platform behind human-approved gates.
+A customer's Mailchimp export goes in; a signed-off, reconciled migration into Listmonk or Brevo comes out. Deterministic parsers do the counting, the LLM proposes mappings with every ambiguity flagged rather than guessed, a human gate refuses approval while questions stay open, and an idempotent executor writes suppressions first. Proven end to end on a live Brevo account, then verified by an enumerated reconciliation report.
+Design principle: The suppression invariant is held by the schema, not the model: a spec that could land a suppressed address subscribable cannot even parse.
+Headline result: 4,255 of 4,255 contacts reconciled on a live Brevo run, 411 of 411 suppressions held, and a second executor pass converged to zero writes.
+Technologies: Python, pydantic, Claude API, Listmonk, Brevo, Datadog LLM Observability, pytest, agent-evals
+Continuous evals: Measured on flag recall and precision over frozen proposer payloads: the three seeded ambiguities must come back flagged, never guessed.
+Links: Engagement writeup: https://github.com/snacksnack/esp-migration-agent/blob/main/docs/engagement.md; GitHub: https://github.com/snacksnack/esp-migration-agent
+
+Project: ESP Migration Agent — checks [esp-migration-agent]
+- Consent counts, per state — measured: 4,255 of 4,255
+- Suppression integrity, enumerated — measured: 411 of 411
+- Segment parity vs the approved plan — measured: 4 of 4
+- Sampled checksums, field-for-field — measured: 51 of 51
+- Campaigns, zero residual source tags — measured: 3 of 3
+
+Project: ESP Migration Agent — reconcileCaption [esp-migration-agent]
+The acceptance report from the live run: reconciliation must PASS before cutover, and any FAIL stops the clock.

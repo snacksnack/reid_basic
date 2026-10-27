@@ -15,6 +15,7 @@ const ALL_NAMES = [
   'Concert Intelligence Agent',
   'Agent Evals',
   'Fleet Observability',
+  'ESP Migration Agent',
 ]
 
 const rowButton = (name: string | RegExp) =>
@@ -63,7 +64,7 @@ describe('ProjectIndex', () => {
 
   it('counts the systems in the thesis rather than hardcoding the total', () => {
     render(<ProjectIndex />)
-    expect(screen.getByText(/^Nine shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Ten shipped systems on one thesis:/)).toBeInTheDocument()
   })
 
   it('points each row header at the panel it controls', () => {
@@ -96,11 +97,12 @@ describe('ProjectIndex', () => {
 
   // --- the headline measurement and the promoted row (RC1-410) ----------
 
-  it('places the PR Review Agent second, right under the flagship', () => {
+  it('places the ESP Migration Agent second and the PR Review Agent third', () => {
     render(<ProjectIndex />)
     const names = [...document.querySelectorAll('.pi-row .pi-name')].map((n) => n.textContent)
     expect(names[0]).toBe('Launch Planner')
-    expect(names[1]).toBe('PR Review Agent')
+    expect(names[1]).toBe('ESP Migration Agent')
+    expect(names[2]).toBe('PR Review Agent')
   })
 
   it('renders a result line for a row that carries one', () => {
@@ -231,13 +233,13 @@ describe('ProjectIndex teaser (the résumé’s short index)', () => {
     )
     expect(screen.queryByText('Job Scout')).not.toBeInTheDocument()
 
-    const more = screen.getByText('See all nine projects →')
+    const more = screen.getByText('See all ten projects →')
     expect(more).toHaveAttribute('href', '/work')
   })
 
-  it('still counts all nine in the thesis, and drops the expand-all control', () => {
+  it('still counts all ten in the thesis, and drops the expand-all control', () => {
     render(<ProjectIndex teaser />)
-    expect(screen.getByText(/^Nine shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Ten shipped systems on one thesis:/)).toBeInTheDocument()
     expect(screen.getByText(/Three of them below\./)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Expand all' })).not.toBeInTheDocument()
   })
