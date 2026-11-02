@@ -22,7 +22,7 @@ export const espMigrationAgent = {
   kicker: 'Platform migration',
   lead: 'Migrates an email platform behind human-approved gates.',
   tagline:
-    "A customer's export goes in; a signed-off, reconciled migration comes out. Platform differences live in adapters behind one protocol, so a new target is an adapter, not a rewrite. Deterministic parsers do the counting and the LLM flags every ambiguity rather than guessing. The approver signs off through the customer's Okta (OIDC), and every gate decision lands in an append-only audit log in Postgres. Suppressions write first.",
+    "A customer's export goes in; a signed-off, reconciled migration comes out. Platform differences live in adapters behind one protocol, so a new target is an adapter, not a rewrite. Deterministic parsers do the counting and the LLM flags every ambiguity rather than guessing. The approver signs off through the customer's Okta, offboarding there ends their session at once (SCIM), and each decision lands in an append-only Postgres log. Suppressions write first.",
   note: 'The suppression invariant is held by the schema, not the model: a spec that could land a suppressed address subscribable cannot even parse.',
   result:
     '4,255 of 4,255 contacts reconciled on a live Brevo run, 411 of 411 suppressions held, and a second executor pass converged to zero writes.',
@@ -36,7 +36,7 @@ export const espMigrationAgent = {
     'Python',
     'pydantic',
     'Claude API',
-    'Okta (OIDC SSO)',
+    'Okta (OIDC SSO, SCIM)',
     'Postgres (Neon)',
     'Listmonk',
     'Brevo',
