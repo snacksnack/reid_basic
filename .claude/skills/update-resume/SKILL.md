@@ -37,6 +37,13 @@ Start at "Propagate the text" below. The served PDF is already the one to ship.
    Expect: still **2 pages**, byte size within a few hundred bytes of the served PDF,
    and the text diff limited to exactly the runs you changed. A faithful LibreOffice
    re-export was confirmed on 2026-10-19 (74677 vs 74426 bytes).
+
+   The script enforces the page check rather than leaving it to your judgment: it
+   refuses to `--apply` when the page count moves, which is what catches a skills
+   row that wrapped onto a second line. Override with `--apply --force` only when
+   the new page count is intended. It needs LibreOffice (PATH or the macOS app
+   bundle) and the repo `.venv` for `pdfplumber`, and it fixes the 644 mode bit
+   itself. A no-op rebuild is reported as such, so you do not commit an empty diff.
 3. Then propagate the text as in Mode A.
 
 Do **not** rely on `npm run update:resume` to author the change. It is lossy: it

@@ -100,6 +100,7 @@ src/components/Resume.tsx         <- the React component that renders the resume
 app.py                            <- Flask server (loads resume-prompt.txt for the chatbot)
 scripts/update-resume.py          <- PDF to resume.ts/resume-prompt.txt generator (lossy)
 scripts/extract_pdf.py            <- PDF to plain-text extractor
+scripts/rebuild-pdf.sh            <- DOCX to PDF via LibreOffice (dry run, then --apply)
 index.html                        <- page shell (contains <title>)
 .claude/skills/update-resume/     <- the agent procedure for all of the above
 ```
