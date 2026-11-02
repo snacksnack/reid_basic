@@ -17,6 +17,7 @@ const resume: ResumeData = {
     { category: 'AI & Agents', items: ['Claude API', 'multi-agent orchestration', 'tool use', 'RAG', 'evals', 'cost telemetry'] },
     { category: 'Languages', items: ['Python', 'Perl', 'Ruby', 'Bash'] },
     { category: 'Cloud & Infrastructure', items: ['AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)'] },
+    { category: 'Identity', items: ['Okta (OIDC SSO, SCIM provisioning)'] },
     { category: 'Data', items: ['MySQL', 'PostgreSQL', 'ClickHouse', 'Hive', 'DynamoDB'] },
     { category: 'Observability', items: ['Datadog', 'Prometheus', 'Grafana', 'distributed tracing', 'structured logging'] },
     { category: 'Developer Tools', items: ['Git (GitHub, Bitbucket)', 'Docker', 'OpenAPI', 'Claude Code', 'Jira', 'Confluence', 'Notion', 'n8n'] },

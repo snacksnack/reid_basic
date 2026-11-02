@@ -9,7 +9,7 @@ JavaScript.
 ## About
 
 - Current: Senior Technical Program Manager / Platform Engineer at Zeta Global (acquired Marigold, November 2025), 2021–2026.
-- Skills: program governance and release management; AI agents (Claude API, multi-agent orchestration, tool use, RAG, evals, cost telemetry); Python, Ruby, Bash; AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena); MySQL, PostgreSQL, ClickHouse, DynamoDB; Datadog, Prometheus, Grafana, distributed tracing.
+- Skills: program governance and release management; AI agents (Claude API, multi-agent orchestration, tool use, RAG, evals, cost telemetry); Python, Ruby, Bash; AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena); Okta (OIDC SSO, SCIM provisioning); MySQL, PostgreSQL, ClickHouse, DynamoDB; Datadog, Prometheus, Grafana, distributed tracing.
 - Certifications: AWS Solutions Architect – Associate; Certified Scrum Master (CSM).
 - Previously: Cheetah Digital (2015–2021), CheetahMail / Experian.
 

@@ -82,6 +82,7 @@ Management, RAID Management, Dependency Management, Stakeholder Management
 AI & Agents: Claude API, multi-agent orchestration, tool use, RAG, evals, cost telemetry
 Languages: Python, Perl, Ruby, Bash
 Cloud & Infrastructure: AWS (ECS/Fargate, Lambda, SQS, EventBridge, SageMaker, S3, Athena, AWS SAM)
+Identity: Okta (OIDC SSO, SCIM provisioning)
 Data: MySQL, PostgreSQL, ClickHouse, Hive, DynamoDB
 Observability: Datadog, Prometheus, Grafana, distributed tracing, structured logging
 Developer Tools: Git (GitHub, Bitbucket), Docker, OpenAPI, Claude Code, Jira, Confluence, Notion, n8n
