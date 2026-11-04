@@ -746,14 +746,11 @@ def _retrieve_context(query: str, n_results: int = 3, source: str | None = None)
         for i, (match, rerank_score) in enumerate(scored):
             meta = match.metadata or {}
             logging.info(
-                "RAG retrieved chunk %d/%d — source=%s section=%s employer=%s "
-                "project=%s score=%.4f%s query=%r",
+                "RAG retrieved chunk %d/%d - source=%s section=%s score=%.4f%s query=%r",
                 i + 1,
                 len(scored),
                 meta.get("source", "?"),
                 meta.get("section", "?"),
-                meta.get("employer", "—"),
-                meta.get("project", "—"),
                 match.score,
                 "" if rerank_score is None else f" rerank={rerank_score:.4f}",
                 query[:60],
