@@ -16,6 +16,7 @@ const ALL_NAMES = [
   'Agent Evals',
   'Fleet Observability',
   'ESP Migration Agent',
+  'API Compatibility Lab',
 ]
 
 const rowButton = (name: string | RegExp) =>
@@ -67,6 +68,38 @@ describe('ProjectIndex', () => {
     expect(screen.getByText(/^Ten shipped systems on one thesis:/)).toBeInTheDocument()
   })
 
+  // RC1-612: a system still being built must not be counted among the shipped
+  // ones, and the page has to say which one it is.
+  it('counts an in-progress row separately from the shipped ones', () => {
+    render(<ProjectIndex />)
+    expect(document.querySelectorAll('.pi-row')).toHaveLength(11)
+    expect(
+      screen.getByText(/One more is still being built, and says so\./),
+    ).toBeInTheDocument()
+  })
+
+  it('marks the in-progress row with a status chip, and marks only that row', () => {
+    render(<ProjectIndex />)
+    const chips = [...document.querySelectorAll('.pi-status')]
+    expect(chips.map((c) => c.textContent)).toEqual(['In progress'])
+    expect(chips[0]!.closest('.pi-row')!.querySelector('.pi-name')!.textContent).toBe(
+      'API Compatibility Lab',
+    )
+  })
+
+  it('leads the compatibility lab row with the caught-of-exercised number', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('API Compatibility Lab'))
+    const panel = document.getElementById('compat-lab-panel')!
+    expect(panel.querySelector('.pi-result')!.textContent).toMatch(
+      /^ResultCaught 4 of the 4 documented behavioral breaks/,
+    )
+    // The visual's own argument: three of the four caught breaks drew no
+    // usable warning from the baseline.
+    expect(within(panel).getByText('3 of 4')).toBeInTheDocument()
+    expect(panel.querySelectorAll('.mb-row.blind')).toHaveLength(3)
+  })
+
   it('points each row header at the panel it controls', () => {
     render(<ProjectIndex />)
     const head = rowButton('Launch Planner')
@@ -97,12 +130,13 @@ describe('ProjectIndex', () => {
 
   // --- the headline measurement and the promoted row (RC1-410) ----------
 
-  it('places the ESP Migration Agent second and the PR Review Agent third', () => {
+  it('places the two FDE rows second and third, and the PR Review Agent fourth', () => {
     render(<ProjectIndex />)
     const names = [...document.querySelectorAll('.pi-row .pi-name')].map((n) => n.textContent)
     expect(names[0]).toBe('Launch Planner')
     expect(names[1]).toBe('ESP Migration Agent')
-    expect(names[2]).toBe('PR Review Agent')
+    expect(names[2]).toBe('API Compatibility Lab')
+    expect(names[3]).toBe('PR Review Agent')
   })
 
   it('renders a result line for a row that carries one', () => {
@@ -233,11 +267,11 @@ describe('ProjectIndex teaser (the résumé’s short index)', () => {
     )
     expect(screen.queryByText('Job Scout')).not.toBeInTheDocument()
 
-    const more = screen.getByText('See all ten projects →')
+    const more = screen.getByText('See all eleven projects →')
     expect(more).toHaveAttribute('href', '/work')
   })
 
-  it('still counts all ten in the thesis, and drops the expand-all control', () => {
+  it('still counts every shipped system in the thesis, and drops the expand-all control', () => {
     render(<ProjectIndex teaser />)
     expect(screen.getByText(/^Ten shipped systems on one thesis:/)).toBeInTheDocument()
     expect(screen.getByText(/Three of them below\./)).toBeInTheDocument()

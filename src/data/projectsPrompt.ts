@@ -1,4 +1,4 @@
-// Renders the ten /work project data files into the plain-text RAG corpus
+// Renders the eleven /work project data files into the plain-text RAG corpus
 // (projects-prompt.txt) the chatbot indexes alongside the resume (RC1-478).
 //
 // The TS files under src/data/ are the single source of truth for the /work
@@ -22,6 +22,7 @@ import { concertIntelligence } from './concertIntelligence'
 import { agentEvals } from './agentEvals'
 import { fleetObservability } from './fleetObservability'
 import { espMigrationAgent } from './espMigrationAgent'
+import { apiCompatibilityLab } from './apiCompatibilityLab'
 
 export const PROJECTS: ReadonlyArray<{ slug: string; content: Record<string, unknown> }> = [
   { slug: 'launch-planner', content: launchPlanner },
@@ -34,6 +35,7 @@ export const PROJECTS: ReadonlyArray<{ slug: string; content: Record<string, unk
   { slug: 'agent-evals', content: agentEvals },
   { slug: 'fleet-observability', content: fleetObservability },
   { slug: 'esp-migration-agent', content: espMigrationAgent },
+  { slug: 'api-compatibility-lab', content: apiCompatibilityLab },
 ]
 
 // Card/overview fields folded into the single overview paragraph, in this
@@ -42,6 +44,7 @@ const OVERVIEW_KEYS = [
   'name',
   'kicker',
   'lead',
+  'status',
   'tagline',
   'principle',
   'note',
@@ -105,6 +108,9 @@ function renderOverview(slug: string, content: Record<string, unknown>): string 
   const lines: string[] = [`Project: ${content.name} [${slug}]`]
   if (content.kicker) lines.push(`Category: ${renderScalar(content.kicker)}`)
   if (content.lead) lines.push(renderScalar(content.lead))
+  // A project still being built says so in the same chunk as its numbers, so
+  // an answer about it cannot come back reading as shipped (RC1-612).
+  if (content.status) lines.push(`Status: ${renderScalar(content.status)}`)
   if (content.tagline) lines.push(renderScalar(content.tagline))
   const principle = content.principle ?? content.note
   if (principle) lines.push(`Design principle: ${renderScalar(principle)}`)

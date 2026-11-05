@@ -1,0 +1,114 @@
+/* Schema diff versus replay (RC1-612): one table, two verdict columns, and
+   the rows where they disagree carrying the weight. Two hues only, a muted
+   one for what the baseline failed to say and the catch hue for what the
+   replay found. */
+.mb {
+  --mb-hair: #e4e3dd;
+  --mb-caught: #0f7b3f;
+  --mb-blind: #a8683c;
+  margin: 0;
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.mb-head,
+.mb-row {
+  display: grid;
+  grid-template-columns: 1fr 4.6rem 3.6rem;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.mb-head {
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--mb-hair);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8a887f;
+}
+
+.mb-head-col {
+  text-align: right;
+}
+
+.mb-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mb-row {
+  padding: 0.28rem 0;
+  border-bottom: 1px solid var(--mb-hair);
+  font-size: 0.66rem;
+}
+
+.mb-label {
+  color: #55534c;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* What the baseline said. On a blind row it is the finding, so it is the one
+   value on the line that is colored and bracketed. */
+.mb-base {
+  text-align: right;
+  color: #8a887f;
+  white-space: nowrap;
+}
+
+.mb-row.blind .mb-base {
+  color: var(--mb-blind);
+}
+
+.mb-row.blind .mb-base::before {
+  content: '(';
+}
+
+.mb-row.blind .mb-base::after {
+  content: ')';
+}
+
+.mb-caught {
+  text-align: right;
+  color: var(--mb-caught);
+  white-space: nowrap;
+}
+
+.mb-tally {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-top: 0.38rem;
+}
+
+.mb-tally-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--mb-blind);
+  white-space: nowrap;
+}
+
+.mb-tally-note {
+  font-size: 0.6rem;
+  line-height: 1.4;
+  color: #55534c;
+}
+
+.mb-caption {
+  margin-top: 0.4rem;
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: #8a887f;
+}
+
+@media (max-width: 520px) {
+  .mb-head,
+  .mb-row {
+    grid-template-columns: 1fr 4rem 3.2rem;
+  }
+
+  .mb-row {
+    font-size: 0.62rem;
+  }
+}

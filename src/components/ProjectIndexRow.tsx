@@ -32,8 +32,11 @@ export default function ProjectIndexRow({
         aria-controls={panelId}
       >
         <span className="pi-id">
-          <span className={`pi-kicker${content.flagship ? ' pi-kicker-flagship' : ''}`}>
-            {content.kicker}
+          <span className="pi-kicker-row">
+            <span className={`pi-kicker${content.flagship ? ' pi-kicker-flagship' : ''}`}>
+              {content.kicker}
+            </span>
+            {content.status && <span className="pi-status">{content.status}</span>}
           </span>
           <span className="pi-name">{content.name}</span>
         </span>
