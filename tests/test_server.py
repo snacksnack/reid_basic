@@ -538,6 +538,7 @@ class TestChunkProjects:
         "agent-evals",
         "fleet-observability",
         "esp-migration-agent",
+        "api-compatibility-lab",
         "portfolio",  # the catalog chunk (RC1-479)
     }
 
@@ -548,7 +549,7 @@ class TestChunkProjects:
         chunks = _chunk_projects(projects_text)
         assert len(chunks) == len(paragraphs)
 
-    def test_all_ten_projects_are_present(self, projects_text):
+    def test_every_project_is_present(self, projects_text):
         from app import _chunk_projects
 
         slugs = {c["metadata"]["project"] for c in _chunk_projects(projects_text)}

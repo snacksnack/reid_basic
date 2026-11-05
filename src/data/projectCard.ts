@@ -26,6 +26,11 @@ export interface ProjectCardContent {
   // The headline measurement (RC1-410): what the system was measured at, in
   // one line. Optional — a row without one renders exactly as it did before.
   result?: string
+  // A row that is not finished yet (RC1-612): the short status shown as a
+  // chip in the header, beside the name. A system that ships drops the field
+  // rather than changing the word, so nothing on the page can claim shipped
+  // and in-progress at once.
+  status?: string
   evals?: ProjectEvals
   technologies: readonly string[]
   links: readonly ProjectLink[]

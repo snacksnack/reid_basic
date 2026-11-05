@@ -10,6 +10,7 @@ import MiniScorecard from './visuals/MiniScorecard'
 import MiniTrend from './visuals/MiniTrend'
 import MiniFleet from './visuals/MiniFleet'
 import MiniReconcile from './visuals/MiniReconcile'
+import MiniBlindspot from './visuals/MiniBlindspot'
 import { launchPlanner } from '../data/launchPlanner'
 import { driftDetector } from '../data/driftDetector'
 import { incidentSummarizer } from '../data/incidentSummarizer'
@@ -20,6 +21,7 @@ import { concertIntelligence } from '../data/concertIntelligence'
 import { agentEvals } from '../data/agentEvals'
 import { fleetObservability } from '../data/fleetObservability'
 import { espMigrationAgent } from '../data/espMigrationAgent'
+import { apiCompatibilityLab } from '../data/apiCompatibilityLab'
 import type { ProjectCardContent } from '../data/projectCard'
 import './ProjectIndex.css'
 
@@ -58,7 +60,21 @@ const ENTRIES: Entry[] = [
       />
     ),
   },
-  // Third (was second, RC1-410): the most engineered system on the page, and
+  // Third (RC1-612): the newest work and the second FDE row, so it sits with
+  // the engagement story above it rather than at the bottom. The only row
+  // carrying a status chip, because it is not a finished tool and the page
+  // must not imply otherwise.
+  {
+    id: 'compat-lab',
+    content: apiCompatibilityLab,
+    visual: (
+      <MiniBlindspot
+        breaks={apiCompatibilityLab.breaks}
+        caption={apiCompatibilityLab.blindCaption}
+      />
+    ),
+  },
+  // Fourth (was second, RC1-410): the most engineered system on the page, and
   // the row whose own numbers the harness below it produced.
   {
     id: 'pr-agent',
@@ -133,8 +149,13 @@ const ENTRIES: Entry[] = [
 ]
 
 // The thesis line counts the systems rather than hardcoding a number, so adding
-// an entry can't leave the copy claiming the wrong total.
-const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+// an entry can't leave the copy claiming the wrong total. A row carrying a
+// status is counted separately (RC1-612): a system still being built is not a
+// shipped one, and the sentence has to survive the next row that isn't.
+const NUMBER_WORDS = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen',
+]
 const numberWord = (n: number) => NUMBER_WORDS[n] ?? String(n)
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -155,6 +176,8 @@ export default function ProjectIndex({ teaser = false }: ProjectIndexProps) {
 
   const allOpen = entries.every((e) => open[e.id])
   const total = ENTRIES.length
+  const building = ENTRIES.filter((e) => e.content.status).length
+  const shipped = total - building
 
   const toggle = (id: string) => setOpen((prev) => ({ ...prev, [id]: !prev[id] }))
   const toggleAll = () =>
@@ -164,8 +187,10 @@ export default function ProjectIndex({ teaser = false }: ProjectIndexProps) {
     <>
       <div className="pi-thesis-row">
         <p className="pi-thesis">
-          {capitalize(numberWord(total))} shipped systems on one thesis:{' '}
+          {capitalize(numberWord(shipped))} shipped systems on one thesis:{' '}
           <em>the model proposes, deterministic code decides, a human approves.</em>{' '}
+          {building > 0 &&
+            `${capitalize(numberWord(building))} more ${building === 1 ? 'is' : 'are'} still being built, and ${building === 1 ? 'says' : 'say'} so. `}
           {teaser
             ? `${capitalize(numberWord(entries.length))} of them below.`
             : 'Each row opens onto how it works.'}

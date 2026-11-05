@@ -97,10 +97,35 @@
   color: #2f6bff;
 }
 
+/* The chip rides with the kicker, not the name: a long name wraps in this
+   column and would leave the chip stranded mid-title. */
+.pi-kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
 .pi-name {
   font-size: 0.98rem;
   font-weight: 700;
   color: var(--tb-ink, #16150f);
+}
+
+/* A row that is not finished yet (RC1-612). Quiet on purpose: it has to be
+   legible beside the name without competing with the result line below. */
+.pi-status {
+  flex: none;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #8a6a3c;
+  border: 1px solid #d8c7a8;
+  border-radius: 3px;
+  padding: 0.06rem 0.3rem;
+  background: #fbf6ec;
+  white-space: nowrap;
 }
 
 .pi-lead {

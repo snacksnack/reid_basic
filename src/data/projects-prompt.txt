@@ -1,5 +1,5 @@
 Project: Reid Collins's project portfolio [portfolio]
-All 10 personal engineering projects on the /work page (hihelloreid.com/work):
+All 11 personal engineering projects on the /work page (hihelloreid.com/work):
 - Launch Planner [launch-planner]: An agentic delivery planner for migrations and launches.
 - Dependency Drift Detector [drift-detector]: Watches a Jira dependency graph for upstream slips.
 - AI Incident Summarizer [incident-summarizer]: Correlates three alert firehoses into one incident.
@@ -10,6 +10,7 @@ All 10 personal engineering projects on the /work page (hihelloreid.com/work):
 - Agent Evals [agent-evals]: The regression suite measuring seven systems on this page.
 - Fleet Observability [fleet-observability]: Nine LLM systems under one pane, priced run by run.
 - ESP Migration Agent [esp-migration-agent]: Migrates an email platform behind human-approved gates.
+- API Compatibility Lab [api-compatibility-lab]: Replays captured traffic across two API versions to find the breaks a schema diff misses.
 
 Project: Launch Planner [launch-planner]
 Category: Flagship project
@@ -279,3 +280,23 @@ Project: ESP Migration Agent — checks [esp-migration-agent]
 
 Project: ESP Migration Agent — reconcileCaption [esp-migration-agent]
 The acceptance report from the live run: reconciliation must PASS before cutover, and any FAIL stops the clock.
+
+Project: API Compatibility Lab [api-compatibility-lab]
+Category: API upgrades
+Replays captured traffic across two API versions to find the breaks a schema diff misses.
+Status: In progress
+An OpenAPI diff catches removed fields and changed types. It is blind to a changed default, a field that became nullable in practice, a pagination boundary shift, a different error code under the same HTTP status. Each of those breaks working integration code while the diff reports green. So this captures a customer’s own traffic, sanitizes it for storage, replays the identical requests against both versions, and compares canonical responses. Every surviving difference is classified, mapped onto the workflows and the exact field reads it affects, and compiled into a test that passes on the old version and fails on the new one. Goes beyond schema comparison to find the changes that actually break customer applications. Phases 0 through 7 are built and the captured corpus reaches half the documented breaks in the inventory, so this is an argument that holds rather than a finished tool.
+Design principle: Four gates refuse to publish rather than caveat: no false-break rate while a finding lacks a hand verdict, no precision while a claim is unconfirmed, no pass-fail count while a pin is uncertified, and no corpus that still holds a credential. Four of the eight documented breaks are unexercised by this traffic, and they are reported as unexercised, never as passed.
+Headline result: Caught 4 of the 4 documented behavioral breaks the corpus exercises. The schema-diff baseline gave no usable warning on three of them while reporting 12,313 breaking changes on the same twenty endpoints. 0 false breaks over 25 breaking findings, and 11 of 11 generated tests pass on the old version and fail on the new one.
+Technologies: Python, httpx, pytest, oasdiff, Stripe API (dated versions), Datadog, agent-evals
+Continuous evals: Six dimensions scored on every run: detection recall against a changelog its author did not write, the false-break rate, the schema-diff comparison, workflow-mapping precision, pin certification, and the corpus PII count. The only subject on the harness that calls no model, so its record carries zero spend on purpose.
+Links: Engagement writeup: https://github.com/snacksnack/api-compatibility-lab/blob/main/docs/engagement.md; Impact report: https://github.com/snacksnack/api-compatibility-lab/blob/main/docs/impact-report.md; GitHub: https://github.com/snacksnack/api-compatibility-lab
+
+Project: API Compatibility Lab — breaks [api-compatibility-lab]
+- Automatic payment methods on by default — baseline: no entry; blind: true
+- capture_method default changed — baseline: field only; blind: true
+- Partial capture stopped creating a Refund — baseline: no entry; blind: true
+- GET /v1/invoices/upcoming removed — baseline: reported; blind: false
+
+Project: API Compatibility Lab — blindCaption [api-compatibility-lab]
+The same baseline reported 12,313 breaking changes on these twenty endpoints, 11,270 of them one enum rule. It does not hand a reader a green light to trust; it hands them a haystack, and three of the four needles are not in it.
