@@ -8,7 +8,7 @@ interface MiniBlindspotProps {
 
 // The scorecard's central comparison (RC1-612), drawn as the two columns that
 // disagree: what the schema-diff baseline said about each documented break,
-// and what replaying real traffic found. Three of the four rows are the
+// and what replaying real traffic found. Five of the six rows are the
 // project's whole argument, so the blind rows carry the emphasis and the one
 // the baseline did report is left plain.
 export default function MiniBlindspot({ breaks, caption }: MiniBlindspotProps) {

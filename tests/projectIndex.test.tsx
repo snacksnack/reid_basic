@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import ProjectIndex from '../src/components/ProjectIndex'
+import { apiCompatibilityLab } from '../src/data/apiCompatibilityLab'
 
 // The Projects section is an aligned index that expands in place (RC1-216),
 // rendered full at /work and as a three-row teaser on the résumé (RC1-226).
@@ -87,17 +88,26 @@ describe('ProjectIndex', () => {
     )
   })
 
+  // The figures themselves are pinned in the lab repo's own suite, which
+  // re-derives each one from a regenerated artifact. What this test owns is
+  // narrower and still worth owning: the card's data reaching the DOM, and
+  // the visual's tally agreeing with the rows it was drawn from. Reading the
+  // expectations off the data module is deliberate, so a corpus that widens
+  // again edits one file instead of two.
   it('leads the compatibility lab row with the caught-of-exercised number', () => {
     render(<ProjectIndex />)
     fireEvent.click(rowButton('API Compatibility Lab'))
     const panel = document.getElementById('compat-lab-panel')!
-    expect(panel.querySelector('.pi-result')!.textContent).toMatch(
-      /^ResultCaught 4 of the 4 documented behavioral breaks/,
-    )
-    // The visual's own argument: three of the four caught breaks drew no
-    // usable warning from the baseline.
-    expect(within(panel).getByText('3 of 4')).toBeInTheDocument()
-    expect(panel.querySelectorAll('.mb-row.blind')).toHaveLength(3)
+    const { breaks, result } = apiCompatibilityLab
+    expect(result).toMatch(/^Caught (\d+) of the \1 documented behavioral breaks/)
+    expect(panel.querySelector('.pi-result')!.textContent).toBe(`Result${result}`)
+    // The visual's own argument: most of the caught breaks drew no usable
+    // warning from the baseline.
+    const blind = breaks.filter((b) => b.blind).length
+    expect(blind).toBeGreaterThan(breaks.length / 2)
+    expect(within(panel).getByText(`${blind} of ${breaks.length}`)).toBeInTheDocument()
+    expect(panel.querySelectorAll('.mb-row.blind')).toHaveLength(blind)
+    expect(panel.querySelectorAll('.mb-row')).toHaveLength(breaks.length)
   })
 
   it('points each row header at the panel it controls', () => {
