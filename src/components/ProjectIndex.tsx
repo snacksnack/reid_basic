@@ -61,9 +61,15 @@ const ENTRIES: Entry[] = [
     ),
   },
   // Third (RC1-612): the newest work and the second FDE row, so it sits with
-  // the engagement story above it rather than at the bottom. The only row
-  // carrying a status chip, because it is not a finished tool and the page
-  // must not imply otherwise.
+  // the engagement story above it rather than at the bottom. Carried an
+  // "In progress" chip until RC1-622, which was the wrong shape of claim: the
+  // gap it was hedging against is that the integration inventory is declared
+  // by the customer rather than discovered from their code, and closing that
+  // needs a codebase this will never be pointed at. A permanent limit on
+  // scope is not a progress state, and a chip promising a finish line that
+  // cannot arrive reads as abandoned rather than as honest. The honesty lives
+  // in the card's own copy, which says outright that this is an argument that
+  // holds rather than a finished tool.
   {
     id: 'compat-lab',
     content: apiCompatibilityLab,

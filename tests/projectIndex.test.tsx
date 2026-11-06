@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import ProjectIndex from '../src/components/ProjectIndex'
+import ProjectIndexRow from '../src/components/ProjectIndexRow'
 import { apiCompatibilityLab } from '../src/data/apiCompatibilityLab'
 
 // The Projects section is an aligned index that expands in place (RC1-216),
@@ -22,6 +23,43 @@ const ALL_NAMES = [
 
 const rowButton = (name: string | RegExp) =>
   screen.getByRole('button', { name: typeof name === 'string' ? new RegExp(name) : name })
+
+// The status chip, tested on a synthetic row rather than on a real project.
+// Asserting it against whichever card currently carries a status is how the
+// last version of these tests broke the moment one stopped: which project is
+// in that state is supposed to change, the mechanism is not.
+describe('ProjectIndexRow status chip', () => {
+  const content = {
+    name: 'Fixture System',
+    kicker: 'fixtures',
+    lead: 'A row that exists only for this test.',
+    tagline: 'Tagline.',
+    technologies: ['TypeScript'],
+    links: [],
+  } as unknown as Parameters<typeof ProjectIndexRow>[0]['content']
+
+  const renderRow = (status?: string) =>
+    render(
+      <ProjectIndexRow
+        id="fixture"
+        content={{ ...content, ...(status ? { status } : {}) }}
+        open={false}
+        onToggle={() => {}}
+      >
+        <div />
+      </ProjectIndexRow>,
+    )
+
+  it('renders the status as a chip when a row declares one', () => {
+    renderRow('Still cooking')
+    expect(document.querySelector('.pi-status')!.textContent).toBe('Still cooking')
+  })
+
+  it('renders no chip when a row declares none', () => {
+    renderRow()
+    expect(document.querySelector('.pi-status')).toBeNull()
+  })
+})
 
 describe('ProjectIndex', () => {
   it('lists every project as a row, flagship first', () => {
@@ -66,26 +104,19 @@ describe('ProjectIndex', () => {
 
   it('counts the systems in the thesis rather than hardcoding the total', () => {
     render(<ProjectIndex />)
-    expect(screen.getByText(/^Ten shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Eleven shipped systems on one thesis:/)).toBeInTheDocument()
   })
 
-  // RC1-612: a system still being built must not be counted among the shipped
-  // ones, and the page has to say which one it is.
-  it('counts an in-progress row separately from the shipped ones', () => {
+  // RC1-622: no row carries a status now. The API Compatibility Lab gave its
+  // chip up because the gap it hedged against — an integration inventory the
+  // customer declares rather than one discovered from their code — needs a
+  // codebase the project will never be pointed at, so it is a permanent limit
+  // on scope and not a stage of work.
+  it('counts every row as shipped and drops the still-being-built clause', () => {
     render(<ProjectIndex />)
     expect(document.querySelectorAll('.pi-row')).toHaveLength(11)
-    expect(
-      screen.getByText(/One more is still being built, and says so\./),
-    ).toBeInTheDocument()
-  })
-
-  it('marks the in-progress row with a status chip, and marks only that row', () => {
-    render(<ProjectIndex />)
-    const chips = [...document.querySelectorAll('.pi-status')]
-    expect(chips.map((c) => c.textContent)).toEqual(['In progress'])
-    expect(chips[0]!.closest('.pi-row')!.querySelector('.pi-name')!.textContent).toBe(
-      'API Compatibility Lab',
-    )
+    expect(document.querySelectorAll('.pi-status')).toHaveLength(0)
+    expect(screen.queryByText(/still being built/)).not.toBeInTheDocument()
   })
 
   // The figures themselves are pinned in the lab repo's own suite, which
@@ -283,7 +314,7 @@ describe('ProjectIndex teaser (the résumé’s short index)', () => {
 
   it('still counts every shipped system in the thesis, and drops the expand-all control', () => {
     render(<ProjectIndex teaser />)
-    expect(screen.getByText(/^Ten shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Eleven shipped systems on one thesis:/)).toBeInTheDocument()
     expect(screen.getByText(/Three of them below\./)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Expand all' })).not.toBeInTheDocument()
   })
