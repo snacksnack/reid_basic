@@ -6,12 +6,15 @@
 // repo (the behavioral diff report, the impact report, and the pinned-test
 // certification), and the repo's own test suite re-derives each one.
 //
-// The only row on this page carrying a status: phases 0 through 7 of the
-// epic are built and the corpus reaches six of the eight documented breaks
-// in the inventory, so it is an argument that holds rather than a finished
-// tool. The card says so in the same breath as the numbers. The last two
-// each need something a bare test-mode sandbox cannot do, which is why they
-// stay unexercised rather than becoming a longer corpus.
+// This row carried an "In progress" chip until RC1-622. Every phase is built
+// and the corpus reaches seven of the eight documented breaks; the eighth is
+// unexercised by decision, not by blocker. What the chip was really hedging
+// against is that the integration inventory is declared by the customer
+// rather than discovered from their code, and closing that needs a codebase
+// this project will never be pointed at. That is a permanent limit on scope,
+// not a stage of work, and a chip promising a finish line that cannot arrive
+// reads as abandoned rather than as honest. So the chip is gone and the
+// limit stays in the copy below, stated in the same breath as the numbers.
 
 import type { ProjectCardContent } from './projectCard'
 
@@ -32,7 +35,6 @@ const SITE = 'https://snacksnack.github.io/api-compatibility-lab/'
 export const apiCompatibilityLab = {
   name: 'API Compatibility Lab',
   kicker: 'API upgrades',
-  status: 'In progress',
   lead: 'Replays captured traffic across two API versions to find the breaks a schema diff misses.',
   tagline:
     'An OpenAPI diff catches removed fields and changed types. It is blind to a changed default, a field that became nullable in practice, a pagination boundary shift, a different error code under the same HTTP status. Each of those breaks working integration code while the diff reports green. So this captures a customer’s own traffic, sanitizes it for storage, replays the identical requests against both versions, and compares canonical responses. Every surviving difference is classified, mapped onto the workflows and the exact field reads it affects, and compiled into a test that passes on the old version and fails on the new one. Goes beyond schema comparison to find the changes that actually break customer applications. Every phase is built and the captured corpus reaches seven of the eight documented breaks in the inventory. The one it does not reach was probed and confirmed live, then left unexercised by decision rather than by blocker: observing it needs a hosted Checkout page driven to a failed payment, and replaying that would put a browser inside the control run whose determinism the whole method rests on. So this is an argument that holds rather than a finished tool: the inventory of workflows is declared by the customer, not discovered from their code, and every figure describes one version pair.',
