@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import ProjectIndex from '../src/components/ProjectIndex'
 import ProjectIndexRow from '../src/components/ProjectIndexRow'
 import { apiCompatibilityLab } from '../src/data/apiCompatibilityLab'
+import { pocBenchmarkAgent } from '../src/data/pocBenchmarkAgent'
 
 // The Projects section is an aligned index that expands in place (RC1-216),
 // rendered full at /work and as a three-row teaser on the résumé (RC1-226).
@@ -19,6 +20,7 @@ const ALL_NAMES = [
   'Fleet Observability',
   'ESP Migration Agent',
   'API Compatibility Lab',
+  'POC Benchmark Agent',
 ]
 
 const rowButton = (name: string | RegExp) =>
@@ -104,7 +106,7 @@ describe('ProjectIndex', () => {
 
   it('counts the systems in the thesis rather than hardcoding the total', () => {
     render(<ProjectIndex />)
-    expect(screen.getByText(/^Eleven shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Twelve shipped systems on one thesis:/)).toBeInTheDocument()
   })
 
   // RC1-622: no row carries a status now. The API Compatibility Lab gave its
@@ -114,7 +116,7 @@ describe('ProjectIndex', () => {
   // on scope and not a stage of work.
   it('counts every row as shipped and drops the still-being-built clause', () => {
     render(<ProjectIndex />)
-    expect(document.querySelectorAll('.pi-row')).toHaveLength(11)
+    expect(document.querySelectorAll('.pi-row')).toHaveLength(12)
     expect(document.querySelectorAll('.pi-status')).toHaveLength(0)
     expect(screen.queryByText(/still being built/)).not.toBeInTheDocument()
   })
@@ -171,13 +173,29 @@ describe('ProjectIndex', () => {
 
   // --- the headline measurement and the promoted row (RC1-410) ----------
 
-  it('places the two FDE rows second and third, and the PR Review Agent fourth', () => {
+  it('places the three FDE rows second to fourth, and the PR Review Agent fifth', () => {
     render(<ProjectIndex />)
     const names = [...document.querySelectorAll('.pi-row .pi-name')].map((n) => n.textContent)
     expect(names[0]).toBe('Launch Planner')
     expect(names[1]).toBe('ESP Migration Agent')
     expect(names[2]).toBe('API Compatibility Lab')
-    expect(names[3]).toBe('PR Review Agent')
+    expect(names[3]).toBe('POC Benchmark Agent')
+    expect(names[4]).toBe('PR Review Agent')
+  })
+
+  // --- the refusal row (RC1-635) ------------------------------------------
+
+  it('colors only the shapes over the ceiling and counts the ones the best setup leaves', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('POC Benchmark Agent'))
+    const { shapes, ceiling } = pocBenchmarkAgent
+    const panel = document.querySelector('.mc') as HTMLElement
+    expect(panel.querySelectorAll('.mc-row')).toHaveLength(shapes.length)
+    const over = shapes.filter((s) => s.best > ceiling).length
+    const overToday = shapes.filter((s) => s.today > ceiling).length
+    expect(panel.querySelectorAll('.mc-val.over')).toHaveLength(over + overToday)
+    expect(panel.querySelector('.mc-tally-value')?.textContent).toBe(`${over} of ${shapes.length}`)
+    expect(pocBenchmarkAgent.result).toMatch(/^Refused to recommend/)
   })
 
   it('renders a result line for a row that carries one', () => {
@@ -308,13 +326,13 @@ describe('ProjectIndex teaser (the résumé’s short index)', () => {
     )
     expect(screen.queryByText('Job Scout')).not.toBeInTheDocument()
 
-    const more = screen.getByText('See all eleven projects →')
+    const more = screen.getByText('See all twelve projects →')
     expect(more).toHaveAttribute('href', '/work')
   })
 
   it('still counts every shipped system in the thesis, and drops the expand-all control', () => {
     render(<ProjectIndex teaser />)
-    expect(screen.getByText(/^Eleven shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Twelve shipped systems on one thesis:/)).toBeInTheDocument()
     expect(screen.getByText(/Three of them below\./)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Expand all' })).not.toBeInTheDocument()
   })

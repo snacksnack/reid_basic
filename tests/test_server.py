@@ -539,6 +539,7 @@ class TestChunkProjects:
         "fleet-observability",
         "esp-migration-agent",
         "api-compatibility-lab",
+        "poc-benchmark-agent",
         "portfolio",  # the catalog chunk (RC1-479)
     }
 
