@@ -23,6 +23,7 @@ import { agentEvals } from './agentEvals'
 import { fleetObservability } from './fleetObservability'
 import { espMigrationAgent } from './espMigrationAgent'
 import { apiCompatibilityLab } from './apiCompatibilityLab'
+import { pocBenchmarkAgent } from './pocBenchmarkAgent'
 
 export const PROJECTS: ReadonlyArray<{ slug: string; content: Record<string, unknown> }> = [
   { slug: 'launch-planner', content: launchPlanner },
@@ -36,6 +37,7 @@ export const PROJECTS: ReadonlyArray<{ slug: string; content: Record<string, unk
   { slug: 'fleet-observability', content: fleetObservability },
   { slug: 'esp-migration-agent', content: espMigrationAgent },
   { slug: 'api-compatibility-lab', content: apiCompatibilityLab },
+  { slug: 'poc-benchmark-agent', content: pocBenchmarkAgent },
 ]
 
 // Card/overview fields folded into the single overview paragraph, in this

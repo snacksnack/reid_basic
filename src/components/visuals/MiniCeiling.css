@@ -1,0 +1,91 @@
+/* Today versus the best tested setup (RC1-635): one table, two value columns,
+   and only the values over the error ceiling colored. */
+.mc {
+  margin: 0;
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.mc-head,
+.mc-row {
+  display: grid;
+  grid-template-columns: 1fr 3.8rem 4.6rem;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.mc-head {
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 25%, transparent);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.mc-col,
+.mc-val {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mc-row {
+  padding: 0.24rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 18%, transparent);
+  font-size: 0.66rem;
+}
+
+.mc-label {
+  color: var(--text);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.mc-val {
+  color: var(--muted);
+}
+
+.mc-val.over {
+  color: var(--caution);
+  font-weight: 700;
+}
+
+.mc-tally {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-top: 0.38rem;
+}
+
+.mc-tally-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--caution);
+  white-space: nowrap;
+}
+
+.mc-tally-note {
+  font-size: 0.6rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.mc-caption {
+  margin-top: 0.4rem;
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+@media (max-width: 520px) {
+  .mc-head,
+  .mc-row {
+    grid-template-columns: 1fr 3.4rem 4.2rem;
+  }
+}

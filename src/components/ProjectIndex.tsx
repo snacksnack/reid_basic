@@ -11,6 +11,7 @@ import MiniTrend from './visuals/MiniTrend'
 import MiniFleet from './visuals/MiniFleet'
 import MiniReconcile from './visuals/MiniReconcile'
 import MiniBlindspot from './visuals/MiniBlindspot'
+import MiniCeiling from './visuals/MiniCeiling'
 import { launchPlanner } from '../data/launchPlanner'
 import { driftDetector } from '../data/driftDetector'
 import { incidentSummarizer } from '../data/incidentSummarizer'
@@ -22,6 +23,7 @@ import { agentEvals } from '../data/agentEvals'
 import { fleetObservability } from '../data/fleetObservability'
 import { espMigrationAgent } from '../data/espMigrationAgent'
 import { apiCompatibilityLab } from '../data/apiCompatibilityLab'
+import { pocBenchmarkAgent } from '../data/pocBenchmarkAgent'
 import type { ProjectCardContent } from '../data/projectCard'
 import './ProjectIndex.css'
 
@@ -80,7 +82,20 @@ const ENTRIES: Entry[] = [
       />
     ),
   },
-  // Fourth (was second, RC1-410): the most engineered system on the page, and
+  // Fourth (RC1-635): the third FDE row, kept with the other two engagement
+  // stories. Its headline is a refusal, which is the point of the row.
+  {
+    id: 'poc-benchmark',
+    content: pocBenchmarkAgent,
+    visual: (
+      <MiniCeiling
+        shapes={pocBenchmarkAgent.shapes}
+        ceiling={pocBenchmarkAgent.ceiling}
+        caption={pocBenchmarkAgent.ceilingCaption}
+      />
+    ),
+  },
+  // Fifth (was second, RC1-410): the most engineered system on the page, and
   // the row whose own numbers the harness below it produced.
   {
     id: 'pr-agent',
@@ -94,7 +109,7 @@ const ENTRIES: Entry[] = [
     ),
     teaser: true,
   },
-  // Still above most of the rows it grades: the harness that measures seven
+  // Still above most of the rows it grades: the harness that measures eight
   // of the systems on this page.
   {
     id: 'agent-evals',
