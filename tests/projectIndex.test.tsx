@@ -262,6 +262,20 @@ describe('ProjectIndex', () => {
     )
   })
 
+  it('prices one production run per app, in that app\'s own unit', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('Fleet Observability'))
+    const panel = document.getElementById('fleet-obs-panel')!
+    const run = (app: string) =>
+      [...panel.querySelectorAll('.mfl-row')]
+        .find((r) => r.querySelector('.mfl-name')!.textContent === app)!
+        .querySelector('.mfl-run')!.textContent
+    expect(run('pr-review-agent')).toBe('10¢ / review')
+    expect(run('hihelloreid-chat')).toBe('0.01¢ / reply')
+    expect(run('launch-planner')).toBe('test runs only')
+    expect(run('esp-migration-agent')).toBe('too few runs')
+  })
+
   it('keeps the smallest app visible rather than a zero-width bar', () => {
     render(<ProjectIndex />)
     fireEvent.click(rowButton('Fleet Observability'))

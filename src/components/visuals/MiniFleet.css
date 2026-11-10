@@ -65,7 +65,7 @@
 
 .mfl-row {
   display: grid;
-  grid-template-columns: 132px 1fr 46px;
+  grid-template-columns: 132px 1fr 46px 96px;
   align-items: center;
   gap: 8px;
   min-height: 13px;
@@ -118,6 +118,19 @@
   text-align: right;
 }
 
+.mfl-run {
+  font-size: 0.57rem;
+  color: #6b6b66;
+  white-space: nowrap;
+}
+
+/* Sits over the per-run column. */
+.mfl-key-run {
+  margin-left: auto;
+  width: 96px;
+  color: #8a8981;
+}
+
 .mfl-caption {
   padding: 0.38rem 0.55rem;
   font-size: 0.6rem;
@@ -129,6 +142,6 @@
 
 @media (max-width: 560px) {
   .mfl-row {
-    grid-template-columns: 92px 1fr 42px;
+    grid-template-columns: 92px 1fr 42px 78px;
   }
 }

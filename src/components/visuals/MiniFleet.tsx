@@ -12,13 +12,29 @@ interface MiniFleetProps {
 // text: color is never the only way to read it. The value sits beside each
 // bar rather than in a tooltip, so it survives print, keyboard and screen
 // readers; the per-segment split is in the row's title and the aria label.
+// The last column prices one production run, labeled by what a run is, since
+// a review and a chat reply are not the same unit.
 
 const money = (n: number) => (n < 0.01 ? '<$0.01' : `$${n.toFixed(2)}`)
 
 const total = (a: FleetApp) => a.production + a.test
 
-const split = (a: FleetApp) =>
-  `${a.app}: ${money(total(a))} (production ${money(a.production)}, test runs ${money(a.test)})`
+// Per-run cost in cents: whole cents from 1¢ up, one significant figure
+// below, so a tenth of a cent and a hundredth stay distinguishable.
+const cents = (usd: number) => {
+  const c = usd * 100
+  return `${c >= 1 ? c.toFixed(0) : Number(c.toPrecision(1))}¢`
+}
+
+const perRun = (a: FleetApp) =>
+  a.runs && a.unit ? `${cents(a.production / a.runs)} / ${a.unit}` : null
+
+const split = (a: FleetApp) => {
+  const run = perRun(a)
+  return `${a.app}: ${money(total(a))} (production ${money(a.production)}, test runs ${money(
+    a.test,
+  )})${run ? `, ${run} over ${a.runs} production runs` : ''}`
+}
 
 export default function MiniFleet({ apps, caption }: MiniFleetProps) {
   const max = Math.max(...apps.map(total))
@@ -47,6 +63,7 @@ export default function MiniFleet({ apps, caption }: MiniFleetProps) {
         <span className="mfl-key">
           <span className="mfl-swatch mfl-test" /> test runs {money(test)}
         </span>
+        <span className="mfl-key mfl-key-run">per run</span>
       </div>
 
       <ul className="mfl-rows">
@@ -69,6 +86,9 @@ export default function MiniFleet({ apps, caption }: MiniFleetProps) {
                 </span>
               </span>
               <span className="mfl-val">{money(total(a))}</span>
+              <span className="mfl-run">
+                {perRun(a) ?? (a.production ? 'too few runs' : 'test runs only')}
+              </span>
             </li>
           )
         })}
