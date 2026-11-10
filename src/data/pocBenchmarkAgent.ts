@@ -29,9 +29,9 @@ const SITE = 'https://snacksnack.github.io/poc-benchmark-agent/'
 export const pocBenchmarkAgent = {
   name: 'POC Benchmark Agent',
   kicker: 'Database sizing',
-  lead: "Sizes a customer's database, and says no when nothing fits.",
+  lead: "Benchmarks a prospect's Postgres queries to find the cheapest compute size and indexes that meet their latency targets.",
   tagline:
-    "Takes a prospect's query log and dataset and answers the pre-sales question: what compute size and indexes hold their latency at their concurrency. Success criteria are frozen with the buyer before any experiment runs. Claude proposes configurations inside a fixed budget, Python measures each one, and the answer is scored on accounts the search never saw. The workload is synthetic and written by the person tuning it, so its traps were committed in advance.",
+    "A pre-sales sizing tool for Postgres on Neon. It groups a prospect's query log into query types and agrees pass/fail targets with the buyer before any test runs. Claude picks which compute sizes and indexes to try, within a fixed budget, and Python runs each benchmark. The best setup is then re-tested on customer accounts the search never saw. If nothing meets the targets, the tool reports that instead of recommending a setup that would fail. The workload here is synthetic, and its known problem queries were written down before the first test.",
   note: 'Results mean performance at a fixed 8 or 32 sessions, not a sustained arrival rate. Only compute size and eight candidate indexes were in play; memory settings and extended statistics were not, and two of the three failing shapes need one of them. Every figure is Neon Postgres, whose deepest cache tier is invisible from the client.',
   result:
     "Refused to recommend: no setup in the agreed space met the 80 criteria frozen before the first experiment. At 32 sessions today's setup times out on 97% of daily reports. The strongest permitted setup, 4 CU with all eight candidate indexes, cleared the email lookup, funnel and timeline, and left three shapes failing 15 to 21% of calls against a 1% ceiling. Two experiments, $0.60 of model spend.",
