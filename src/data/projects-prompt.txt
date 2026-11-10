@@ -8,7 +8,7 @@ All 12 personal engineering projects on the /work page (hihelloreid.com/work):
 - Job Scout [job-search-agent]: Scores every new posting against a résumé, daily.
 - Concert Intelligence Agent [concert-intelligence]: Ranks upcoming shows by what you actually listen to.
 - Agent Evals [agent-evals]: The regression suite measuring eight systems on this page.
-- Fleet Observability [fleet-observability]: Nine LLM systems under one pane, priced run by run.
+- Fleet Observability [fleet-observability]: Eleven LLM systems under one pane, priced run by run.
 - ESP Migration Agent [esp-migration-agent]: Migrates an email platform behind human-approved gates.
 - API Compatibility Lab [api-compatibility-lab]: Replays captured traffic across two API versions to find the breaks a schema diff misses.
 - POC Benchmark Agent [poc-benchmark-agent]: Benchmarks a prospect's Postgres queries to find the cheapest compute size and indexes that meet their latency targets.
@@ -241,26 +241,28 @@ Real runs from the store: pr-review’s pass rate per run, every point attribute
 
 Project: Fleet Observability [fleet-observability]
 Category: Platform
-Nine LLM systems under one pane, priced run by run.
-Every agent on this page reports into one Datadog estate. Traces and token counts reach LLM Observability, where a run is priced at the end of its own trace rather than estimated from a monthly bill, and spend has guardrails that fire before a runaway loop becomes an invoice. Twenty-two dashboards, monitors, SLOs and synthetics are code, and a daily job goes red when the console and the repository disagree, in either direction, for a human to reconcile.
+Eleven LLM systems under one pane, priced run by run.
+Every agent on this page reports into one Datadog estate. Traces and token counts reach LLM Observability, where a run is priced at the end of its own trace rather than estimated from a monthly bill, and spend has guardrails that fire before a runaway loop becomes an invoice. Fifty-one dashboards, monitors, SLOs, synthetics and a log index are code, and a daily job goes red when the console and the repository disagree, in either direction, for a human to reconcile.
 Design principle: A daily aggregate cannot date a regression. Every number resolves to the raw event behind it, which is how a cost metric in nanodollars, scaled by a billion twice, was caught showing the largest spend as 0.00.
-Headline result: Nine apps traced and 22 Datadog objects under daily drift detection; every run priced from its own trace rather than a monthly estimate.
+Headline result: Eleven apps traced and 51 Datadog objects under daily drift detection. Every run is priced from its own trace, and eval runs are told apart from production by their service tag, so a benchmark sweep never reads as customer spend.
 Technologies: Datadog (LLM Observability, APM, SLOs, Synthetics), Python, GitHub Actions, DORA metrics
 Links: GitHub: https://github.com/snacksnack/tpm-automation-platform
 
 Project: Fleet Observability — apps [fleet-observability]
-- app: pr-review-agent; cost: 34.9377
-- app: launch-planner; cost: 1.6977
-- app: kpi-agent; cost: 0.2382
-- app: drift-digest; cost: 0.1994
-- app: tpm-platform; cost: 0.1948
-- app: concert-intelligence; cost: 0.0464
-- app: hihelloreid-chat; cost: 0.014
-- app: agent-evals-harness; cost: 0.0006
-- app: agent-fleet; cost: 0.00005
+- app: pr-review-agent; production: 17.4835; test: 2.5729
+- app: launch-planner; production: 0; test: 3.5394
+- app: poc-benchmark-agent; production: 0; test: 1.6818
+- app: esp-migration-agent; production: 0.1508; test: 1.4711
+- app: kpi-agent; production: 0.8641; test: 0
+- app: incident-summarizer; production: 0.6471; test: 0.07
+- app: drift-digest; production: 0.6032; test: 0
+- app: tpm-platform; production: 0; test: 0.4898
+- app: release-notes; production: 0.096; test: 0
+- app: hihelloreid-chat; production: 0.0458; test: 0
+- app: concert-intelligence; production: 0.0381; test: 0
 
 Project: Fleet Observability — fleetCaption [fleet-observability]
-Datadog’s estimated cost by ml_app, 2026-08-28 to 09-07, every run, benchmarks included.
+Datadog’s estimated cost by ml_app, 2026-10-11 to 11-10 UTC. Test runs are eval and benchmark sweeps, tagged by service.
 
 Project: ESP Migration Agent [esp-migration-agent]
 Category: Platform migration

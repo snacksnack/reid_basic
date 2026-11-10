@@ -239,21 +239,37 @@ describe('ProjectIndex', () => {
     render(<ProjectIndex />)
     fireEvent.click(rowButton('Fleet Observability'))
     const panel = document.getElementById('fleet-obs-panel')!
-    const names = [...panel.querySelectorAll('.mf-name')].map((n) => n.textContent)
+    const names = [...panel.querySelectorAll('.mfl-name')].map((n) => n.textContent)
     expect(names[0]).toBe('pr-review-agent')
     expect(names[1]).toBe('launch-planner')
-    expect(names).toHaveLength(9)
-    expect(within(panel).getByText('$34.94')).toBeInTheDocument()
+    expect(names).toHaveLength(11)
+    expect(within(panel).getByText('$20.06')).toBeInTheDocument()
+  })
+
+  it('splits each fleet bar into production and test runs', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('Fleet Observability'))
+    const panel = document.getElementById('fleet-obs-panel')!
+    const rows = [...panel.querySelectorAll('.mfl-row')]
+    // pr-review-agent has both; launch-planner ran only as evals this window.
+    expect(rows[0].querySelectorAll('.mfl-prod, .mfl-test')).toHaveLength(2)
+    expect(rows[1].querySelector('.mfl-prod')).toBeNull()
+    expect(rows[1].querySelector('.mfl-test')).not.toBeNull()
+    expect(within(panel).getByText(/production \$19\.93/)).toBeInTheDocument()
+    expect(within(panel).getByText(/test runs \$9\.83/)).toBeInTheDocument()
+    expect(panel.querySelector('.mfl')!.getAttribute('aria-label')).toMatch(
+      /pr-review-agent: \$20\.06 \(production \$17\.48, test runs \$2\.57\)/,
+    )
   })
 
   it('keeps the smallest app visible rather than a zero-width bar', () => {
     render(<ProjectIndex />)
     fireEvent.click(rowButton('Fleet Observability'))
     const panel = document.getElementById('fleet-obs-panel')!
-    const bars = [...panel.querySelectorAll<HTMLElement>('.mf-bar')]
+    const bars = [...panel.querySelectorAll<HTMLElement>('.mfl-bar')]
     const last = bars[bars.length - 1]
-    expect(parseFloat(last.style.width)).toBeGreaterThan(0)
-    expect(within(panel).getAllByText('<$0.01').length).toBeGreaterThan(0)
+    expect(parseFloat(last.style.width)).toBeGreaterThanOrEqual(1.5)
+    expect(last.children.length).toBeGreaterThan(0)
   })
 
   // --- the two projects added in RC1-226 --------------------------------
