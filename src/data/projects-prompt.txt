@@ -249,20 +249,20 @@ Technologies: Datadog (LLM Observability, APM, SLOs, Synthetics), Python, GitHub
 Links: GitHub: https://github.com/snacksnack/tpm-automation-platform
 
 Project: Fleet Observability — apps [fleet-observability]
-- app: pr-review-agent; production: 17.4835; test: 2.5729
+- app: pr-review-agent; production: 17.4835; test: 2.5729; runs: 171; unit: review
 - app: launch-planner; production: 0; test: 3.5394
 - app: poc-benchmark-agent; production: 0; test: 1.6818
 - app: esp-migration-agent; production: 0.1508; test: 1.4711
-- app: kpi-agent; production: 0.8641; test: 0
-- app: incident-summarizer; production: 0.6471; test: 0.07
-- app: drift-digest; production: 0.6032; test: 0
+- app: kpi-agent; production: 0.8641; test: 0; runs: 10; unit: narrative
+- app: incident-summarizer; production: 0.6471; test: 0.07; runs: 102; unit: summary
+- app: drift-digest; production: 0.6032; test: 0; runs: 30; unit: digest
 - app: tpm-platform; production: 0; test: 0.4898
-- app: release-notes; production: 0.096; test: 0
-- app: hihelloreid-chat; production: 0.0458; test: 0
-- app: concert-intelligence; production: 0.0381; test: 0
+- app: release-notes; production: 0.096; test: 0; runs: 44; unit: note
+- app: hihelloreid-chat; production: 0.0458; test: 0; runs: 480; unit: reply
+- app: concert-intelligence; production: 0.0381; test: 0; runs: 30; unit: run
 
 Project: Fleet Observability — fleetCaption [fleet-observability]
-Datadog’s estimated cost by ml_app, 2026-10-11 to 11-10 UTC. Test runs are eval and benchmark sweeps, tagged by service.
+Datadog’s estimated cost by ml_app, 2026-10-11 to 11-10 UTC. Test runs are eval and benchmark sweeps, tagged by service. Per-run cost is production only.
 
 Project: ESP Migration Agent [esp-migration-agent]
 Category: Platform migration

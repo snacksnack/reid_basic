@@ -14,6 +14,12 @@ export interface FleetApp {
   app: string // ml_app tag, as LLM Observability reports it
   production: number // USD over the window from the deployed service
   test: number // USD from eval and benchmark runs (service evals or dry-run)
+  // Production runs in the window (ml_obs.trace, one trace per run) and what
+  // one run is for this app. Left off where a per-run figure would mislead:
+  // test-only apps, whose traces range from one case to a whole sweep, and
+  // esp-migration-agent, with one production run.
+  runs?: number
+  unit?: string
 }
 
 export const fleetObservability = {
@@ -42,20 +48,22 @@ export const fleetObservability = {
   // runs report under the same ml_app as production and differ only by their
   // service tag (evals, dry-run), so each bar is split on it: a project built
   // this month can be all test runs, and a sweep can triple a day's spend.
+  // Per-run cost is production only. pr-review-agent's 171 traces match the
+  // agent's own pr_agent.review.cost_usd: 171 reviews, $17.48.
   apps: [
-    { app: 'pr-review-agent', production: 17.4835, test: 2.5729 },
+    { app: 'pr-review-agent', production: 17.4835, test: 2.5729, runs: 171, unit: 'review' },
     { app: 'launch-planner', production: 0, test: 3.5394 },
     { app: 'poc-benchmark-agent', production: 0, test: 1.6818 },
     { app: 'esp-migration-agent', production: 0.1508, test: 1.4711 },
-    { app: 'kpi-agent', production: 0.8641, test: 0 },
-    { app: 'incident-summarizer', production: 0.6471, test: 0.07 },
-    { app: 'drift-digest', production: 0.6032, test: 0 },
+    { app: 'kpi-agent', production: 0.8641, test: 0, runs: 10, unit: 'narrative' },
+    { app: 'incident-summarizer', production: 0.6471, test: 0.07, runs: 102, unit: 'summary' },
+    { app: 'drift-digest', production: 0.6032, test: 0, runs: 30, unit: 'digest' },
     { app: 'tpm-platform', production: 0, test: 0.4898 },
-    { app: 'release-notes', production: 0.096, test: 0 },
-    { app: 'hihelloreid-chat', production: 0.0458, test: 0 },
-    { app: 'concert-intelligence', production: 0.0381, test: 0 },
+    { app: 'release-notes', production: 0.096, test: 0, runs: 44, unit: 'note' },
+    { app: 'hihelloreid-chat', production: 0.0458, test: 0, runs: 480, unit: 'reply' },
+    { app: 'concert-intelligence', production: 0.0381, test: 0, runs: 30, unit: 'run' },
   ] as FleetApp[],
 
   fleetCaption:
-    'Datadog’s estimated cost by ml_app, 2026-10-11 to 11-10 UTC. Test runs are eval and benchmark sweeps, tagged by service.',
+    'Datadog’s estimated cost by ml_app, 2026-10-11 to 11-10 UTC. Test runs are eval and benchmark sweeps, tagged by service. Per-run cost is production only.',
 } as const satisfies ProjectCardContent & { apps: FleetApp[]; fleetCaption: string }
