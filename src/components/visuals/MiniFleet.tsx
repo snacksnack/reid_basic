@@ -6,49 +6,75 @@ interface MiniFleetProps {
   caption: string
 }
 
-// The fleet's spend at index-row size (RC1-410): one bar per ml_app, ranked.
-// A single measure across nine entities, so one hue for every bar — colour
-// would otherwise track rank, which changes whenever the window does. The
-// value sits beside each bar rather than in a tooltip: nine rows read as a
-// table, and a direct label survives print, keyboard and screen readers.
+// The fleet's spend at index-row size (RC1-410, split in RC1-637): one bar per
+// ml_app, ranked by total, each split into production and test runs. Two
+// series, so a legend sits in the header and every row carries its total as
+// text: color is never the only way to read it. The value sits beside each
+// bar rather than in a tooltip, so it survives print, keyboard and screen
+// readers; the per-segment split is in the row's title and the aria label.
 
 const money = (n: number) => (n < 0.01 ? '<$0.01' : `$${n.toFixed(2)}`)
 
-export default function MiniFleet({ apps, caption }: MiniFleetProps) {
-  const max = Math.max(...apps.map((a) => a.cost))
-  const total = apps.reduce((sum, a) => sum + a.cost, 0)
+const total = (a: FleetApp) => a.production + a.test
 
-  const label = `Cost by ml_app over the window: ${apps
-    .map((a) => `${a.app} ${money(a.cost)}`)
-    .join(', ')}. Total ${money(total)} across ${apps.length} apps. ${caption}`
+const split = (a: FleetApp) =>
+  `${a.app}: ${money(total(a))} (production ${money(a.production)}, test runs ${money(a.test)})`
+
+export default function MiniFleet({ apps, caption }: MiniFleetProps) {
+  const max = Math.max(...apps.map(total))
+  const production = apps.reduce((sum, a) => sum + a.production, 0)
+  const test = apps.reduce((sum, a) => sum + a.test, 0)
+
+  const label = `Cost by ml_app over the window, production and test runs: ${apps
+    .map(split)
+    .join('; ')}. Total ${money(production + test)} across ${apps.length} apps: production ${money(
+    production,
+  )}, test runs ${money(test)}. ${caption}`
 
   return (
-    <div className="mf" role="img" aria-label={label}>
-      <div className="mf-head">
-        <span className="mf-title">cost by ml_app · 11 days</span>
-        <span className="mf-scope">
-          {apps.length} apps · {money(total)}
+    <div className="mfl" role="img" aria-label={label}>
+      <div className="mfl-head">
+        <span className="mfl-title">cost by ml_app · 30 days</span>
+        <span className="mfl-scope">
+          {apps.length} apps · {money(production + test)}
         </span>
       </div>
 
-      <ul className="mf-rows">
-        {apps.map((a) => (
-          <li className="mf-row" key={a.app}>
-            <span className="mf-name">{a.app}</span>
-            <span className="mf-track">
-              {/* Floor the width so the smallest app is still visibly present
-                  — a zero-width bar would read as "not running". */}
-              <span
-                className="mf-bar"
-                style={{ width: `${Math.max((a.cost / max) * 100, 1.5)}%` }}
-              />
-            </span>
-            <span className="mf-val">{money(a.cost)}</span>
-          </li>
-        ))}
+      <div className="mfl-legend" aria-hidden="true">
+        <span className="mfl-key">
+          <span className="mfl-swatch mfl-prod" /> production {money(production)}
+        </span>
+        <span className="mfl-key">
+          <span className="mfl-swatch mfl-test" /> test runs {money(test)}
+        </span>
+      </div>
+
+      <ul className="mfl-rows">
+        {apps.map((a) => {
+          // Floor the visible width so the smallest app is still present: a
+          // zero-width bar would read as "not running".
+          const width = Math.max((total(a) / max) * 100, 1.5)
+          const prodShare = total(a) ? (a.production / total(a)) * 100 : 0
+          return (
+            <li className="mfl-row" key={a.app} title={split(a)}>
+              <span className="mfl-name">{a.app}</span>
+              <span className="mfl-track">
+                <span className="mfl-bar" style={{ width: `${width}%` }}>
+                  {a.production > 0 && (
+                    <span className="mfl-seg mfl-prod" style={{ flexBasis: `${prodShare}%` }} />
+                  )}
+                  {a.test > 0 && (
+                    <span className="mfl-seg mfl-test" style={{ flexBasis: `${100 - prodShare}%` }} />
+                  )}
+                </span>
+              </span>
+              <span className="mfl-val">{money(total(a))}</span>
+            </li>
+          )
+        })}
       </ul>
 
-      <div className="mf-caption">{caption}</div>
+      <div className="mfl-caption">{caption}</div>
     </div>
   )
 }

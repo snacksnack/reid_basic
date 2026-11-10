@@ -1,15 +1,17 @@
 /* The fleet spend bars (RC1-410). Same construction as the other mini-visuals:
-   hairline frame, mono type, flat fills — no gradient, no animation. */
-.mf {
-  --mf-hair: #e4e3dd;
+   hairline frame, mono type, flat fills — no gradient, no animation.
+   Prefix mfl-, not mf-: MiniFunnel owns .mf, and sharing it centered this
+   visual and collapsed its bar track to a few pixels (RC1-637). */
+.mfl {
+  --mfl-hair: #e4e3dd;
   font-family: 'Space Mono', ui-monospace, monospace;
-  border: 1px solid var(--mf-hair);
+  border: 1px solid var(--mfl-hair);
   border-radius: 5px;
   background: #fff;
   overflow: hidden;
 }
 
-.mf-head {
+.mfl-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -17,20 +19,42 @@
   flex-wrap: wrap;
   padding: 0.35rem 0.55rem;
   background: #f6f5f0;
-  border-bottom: 1px solid var(--mf-hair);
+  border-bottom: 1px solid var(--mfl-hair);
 }
 
-.mf-title {
+.mfl-title {
   font-size: 0.62rem;
   color: #16150f;
 }
 
-.mf-scope {
+.mfl-scope {
   font-size: 0.57rem;
   color: #8a8981;
 }
 
-.mf-rows {
+.mfl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 0.35rem 0.55rem 0;
+  font-size: 0.57rem;
+  color: #55534c;
+}
+
+.mfl-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mfl-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.mfl-rows {
   list-style: none;
   margin: 0;
   padding: 0.4rem 0.55rem;
@@ -39,16 +63,16 @@
   gap: 2px;
 }
 
-.mf-row {
+.mfl-row {
   display: grid;
-  grid-template-columns: 118px 1fr 46px;
+  grid-template-columns: 132px 1fr 46px;
   align-items: center;
   gap: 8px;
   min-height: 13px;
 }
 
 /* Text wears text tokens, never the mark's colour. */
-.mf-name {
+.mfl-name {
   font-size: 0.57rem;
   color: #55534c;
   overflow: hidden;
@@ -56,36 +80,55 @@
   white-space: nowrap;
 }
 
-.mf-track {
+.mfl-track {
   display: block;
   height: 7px;
 }
 
-.mf-bar {
+.mfl-bar {
+  display: flex;
+  height: 100%;
+  /* 2px of surface between the two segments, per the mark spec. */
+  gap: 2px;
+}
+
+.mfl-seg {
   display: block;
   height: 100%;
-  background: #2f6bff;
-  /* Anchored to the baseline, rounded only at the data end. */
+  flex-shrink: 1;
+  min-width: 2px;
+}
+
+/* Anchored to the baseline, rounded only at the data end. */
+.mfl-seg:last-child {
   border-radius: 0 3px 3px 0;
 }
 
-.mf-val {
+.mfl-prod {
+  background: #2f6bff;
+}
+
+.mfl-test {
+  background: #eb6834;
+}
+
+.mfl-val {
   font-size: 0.57rem;
   color: #16150f;
   text-align: right;
 }
 
-.mf-caption {
+.mfl-caption {
   padding: 0.38rem 0.55rem;
   font-size: 0.6rem;
   line-height: 1.45;
   color: #6b6b66;
   background: #f6f5f0;
-  border-top: 1px solid var(--mf-hair);
+  border-top: 1px solid var(--mfl-hair);
 }
 
 @media (max-width: 560px) {
-  .mf-row {
+  .mfl-row {
     grid-template-columns: 92px 1fr 42px;
   }
 }
