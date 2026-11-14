@@ -345,13 +345,13 @@ Continuous evals: Four billed cases on frozen bundles score whether the investig
 Links: Engagement writeup: https://github.com/snacksnack/customer-install-kit/blob/main/docs/engagement.md; Demo with artifacts: https://github.com/snacksnack/customer-install-kit/blob/main/docs/demo.md; GitHub: https://github.com/snacksnack/customer-install-kit
 
 Project: Customer Install Kit — steps [customer-install-kit]
-- Install signed 0.1.4 · 45 s — side: customer
-- Install test 14 of 14 — side: customer
-- Grant revoked · health still 200 · test fails — side: customer; sends: bundle + key fingerprint
-- Rules and agent: which grants does the app role hold? — side: vendor; sends: one read-only check
-- Runs the check, reads the answer — side: customer; sends: follow-up bundle
-- Missing: review_audit SELECT — side: vendor; sends: proposed GRANT
-- Applies it · install test 14 of 14 — side: customer
+- Installs the app in their own cloud: 45 s — side: customer
+- Runs the install test: 14 of 14 pass — side: customer
+- A database permission goes missing. The app still looks healthy, but the test fails. — side: customer; sends: a diagnostic bundle
+- Can't log in to look. Asks one question: which permissions does the app's database user have? — side: vendor; sends: a request for one read-only check
+- Runs that check on their side — side: customer; sends: the result
+- Names the missing permission and writes the one-line fix — side: vendor; sends: the fix, as text
+- Applies the fix. Test: 14 of 14 pass — side: customer
 
 Project: Customer Install Kit — handoffCaption [customer-install-kit]
-The demo case from docs/demo.md. Every arrow is a file or a line of text the customer chose to send; the vendor held no customer credential at any step.
+The support case from the demo, in order. Green lines are everything that crossed between the two sides; the vendor never logged in to anything the customer runs.

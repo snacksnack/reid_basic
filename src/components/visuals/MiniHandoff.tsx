@@ -22,8 +22,8 @@ export default function MiniHandoff({ steps, caption }: MiniHandoffProps) {
         .join('; ')}`}
     >
       <div className="mho-head">
-        <span>Customer</span>
-        <span>Vendor</span>
+        <span>Customer · runs everything</span>
+        <span>Vendor support · no access</span>
       </div>
 
       <ol className="mho-steps">
@@ -32,7 +32,7 @@ export default function MiniHandoff({ steps, caption }: MiniHandoffProps) {
             <span className="mho-label">{s.label}</span>
             {s.sends && (
               <span className="mho-sends">
-                {s.side === 'customer' ? '→ ' : '← '}
+                {s.side === 'customer' ? '→ to vendor: ' : '← to customer: '}
                 {s.sends}
               </span>
             )}
@@ -41,8 +41,8 @@ export default function MiniHandoff({ steps, caption }: MiniHandoffProps) {
       </ol>
 
       <div className="mho-tally">
-        <span className="mho-tally-value">{crossings} handoffs</span>
-        <span className="mho-tally-note">customer credentials held by the vendor: none</span>
+        <span className="mho-tally-value">{crossings} exchanges</span>
+        <span className="mho-tally-note">vendor logins to customer systems: none</span>
       </div>
 
       <figcaption className="mho-caption">{caption}</figcaption>

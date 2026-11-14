@@ -194,9 +194,9 @@ describe('ProjectIndex', () => {
     expect(fig.querySelectorAll('.mho-customer')).toHaveLength(5)
     expect(fig.querySelectorAll('.mho-vendor')).toHaveLength(2)
     expect(fig.querySelectorAll('.mho-sends')).toHaveLength(4)
-    expect(within(fig as HTMLElement).getByText('4 handoffs')).toBeInTheDocument()
+    expect(within(fig as HTMLElement).getByText('4 exchanges')).toBeInTheDocument()
     expect(
-      within(fig as HTMLElement).getByText('customer credentials held by the vendor: none'),
+      within(fig as HTMLElement).getByText('vendor logins to customer systems: none'),
     ).toBeInTheDocument()
   })
 
