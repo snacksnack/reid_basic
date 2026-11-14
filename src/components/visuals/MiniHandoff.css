@@ -1,0 +1,87 @@
+/* One support case as two lanes (RC1-645). Each step sits in its own side's
+   column; what crossed to the other side is the accented line under it. */
+.mho {
+  margin: 0;
+  font-family: 'Space Mono', ui-monospace, monospace;
+}
+
+.mho-head,
+.mho-step {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mho-head {
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 25%, transparent);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.mho-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mho-step {
+  padding: 0.26rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 18%, transparent);
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.mho-label,
+.mho-sends {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.mho-customer .mho-label,
+.mho-customer .mho-sends {
+  grid-column: 1;
+}
+
+.mho-vendor .mho-label,
+.mho-vendor .mho-sends {
+  grid-column: 2;
+}
+
+.mho-label {
+  color: var(--text);
+}
+
+.mho-sends {
+  color: var(--success);
+  font-size: 0.6rem;
+}
+
+.mho-tally {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-top: 0.38rem;
+}
+
+.mho-tally-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--success);
+  white-space: nowrap;
+}
+
+.mho-tally-note {
+  font-size: 0.6rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.mho-caption {
+  margin-top: 0.4rem;
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: var(--muted);
+}

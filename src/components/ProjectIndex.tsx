@@ -12,6 +12,7 @@ import MiniFleet from './visuals/MiniFleet'
 import MiniReconcile from './visuals/MiniReconcile'
 import MiniBlindspot from './visuals/MiniBlindspot'
 import MiniCeiling from './visuals/MiniCeiling'
+import MiniHandoff from './visuals/MiniHandoff'
 import { launchPlanner } from '../data/launchPlanner'
 import { driftDetector } from '../data/driftDetector'
 import { incidentSummarizer } from '../data/incidentSummarizer'
@@ -24,6 +25,7 @@ import { fleetObservability } from '../data/fleetObservability'
 import { espMigrationAgent } from '../data/espMigrationAgent'
 import { apiCompatibilityLab } from '../data/apiCompatibilityLab'
 import { pocBenchmarkAgent } from '../data/pocBenchmarkAgent'
+import { customerInstallKit } from '../data/customerInstallKit'
 import type { ProjectCardContent } from '../data/projectCard'
 import './ProjectIndex.css'
 
@@ -95,7 +97,16 @@ const ENTRIES: Entry[] = [
       />
     ),
   },
-  // Fifth (was second, RC1-410): the most engineered system on the page, and
+  // Fifth (RC1-645): the third FDE build, the ESP agent installed and supported
+  // in a customer's own cloud, kept with the engagement rows above it.
+  {
+    id: 'install-kit',
+    content: customerInstallKit,
+    visual: (
+      <MiniHandoff steps={customerInstallKit.steps} caption={customerInstallKit.handoffCaption} />
+    ),
+  },
+  // Sixth (was second, RC1-410): the most engineered system on the page, and
   // the row whose own numbers the harness below it produced.
   {
     id: 'pr-agent',

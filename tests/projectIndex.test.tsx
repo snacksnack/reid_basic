@@ -21,6 +21,7 @@ const ALL_NAMES = [
   'ESP Migration Agent',
   'API Compatibility Lab',
   'POC Benchmark Agent',
+  'Customer Install Kit',
 ]
 
 const rowButton = (name: string | RegExp) =>
@@ -106,7 +107,7 @@ describe('ProjectIndex', () => {
 
   it('counts the systems in the thesis rather than hardcoding the total', () => {
     render(<ProjectIndex />)
-    expect(screen.getByText(/^Twelve shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Thirteen shipped systems on one thesis:/)).toBeInTheDocument()
   })
 
   // RC1-622: no row carries a status now. The API Compatibility Lab gave its
@@ -116,7 +117,7 @@ describe('ProjectIndex', () => {
   // on scope and not a stage of work.
   it('counts every row as shipped and drops the still-being-built clause', () => {
     render(<ProjectIndex />)
-    expect(document.querySelectorAll('.pi-row')).toHaveLength(12)
+    expect(document.querySelectorAll('.pi-row')).toHaveLength(13)
     expect(document.querySelectorAll('.pi-status')).toHaveLength(0)
     expect(screen.queryByText(/still being built/)).not.toBeInTheDocument()
   })
@@ -173,14 +174,30 @@ describe('ProjectIndex', () => {
 
   // --- the headline measurement and the promoted row (RC1-410) ----------
 
-  it('places the three FDE rows second to fourth, and the PR Review Agent fifth', () => {
+  it('places the four FDE rows second to fifth, and the PR Review Agent sixth', () => {
     render(<ProjectIndex />)
     const names = [...document.querySelectorAll('.pi-row .pi-name')].map((n) => n.textContent)
     expect(names[0]).toBe('Launch Planner')
     expect(names[1]).toBe('ESP Migration Agent')
     expect(names[2]).toBe('API Compatibility Lab')
     expect(names[3]).toBe('POC Benchmark Agent')
-    expect(names[4]).toBe('PR Review Agent')
+    expect(names[4]).toBe('Customer Install Kit')
+    expect(names[5]).toBe('PR Review Agent')
+  })
+
+  // --- the handoff row (RC1-645) ------------------------------------------
+
+  it('lays the support case out in two lanes and counts what crossed', () => {
+    render(<ProjectIndex />)
+    fireEvent.click(rowButton('Customer Install Kit'))
+    const fig = document.querySelector('.mho')!
+    expect(fig.querySelectorAll('.mho-customer')).toHaveLength(5)
+    expect(fig.querySelectorAll('.mho-vendor')).toHaveLength(2)
+    expect(fig.querySelectorAll('.mho-sends')).toHaveLength(4)
+    expect(within(fig as HTMLElement).getByText('4 handoffs')).toBeInTheDocument()
+    expect(
+      within(fig as HTMLElement).getByText('customer credentials held by the vendor: none'),
+    ).toBeInTheDocument()
   })
 
   // --- the refusal row (RC1-635) ------------------------------------------
@@ -356,13 +373,13 @@ describe('ProjectIndex teaser (the résumé’s short index)', () => {
     )
     expect(screen.queryByText('Job Scout')).not.toBeInTheDocument()
 
-    const more = screen.getByText('See all twelve projects →')
+    const more = screen.getByText('See all thirteen projects →')
     expect(more).toHaveAttribute('href', '/work')
   })
 
   it('still counts every shipped system in the thesis, and drops the expand-all control', () => {
     render(<ProjectIndex teaser />)
-    expect(screen.getByText(/^Twelve shipped systems on one thesis:/)).toBeInTheDocument()
+    expect(screen.getByText(/^Thirteen shipped systems on one thesis:/)).toBeInTheDocument()
     expect(screen.getByText(/Three of them below\./)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Expand all' })).not.toBeInTheDocument()
   })
