@@ -1,5 +1,5 @@
 Project: Reid Collins's project portfolio [portfolio]
-All 12 personal engineering projects on the /work page (hihelloreid.com/work):
+All 13 personal engineering projects on the /work page (hihelloreid.com/work):
 - Launch Planner [launch-planner]: An agentic delivery planner for migrations and launches.
 - Dependency Drift Detector [drift-detector]: Watches a Jira dependency graph for upstream slips.
 - AI Incident Summarizer [incident-summarizer]: Correlates three alert firehoses into one incident.
@@ -7,11 +7,12 @@ All 12 personal engineering projects on the /work page (hihelloreid.com/work):
 - TPM Workflow Automation [automation-suite]: Three scheduled services behind a program's paperwork.
 - Job Scout [job-search-agent]: Scores every new posting against a résumé, daily.
 - Concert Intelligence Agent [concert-intelligence]: Ranks upcoming shows by what you actually listen to.
-- Agent Evals [agent-evals]: The regression suite measuring eight systems on this page.
+- Agent Evals [agent-evals]: The regression suite measuring ten systems on this page.
 - Fleet Observability [fleet-observability]: Eleven LLM systems under one pane, priced run by run.
 - ESP Migration Agent [esp-migration-agent]: Migrates an email platform behind human-approved gates.
 - API Compatibility Lab [api-compatibility-lab]: Replays captured traffic across two API versions to find the breaks a schema diff misses.
 - POC Benchmark Agent [poc-benchmark-agent]: Benchmarks a prospect's Postgres queries to find the cheapest compute size and indexes that meet their latency targets.
+- Customer Install Kit [customer-install-kit]: Installs the ESP agent in a customer's own cloud and supports it when it breaks, with no access to their systems.
 
 Project: Launch Planner [launch-planner]
 Category: Flagship project
@@ -226,7 +227,7 @@ Deterministic arithmetic decides the ranking; Claude only writes the setlist pre
 
 Project: Agent Evals [agent-evals]
 Category: Quality engineering
-The regression suite measuring eight systems on this page.
+The regression suite measuring ten systems on this page.
 A shared regression suite for LLM systems, built because five were in production and nothing answered "how do you know the output is any good?" Frozen cases scored on named characteristics, never string equality; a deterministic groundedness checker whose hallucination rate gates CI; and an LLM judge allowed to fail a build only where calibration earned it. Every run is priced from a pinned table, prompt-cache tokens included, into an append-only store.
 Design principle: Attribution over vibes: each run record carries its model, prompt version, code version and token cost, so a regression is a query, not a hunch. An unpriced model raises rather than costing zero.
 Headline result: Seventeen subjects and 155 runs since August 2026. Pricing cache tokens caught a subject recording its work at roughly 40% of real cost.
@@ -332,3 +333,25 @@ Project: POC Benchmark Agent — ceiling [poc-benchmark-agent]
 
 Project: POC Benchmark Agent — ceilingCaption [poc-benchmark-agent]
 Errors and timeouts per query shape at 32 sessions. Today is measured on held-out accounts; the best setup is the development run the refusal was frozen from. Every failure was a 5-second timeout.
+
+Project: Customer Install Kit [customer-install-kit]
+Category: Customer deployment
+Installs the ESP agent in a customer's own cloud and supports it when it breaks, with no access to their systems.
+An install and support kit for running the ESP Migration Agent where the vendor cannot see. The customer installs a signed release into their own Fly account and database, then runs a real migration of fake contacts to prove the workflow works, not just that the app is up. When something breaks, they collect a diagnostic bundle built only from listed fields, read it, and send it. Support diagnoses from that bundle alone, first with fixed rules and then with a Claude investigator that can only ask for one of three read-only checks. The fix is a proposal the customer applies, and a new signed test run shows whether it worked.
+Design principle: One person played customer and vendor, on synthetic contacts, on one supported setup (Fly, amd64, Postgres, Brevo). A signed test report proves it was not altered, not that its results are true: the customer controls the machine and the key.
+Headline result: In the demo, a revoked database grant left the health check green while the install test failed. From the customer's 11-file bundle and one follow-up check, support named the missing grant, and after the customer applied it the test passed 14 of 14. Across 13 sealed cases the AI investigator diagnosed 4 of 8 known faults to the rules' 3, and neither diagnosed the held-out fault type (0 of 2).
+Technologies: Python, Claude API, Fly.io, Postgres (Neon), Sigstore (cosign), Docker, Datadog LLM Observability, agent-evals
+Continuous evals: Four billed cases on frozen bundles score whether the investigator asks for the right check, supports a cause only after the answer, and cites the row that decides it; two free cases fail the build if anything leaves its tracing allowlist or reaches a customer system.
+Links: Engagement writeup: https://github.com/snacksnack/customer-install-kit/blob/main/docs/engagement.md; Demo with artifacts: https://github.com/snacksnack/customer-install-kit/blob/main/docs/demo.md; GitHub: https://github.com/snacksnack/customer-install-kit
+
+Project: Customer Install Kit — steps [customer-install-kit]
+- Install signed 0.1.4 · 45 s — side: customer
+- Install test 14 of 14 — side: customer
+- Grant revoked · health still 200 · test fails — side: customer; sends: bundle + key fingerprint
+- Rules and agent: which grants does the app role hold? — side: vendor; sends: one read-only check
+- Runs the check, reads the answer — side: customer; sends: follow-up bundle
+- Missing: review_audit SELECT — side: vendor; sends: proposed GRANT
+- Applies it · install test 14 of 14 — side: customer
+
+Project: Customer Install Kit — handoffCaption [customer-install-kit]
+The demo case from docs/demo.md. Every arrow is a file or a line of text the customer chose to send; the vendor held no customer credential at any step.

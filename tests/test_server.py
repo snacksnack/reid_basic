@@ -540,6 +540,7 @@ class TestChunkProjects:
         "esp-migration-agent",
         "api-compatibility-lab",
         "poc-benchmark-agent",
+        "customer-install-kit",
         "portfolio",  # the catalog chunk (RC1-479)
     }
 
