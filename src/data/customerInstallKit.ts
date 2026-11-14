@@ -55,17 +55,29 @@ export const customerInstallKit = {
 
   // docs/demo.md, "Timeline": the one support case, end to end.
   steps: [
-    { side: 'customer', label: 'Install signed 0.1.4 · 45 s' },
-    { side: 'customer', label: 'Install test 14 of 14' },
-    { side: 'customer', label: 'Grant revoked · health still 200 · test fails', sends: 'bundle + key fingerprint' },
-    { side: 'vendor', label: 'Rules and agent: which grants does the app role hold?', sends: 'one read-only check' },
-    { side: 'customer', label: 'Runs the check, reads the answer', sends: 'follow-up bundle' },
-    { side: 'vendor', label: 'Missing: review_audit SELECT', sends: 'proposed GRANT' },
-    { side: 'customer', label: 'Applies it · install test 14 of 14' },
+    { side: 'customer', label: 'Installs the app in their own cloud: 45 s' },
+    { side: 'customer', label: 'Runs the install test: 14 of 14 pass' },
+    {
+      side: 'customer',
+      label: 'A database permission goes missing. The app still looks healthy, but the test fails.',
+      sends: 'a diagnostic bundle',
+    },
+    {
+      side: 'vendor',
+      label: "Can't log in to look. Asks one question: which permissions does the app's database user have?",
+      sends: 'a request for one read-only check',
+    },
+    { side: 'customer', label: 'Runs that check on their side', sends: 'the result' },
+    {
+      side: 'vendor',
+      label: 'Names the missing permission and writes the one-line fix',
+      sends: 'the fix, as text',
+    },
+    { side: 'customer', label: 'Applies the fix. Test: 14 of 14 pass' },
   ] as HandoffStep[],
 
   handoffCaption:
-    'The demo case from docs/demo.md. Every arrow is a file or a line of text the customer chose to send; the vendor held no customer credential at any step.',
+    'The support case from the demo, in order. Green lines are everything that crossed between the two sides; the vendor never logged in to anything the customer runs.',
 } as const satisfies ProjectCardContent & {
   steps: HandoffStep[]
   handoffCaption: string
