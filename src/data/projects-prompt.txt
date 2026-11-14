@@ -7,7 +7,7 @@ All 13 personal engineering projects on the /work page (hihelloreid.com/work):
 - TPM Workflow Automation [automation-suite]: Three scheduled services behind a program's paperwork.
 - Job Scout [job-search-agent]: Scores every new posting against a résumé, daily.
 - Concert Intelligence Agent [concert-intelligence]: Ranks upcoming shows by what you actually listen to.
-- Agent Evals [agent-evals]: The regression suite measuring nine systems on this page.
+- Agent Evals [agent-evals]: The regression suite measuring ten systems on this page.
 - Fleet Observability [fleet-observability]: Eleven LLM systems under one pane, priced run by run.
 - ESP Migration Agent [esp-migration-agent]: Migrates an email platform behind human-approved gates.
 - API Compatibility Lab [api-compatibility-lab]: Replays captured traffic across two API versions to find the breaks a schema diff misses.
@@ -227,7 +227,7 @@ Deterministic arithmetic decides the ranking; Claude only writes the setlist pre
 
 Project: Agent Evals [agent-evals]
 Category: Quality engineering
-The regression suite measuring nine systems on this page.
+The regression suite measuring ten systems on this page.
 A shared regression suite for LLM systems, built because five were in production and nothing answered "how do you know the output is any good?" Frozen cases scored on named characteristics, never string equality; a deterministic groundedness checker whose hallucination rate gates CI; and an LLM judge allowed to fail a build only where calibration earned it. Every run is priced from a pinned table, prompt-cache tokens included, into an append-only store.
 Design principle: Attribution over vibes: each run record carries its model, prompt version, code version and token cost, so a regression is a query, not a hunch. An unpriced model raises rather than costing zero.
 Headline result: Seventeen subjects and 155 runs since August 2026. Pricing cache tokens caught a subject recording its work at roughly 40% of real cost.
