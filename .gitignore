@@ -35,3 +35,4 @@ coverage/
 .coverage
 .coverage.*
 htmlcov/
+uv.lock
