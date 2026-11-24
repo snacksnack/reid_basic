@@ -171,6 +171,14 @@ class TestGuessCompany:
         assert vi.guess_company(jd) == "Figma"
 
 
+class TestNormalizeMetro:
+    def test_aliases_collapse_to_one_metro(self):
+        assert vi.normalize_metro("New York City") == "new york"
+        assert vi.normalize_metro("Brooklyn") == "new york"
+        assert vi.normalize_metro("  Austin ") == "austin"
+        assert vi.normalize_metro(None) == ""
+
+
 class TestLocationLine:
     def test_joins_known_parts(self):
         assert (

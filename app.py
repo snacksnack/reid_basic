@@ -340,6 +340,13 @@ def _init_db():
                 """CREATE TABLE IF NOT EXISTS ip_enrichment (
                     ip TEXT PRIMARY KEY, org TEXT, city TEXT, region TEXT,
                     country TEXT, looked_up_at TIMESTAMPTZ DEFAULT NOW())""",
+                # RC1-687: application list for digest correlation. Data lives
+                # only in this private DB (synced by scripts/sync_applications.py
+                # from the Job Scout workspace), never in the repo.
+                """CREATE TABLE IF NOT EXISTS applications (
+                    role_id TEXT PRIMARY KEY, company TEXT NOT NULL,
+                    role_title TEXT, metros TEXT, src_tag TEXT,
+                    applied_on DATE, synced_at TIMESTAMPTZ DEFAULT NOW())""",
                 # Session summaries — written by scripts/summarize_sessions.py
                 """CREATE TABLE IF NOT EXISTS chat_summaries (
                     id SERIAL PRIMARY KEY,
