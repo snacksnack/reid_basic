@@ -12,6 +12,7 @@ visible); is_crawler_org() only marks a visitor as suspected automation.
 import ipaddress
 import json
 import logging
+import time
 import urllib.request
 
 # User-agent substrings that mark automated clients. Matched lowercase.
@@ -68,6 +69,10 @@ CRAWLER_ORG_SIGNATURES = (
 IP_API_URL = "https://ipapi.co/{ip}/json/"
 LOOKUP_TIMEOUT_SECONDS = 5.0
 MAX_LOOKUPS_PER_RUN = 40
+# ipapi.co throttles bursts (observed HTTP 429 at ~7 back-to-back requests),
+# so consecutive lookups are paced. Worst case adds under a minute to the
+# nightly job.
+LOOKUP_PAUSE_SECONDS = 1.5
 
 
 def is_bot(user_agent: str | None) -> bool:
@@ -126,7 +131,7 @@ def fetch_ip_info(ip: str) -> dict | None:
     }
 
 
-def enrich_ips(ips, cur, fetch=fetch_ip_info) -> dict:
+def enrich_ips(ips, cur, fetch=fetch_ip_info, pause=time.sleep) -> dict:
     """Map each IP to cached {org, city, region, country}, looking up and
     caching the ones not seen before. Lookup failures are not cached (so they
     retry another night) and the IP simply has no entry in the result."""
@@ -150,6 +155,8 @@ def enrich_ips(ips, cur, fetch=fetch_ip_info) -> dict:
         if lookups >= MAX_LOOKUPS_PER_RUN:
             logging.error("IP lookup cap (%d) reached; rest stay bare", MAX_LOOKUPS_PER_RUN)
             break
+        if lookups:
+            pause(LOOKUP_PAUSE_SECONDS)
         lookups += 1
         info = fetch(ip)
         if info is None:
