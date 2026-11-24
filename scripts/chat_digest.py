@@ -86,8 +86,18 @@ def build_digest(
     enrichment: dict[str, dict],
     history: dict[str, dict],
     today: str,
+    self_ips: frozenset[str] = frozenset(),
 ) -> tuple[str, str]:
-    """Pure formatter: rows in, (subject, body) out. No IO."""
+    """Pure formatter: rows in, (subject, body) out. No IO.
+
+    RC1-685: events from self_ips (the owner's own IPs, SELF_IPS env) are
+    excluded from counts and narratives and reported as one summary line;
+    chat sessions from a self IP are labeled, not hidden."""
+    self_view_count = sum(1 for r in view_rows if r["ip_address"] in self_ips)
+    self_download_count = sum(1 for r in download_rows if r["ip_address"] in self_ips)
+    if self_ips:
+        view_rows = [r for r in view_rows if r["ip_address"] not in self_ips]
+        download_rows = [r for r in download_rows if r["ip_address"] not in self_ips]
     # Per-event classification: each view/download is judged by its own user
     # agent, so an IP that sends both browser and crawler traffic lands in
     # both halves instead of inheriting whichever event came first.
@@ -174,6 +184,12 @@ def build_digest(
             )
         text += "\n"
 
+    if self_view_count or self_download_count:
+        text += (
+            f"SELF TRAFFIC: {self_view_count} views, "
+            f"{self_download_count} downloads (excluded from counts)\n\n"
+        )
+
     if bots:
         text += f"BOT TRAFFIC ({len(bots)} IPs: {bot_views} views, {bot_downloads} downloads)\n"
         text += RULE + "\n"
@@ -212,7 +228,8 @@ def build_digest(
             started = _time(session["messages"][0]["created_at"])
             where = vi.location_line(enrichment.get(session["ip"]))
             text += f"Session: {sid}\n"
-            text += f"IP: {session['ip']}" + (f" - {where}" if where else "") + "\n"
+            text += f"IP: {session['ip']}" + (f" - {where}" if where else "")
+            text += (" (self)" if session["ip"] in self_ips else "") + "\n"
             text += f"Started: {started}\n"
             text += RULE + "\n"
             for msg in session["messages"]:
@@ -304,7 +321,8 @@ def run(dry_run: bool = False):
 
     today = datetime.now().strftime("%A, %B %d, %Y")
     subject, text = build_digest(
-        view_rows, download_rows, contact_rows, chat_rows, enrichment, history, today
+        view_rows, download_rows, contact_rows, chat_rows, enrichment, history, today,
+        self_ips=vi.self_ips(),
     )
 
     if dry_run:

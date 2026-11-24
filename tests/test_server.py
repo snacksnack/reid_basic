@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+import app as app_module
 from app import (
     TOOLS,
     FIT_CARD_TOOL,
@@ -30,6 +31,70 @@ class TestDownload:
         res = client.get("/api/download/pdf")
         if res.status_code == 404:
             assert res.json["error"] != "invalid format"
+
+
+class TestDownloadAlert:
+    HUMAN_UA = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+    )
+
+    @pytest.fixture
+    def sent(self, monkeypatch):
+        captured = {}
+
+        def fake_send(**kwargs):
+            captured.update(kwargs)
+            return "reid@example.com"
+
+        monkeypatch.setattr(app_module, "send_notification_email", fake_send)
+        # One row in the window: the download being served right now.
+        monkeypatch.setattr(app_module, "_recent_downloads_count", lambda ip: 1)
+        monkeypatch.delenv("SELF_IPS", raising=False)
+        return captured
+
+    def test_human_download_sends_alert(self, client, sent):
+        res = client.get("/api/download/pdf", headers={"User-Agent": self.HUMAN_UA})
+        assert res.status_code == 200
+        assert sent["subject"].startswith("Resume download: PDF")
+        assert "IP: 127.0.0.1" in sent["body"]
+
+    def test_bot_download_does_not_alert(self, client, sent):
+        res = client.get("/api/download/pdf", headers={"User-Agent": "GPTBot/1.0"})
+        assert res.status_code == 200
+        assert sent == {}
+
+    def test_self_ip_does_not_alert(self, client, sent, monkeypatch):
+        monkeypatch.setenv("SELF_IPS", "127.0.0.1")
+        res = client.get("/api/download/pdf", headers={"User-Agent": self.HUMAN_UA})
+        assert res.status_code == 200
+        assert sent == {}
+
+    def test_repeat_download_within_hour_does_not_alert(self, client, sent, monkeypatch):
+        monkeypatch.setattr(app_module, "_recent_downloads_count", lambda ip: 2)
+        res = client.get("/api/download/pdf", headers={"User-Agent": self.HUMAN_UA})
+        assert res.status_code == 200
+        assert sent == {}
+
+    def test_src_tag_parsed_from_referrer(self, client, sent):
+        res = client.get(
+            "/api/download/pdf",
+            headers={
+                "User-Agent": self.HUMAN_UA,
+                "Referer": "https://www.hihelloreid.com/?src=figma",
+            },
+        )
+        assert res.status_code == 200
+        assert "src tag: figma" in sent["body"]
+
+    def test_alert_failure_never_breaks_the_download(self, client, monkeypatch):
+        def boom(**_kwargs):
+            raise RuntimeError("smtp down")
+
+        monkeypatch.setattr(app_module, "send_notification_email", boom)
+        monkeypatch.setattr(app_module, "_recent_downloads_count", lambda ip: 1)
+        res = client.get("/api/download/pdf", headers={"User-Agent": self.HUMAN_UA})
+        assert res.status_code == 200
 
 
 class TestPageview:

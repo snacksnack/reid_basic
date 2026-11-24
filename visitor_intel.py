@@ -12,6 +12,7 @@ visible); is_crawler_org() only marks a visitor as suspected automation.
 import ipaddress
 import json
 import logging
+import os
 import time
 import urllib.request
 
@@ -87,6 +88,14 @@ def is_crawler_org(org: str | None) -> bool:
     """True when the owning org runs crawl infrastructure: a suspicion
     signal for annotation, never grounds to exclude a visitor."""
     return bool(org) and any(sig in org.lower() for sig in CRAWLER_ORG_SIGNATURES)
+
+
+def self_ips() -> frozenset[str]:
+    """The site owner's IPs (SELF_IPS env, comma-separated). Self traffic is
+    excluded from digest visitor counts and never triggers alerts (RC1-685)."""
+    return frozenset(
+        s.strip() for s in os.environ.get("SELF_IPS", "").split(",") if s.strip()
+    )
 
 
 def device_type(user_agent: str | None) -> str:
