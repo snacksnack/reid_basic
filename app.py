@@ -247,6 +247,12 @@ def _init_db():
                     created_at TIMESTAMPTZ DEFAULT NOW())""",
                 # Migration: add raw_message column if it doesn't exist yet
                 "ALTER TABLE chat_logs ADD COLUMN IF NOT EXISTS raw_message JSONB",
+                # RC1-684: ?src= tag on tracked links (hihelloreid.com/?src=<company>)
+                "ALTER TABLE page_views ADD COLUMN IF NOT EXISTS src TEXT",
+                # RC1-684: IP -> org/geo cache, written only by scripts/chat_digest.py
+                """CREATE TABLE IF NOT EXISTS ip_enrichment (
+                    ip TEXT PRIMARY KEY, org TEXT, city TEXT, region TEXT,
+                    country TEXT, looked_up_at TIMESTAMPTZ DEFAULT NOW())""",
                 # Session summaries — written by scripts/summarize_sessions.py
                 """CREATE TABLE IF NOT EXISTS chat_summaries (
                     id SERIAL PRIMARY KEY,
@@ -1113,14 +1119,16 @@ def ratelimit_handler(_e):
 def pageview():
     data = request.get_json(silent=True) or {}
     ip = request.remote_addr or "unknown"
+    src = (str(data.get("src") or "")).strip()[:120] or None
     _db_execute(
-        "INSERT INTO page_views (path, ip_address, user_agent, referrer) "
-        "VALUES (%s, %s, %s, %s)",
+        "INSERT INTO page_views (path, ip_address, user_agent, referrer, src) "
+        "VALUES (%s, %s, %s, %s, %s)",
         [
             data.get("path", "/"),
             ip,
             request.headers.get("User-Agent", ""),
             data.get("referrer", ""),
+            src,
         ],
     )
     return "", 204

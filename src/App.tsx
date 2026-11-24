@@ -44,6 +44,7 @@ function App() {
       body: JSON.stringify({
         path: window.location.pathname,
         referrer: document.referrer,
+        src: new URLSearchParams(window.location.search).get('src'),
       }),
     }).catch(() => {})
   }, [])
