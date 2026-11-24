@@ -34,6 +34,12 @@ class FakeDigestConnection:
     def cursor(self, *_args, **_kwargs):
         return FakeCursor(self._results)
 
+    def commit(self):
+        pass
+
+    def rollback(self):
+        pass
+
     def close(self):
         pass
 
@@ -85,15 +91,20 @@ def test_gmail_api_send_uses_refresh_token_and_message_endpoint(monkeypatch):
 def test_digest_groups_page_views_by_path_and_source(monkeypatch):
     digest = importlib.reload(importlib.import_module("scripts.chat_digest"))
     ts = datetime(2026, 10, 22, 14, 30)
-    # Order matches run(): chat_logs, download_logs, page_views, contact_submissions.
+    ua = "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+    # Order matches run(): chat_logs, download_logs, page_views,
+    # contact_submissions, then the return-visit history query (RC1-684).
+    # 203.0.113.x is TEST-NET-3, not globally routable, so enrichment skips
+    # its lookups and consumes no queued result.
     results = [
         [],
         [],
         [
-            {"ip_address": "203.0.113.1", "path": "/work", "referrer": "https://www.linkedin.com/", "created_at": ts},
-            {"ip_address": "203.0.113.2", "path": "/work", "referrer": "", "created_at": ts},
-            {"ip_address": "203.0.113.3", "path": "/", "referrer": "", "created_at": ts},
+            {"ip_address": "203.0.113.1", "path": "/work", "referrer": "https://www.linkedin.com/", "created_at": ts, "user_agent": ua, "src": None},
+            {"ip_address": "203.0.113.2", "path": "/work", "referrer": "", "created_at": ts, "user_agent": ua, "src": None},
+            {"ip_address": "203.0.113.3", "path": "/", "referrer": "", "created_at": ts, "user_agent": ua, "src": None},
         ],
+        [],
         [],
     ]
     sent = {}
