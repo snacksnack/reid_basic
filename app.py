@@ -1395,6 +1395,22 @@ def chat():
                 return jsonify({"reply": fallback})
 
             fit_card = _build_fit_card(tool_block.input or {}, sections_reviewed)
+            # RC1-686: this forced-tool branch bypasses the conversational
+            # loop and its tool_usage insert, so record the run here; the
+            # nightly digest surfaces these (the JD usually names a company).
+            _db_execute(
+                "INSERT INTO tool_usage "
+                "(session_id, ip_address, tool_name, tool_args, tool_result) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                [
+                    session_id,
+                    ip,
+                    "render_fit_card",
+                    json.dumps({"job_description": match_body}),
+                    f"{fit_card['verdictLabel']} for {fit_card['roleTitle']}: "
+                    f"{fit_card['summary']}",
+                ],
+            )
             follow_up = (
                 "Want me to go deeper on any of these — the gaps, a specific "
                 "requirement, or whether he's senior enough?"

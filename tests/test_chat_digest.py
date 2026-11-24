@@ -200,6 +200,59 @@ class TestSelfExclusion:
         assert "(self)" in text
 
 
+def match_row(ip, when, jd, result="Good fit, some gaps for Senior TPM: close match."):
+    return {"session_id": "s1", "ip_address": ip, "tool_args": {"job_description": jd},
+            "tool_result": result, "created_at": when}
+
+
+class TestMatchRuns:
+    def test_match_run_rendered_with_company_guess(self):
+        rows = [match_row(HUMAN_IP, t(10, 30), "Senior TPM at Stripe, driving launches.")]
+        subject, text = build_digest(
+            [], [], [], [], ENRICHMENT, {}, TODAY, match_rows=rows
+        )
+        assert ", 1 match - " in subject
+        section = text.split("MATCH RUNS (1)")[1]
+        assert "company guess: Stripe" in section
+        assert "Good fit, some gaps for Senior TPM" in section
+        assert "JD: Senior TPM at Stripe" in section
+        assert "Comcast Cable, Austin" in section
+
+    def test_long_jd_truncated_and_whitespace_collapsed(self):
+        jd = "About Figma\n" + "word " * 200
+        _, text = build_digest([], [], [], [], {}, {}, TODAY,
+                               match_rows=[match_row(HUMAN_IP, t(10, 0), jd)])
+        jd_line = [ln for ln in text.splitlines() if ln.strip().startswith("JD:")][0]
+        assert jd_line.endswith("...")
+        assert "\n" not in jd_line and len(jd_line) < 520
+
+    def test_unguessable_company_says_none(self):
+        _, text = build_digest([], [], [], [], {}, {}, TODAY,
+                               match_rows=[match_row(HUMAN_IP, t(10, 0), "we need a tpm")])
+        assert "company guess: none" in text
+
+    def test_self_match_labeled_and_not_counted_in_subject(self):
+        rows = [match_row(HUMAN_IP, t(10, 0), "Senior TPM at Stripe.")]
+        subject, text = build_digest(
+            [], [], [], [], ENRICHMENT, {}, TODAY,
+            self_ips=frozenset({HUMAN_IP}), match_rows=rows,
+        )
+        assert "match" not in subject
+        assert f"{HUMAN_IP} (self)" in text
+
+    def test_string_tool_args_parsed(self):
+        row = match_row(HUMAN_IP, t(10, 0), "x")
+        row["tool_args"] = '{"job_description": "Join Datadog as a TPM."}'
+        _, text = build_digest([], [], [], [], {}, {}, TODAY, match_rows=[row])
+        assert "company guess: Datadog" in text
+
+    def test_no_section_without_match_runs(self):
+        _, text = build_digest(
+            [view(HUMAN_IP, "/", t(9, 0))], [], [], [], ENRICHMENT, {}, TODAY
+        )
+        assert "MATCH RUNS" not in text
+
+
 class TestUnknownIp:
     def test_unenriched_human_still_renders(self):
         _, text = build_digest(

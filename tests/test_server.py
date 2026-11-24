@@ -228,6 +228,39 @@ class TestMatchEndpoint:
         kwargs = fake.messages.calls[0]
         assert kwargs["tool_choice"] == {"type": "tool", "name": "render_fit_card"}
 
+    def test_match_run_recorded_in_tool_usage(self, client, monkeypatch):
+        tool_block = _Block(
+            "tool_use",
+            name="render_fit_card",
+            input={
+                "role_title": "Senior TPM",
+                "verdict": "good",
+                "verdict_label": "Good fit, some gaps",
+                "strengths": ["a"],
+                "transferable": [],
+                "gaps": [],
+                "summary": "Close match.",
+            },
+        )
+        self._patch_client(monkeypatch, _FakeClient(_Resp([tool_block])))
+        executed = []
+        monkeypatch.setattr(
+            app_module, "_db_execute", lambda q, p=None: executed.append((q, p))
+        )
+
+        res = client.post(
+            "/api/chat",
+            json={"message": "/match Senior TPM at Stripe.", "sessionId": "m9"},
+        )
+
+        assert res.status_code == 200
+        tool_inserts = [(q, p) for q, p in executed if "tool_usage" in q]
+        assert len(tool_inserts) == 1
+        _, params = tool_inserts[0]
+        assert params[2] == "render_fit_card"
+        assert json.loads(params[3]) == {"job_description": "Senior TPM at Stripe."}
+        assert params[4].startswith("Good fit, some gaps for Senior TPM")
+
     def test_falls_back_when_model_returns_no_tool_block(self, client, monkeypatch):
         self._patch_client(monkeypatch, _FakeClient(_Resp([_Block("text", text="hi")])))
 
