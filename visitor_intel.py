@@ -180,6 +180,21 @@ def enrich_ips(ips, cur, fetch=fetch_ip_info, pause=time.sleep) -> dict:
     return found
 
 
+# Metro aliases so a visitor's enriched city and an application's office
+# metro compare equal (RC1-687). Shared by the digest and the sync script.
+_METRO_ALIASES = {
+    "new york city": "new york",
+    "nyc": "new york",
+    "brooklyn": "new york",
+    "manhattan": "new york",
+}
+
+
+def normalize_metro(city: str | None) -> str:
+    c = re.sub(r"\s+", " ", (city or "").strip().lower())
+    return _METRO_ALIASES.get(c, c)
+
+
 # Capitalized tokens that never start a company name; a candidate led by one
 # is noise ("The Role", "We Are", ...), a trailing one gets trimmed.
 _COMPANY_NOISE_TOKENS = frozenset(

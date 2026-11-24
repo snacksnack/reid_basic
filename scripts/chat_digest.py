@@ -27,7 +27,7 @@ import json
 import os
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import psycopg2
@@ -50,6 +50,10 @@ load_dotenv()
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 RULE = "-" * 40
+# A metro-only match is meaningful while the application is fresh (RC1-687);
+# a src-tag match is specific enough to report at any age in the 90-day window.
+METRO_MATCH_MAX_DAYS = 21
+MAX_CORRELATIONS_PER_VISITOR = 3
 
 
 def _time(dt: datetime) -> str:
@@ -79,6 +83,46 @@ def _return_flag(hist: dict | None) -> str:
     return f"returning: seen {days} prior {noun}, first {first}"
 
 
+def _days_ago(as_of: date, applied_on: date) -> str:
+    days = (as_of - applied_on).days
+    return "today" if days == 0 else f"{days} day{'s' if days != 1 else ''} ago"
+
+
+def _correlations(src_tags, info: dict | None, applications, as_of: date | None) -> list[str]:
+    """Visitor-to-application correlations (RC1-687): a src-tag match, or a
+    metro match on an application within METRO_MATCH_MAX_DAYS. Labeled as
+    correlation because an IP's geography suggests a person, never proves one."""
+    if not applications or as_of is None:
+        return []
+    city = vi.normalize_metro((info or {}).get("city"))
+    visitor_tags = {t.lower() for t in src_tags}
+    found = []
+    for app in applications:
+        applied_on = app.get("applied_on")
+        days = (as_of - applied_on).days if applied_on else None
+        src_hit = bool(app.get("src_tag")) and app["src_tag"] in visitor_tags
+        metros = (app.get("metros") or "").split(",")
+        metro_hit = (
+            bool(city)
+            and city in metros
+            and days is not None
+            and 0 <= days <= METRO_MATCH_MAX_DAYS
+        )
+        if not (src_hit or metro_hit):
+            continue
+        why = "src tag" if src_hit else f"visitor metro '{city}'"
+        when = _days_ago(as_of, applied_on) if days is not None else "date unknown"
+        found.append(
+            (
+                days if days is not None else 10**6,
+                f"correlation (not identification): applied to {app['company']} "
+                f"{when} ({why})",
+            )
+        )
+    found.sort(key=lambda pair: pair[0])
+    return [line for _, line in found[:MAX_CORRELATIONS_PER_VISITOR]]
+
+
 def build_digest(
     view_rows: list[dict],
     download_rows: list[dict],
@@ -89,6 +133,8 @@ def build_digest(
     today: str,
     self_ips: frozenset[str] = frozenset(),
     match_rows: list[dict] | None = None,
+    applications: list[dict] | None = None,
+    as_of: date | None = None,
 ) -> tuple[str, str]:
     """Pure formatter: rows in, (subject, body) out. No IO.
 
@@ -167,6 +213,8 @@ def build_digest(
             if tags:
                 headline.append("src: " + ", ".join(tags))
             text += "* " + " - ".join(headline) + "\n"
+            for line in _correlations(tags, v["info"], applications, as_of):
+                text += f"    {line}\n"
             events = [(r["created_at"], r["path"] or "/") for r in v["views"]]
             events += [
                 (r["created_at"], f"{r['format'].upper()} download") for r in v["downloads"]
@@ -354,6 +402,18 @@ def run(dry_run: bool = False):
             )
             history = {row["ip_address"]: row for row in cur.fetchall()}
 
+        applications: list[dict] = []
+        try:
+            cur.execute(
+                "SELECT role_id, company, role_title, metros, src_tag, applied_on "
+                "FROM applications WHERE applied_on IS NULL "
+                "OR applied_on >= CURRENT_DATE - INTERVAL '90 days'"
+            )
+            applications = cur.fetchall()
+        except Exception as e:
+            conn.rollback()
+            print(f"applications unavailable ({e}); digest continues", file=sys.stderr)
+
     conn.close()
 
     if not any([chat_rows, download_rows, view_rows, contact_rows, match_rows]):
@@ -364,6 +424,7 @@ def run(dry_run: bool = False):
     subject, text = build_digest(
         view_rows, download_rows, contact_rows, chat_rows, enrichment, history, today,
         self_ips=vi.self_ips(), match_rows=match_rows,
+        applications=applications, as_of=date.today(),
     )
 
     if dry_run:

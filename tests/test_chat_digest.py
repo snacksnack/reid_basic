@@ -1,6 +1,6 @@
 """RC1-684: digest formatting - bot/human split, narratives, src tags, return flags."""
 
-from datetime import datetime
+from datetime import date, datetime
 
 from scripts.chat_digest import build_digest
 
@@ -251,6 +251,60 @@ class TestMatchRuns:
             [view(HUMAN_IP, "/", t(9, 0))], [], [], [], ENRICHMENT, {}, TODAY
         )
         assert "MATCH RUNS" not in text
+
+
+AS_OF = date(2026, 11, 24)
+
+
+def application(company, metros="", src_tag=None, applied_on=None):
+    return {"role_id": company.lower(), "company": company, "role_title": "TPM",
+            "metros": metros, "src_tag": src_tag or company.lower(),
+            "applied_on": applied_on}
+
+
+class TestApplicationCorrelation:
+    def test_metro_match_within_window(self):
+        apps = [application("SailPoint", metros="austin", applied_on=date(2026, 11, 20))]
+        _, text = build_digest(
+            [view(HUMAN_IP, "/", t(9, 0))], [], [], [], ENRICHMENT, {}, TODAY,
+            applications=apps, as_of=AS_OF,
+        )
+        assert (
+            "correlation (not identification): applied to SailPoint 4 days ago "
+            "(visitor metro 'austin')" in text
+        )
+
+    def test_stale_metro_match_is_dropped(self):
+        apps = [application("SailPoint", metros="austin", applied_on=date(2026, 10, 1))]
+        _, text = build_digest(
+            [view(HUMAN_IP, "/", t(9, 0))], [], [], [], ENRICHMENT, {}, TODAY,
+            applications=apps, as_of=AS_OF,
+        )
+        assert "correlation" not in text
+
+    def test_src_tag_match_ignores_age_and_metro(self):
+        apps = [application("Figma", applied_on=date(2026, 10, 15))]
+        _, text = build_digest(
+            [view(HUMAN_IP, "/", t(9, 0), src="figma")], [], [], [], ENRICHMENT, {},
+            TODAY, applications=apps, as_of=AS_OF,
+        )
+        assert "applied to Figma 40 days ago (src tag)" in text
+
+    def test_metro_alias_matches_new_york_city(self):
+        enrichment = {HUMAN_IP: {"org": "Verizon", "city": "New York City",
+                                 "region": "New York", "country": "United States"}}
+        apps = [application("Anterior", metros="new york", applied_on=date(2026, 11, 21))]
+        _, text = build_digest(
+            [view(HUMAN_IP, "/", t(9, 0))], [], [], [], enrichment, {}, TODAY,
+            applications=apps, as_of=AS_OF,
+        )
+        assert "applied to Anterior 3 days ago" in text
+
+    def test_no_applications_no_correlation_lines(self):
+        _, text = build_digest(
+            [view(HUMAN_IP, "/", t(9, 0))], [], [], [], ENRICHMENT, {}, TODAY
+        )
+        assert "correlation" not in text
 
 
 class TestUnknownIp:
