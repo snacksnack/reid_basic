@@ -136,6 +136,16 @@ class TestEnrichIps:
         assert calls == []
 
 
+class TestSelfIps:
+    def test_parses_comma_separated_env(self, monkeypatch):
+        monkeypatch.setenv("SELF_IPS", " 1.2.3.4 ,5.6.7.8,")
+        assert vi.self_ips() == {"1.2.3.4", "5.6.7.8"}
+
+    def test_empty_when_unset(self, monkeypatch):
+        monkeypatch.delenv("SELF_IPS", raising=False)
+        assert vi.self_ips() == frozenset()
+
+
 class TestLocationLine:
     def test_joins_known_parts(self):
         assert (

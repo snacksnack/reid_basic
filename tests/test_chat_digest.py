@@ -170,6 +170,36 @@ class TestSuspectedAutomation:
         assert "suspected automation" not in text
 
 
+class TestSelfExclusion:
+    def test_self_traffic_excluded_and_summarized(self):
+        views = [
+            view(HUMAN_IP, "/", t(9, 0)),
+            view(HUMAN_IP, "/work", t(9, 1)),
+            view(META_IP, "/", t(3, 27), ua=META_UA),
+        ]
+        downloads = [download(HUMAN_IP, "pdf", t(9, 2))]
+        subject, text = build_digest(
+            views, downloads, [], [], ENRICHMENT, {}, TODAY,
+            self_ips=frozenset({HUMAN_IP}),
+        )
+        assert subject.startswith("Resume Digest: 0 views, 0 downloads")
+        assert "SELF TRAFFIC: 2 views, 1 downloads (excluded from counts)" in text
+        assert "VISITORS" not in text
+        assert "BOT TRAFFIC" in text
+
+    def test_self_chat_session_labeled_not_hidden(self):
+        chat_rows = [{
+            "session_id": "s1", "ip_address": HUMAN_IP, "role": "user",
+            "content": "hi", "created_at": t(9, 0),
+        }]
+        _, text = build_digest(
+            [], [], [], chat_rows, ENRICHMENT, {}, TODAY,
+            self_ips=frozenset({HUMAN_IP}),
+        )
+        assert f"IP: {HUMAN_IP}" in text
+        assert "(self)" in text
+
+
 class TestUnknownIp:
     def test_unenriched_human_still_renders(self):
         _, text = build_digest(

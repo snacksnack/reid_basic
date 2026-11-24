@@ -8,6 +8,7 @@ import re
 import threading
 from functools import wraps
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 import anthropic
 import cohere
@@ -32,6 +33,8 @@ from observability import (
 from openai import OpenAI
 from scripts.emailer import send_notification_email
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+import visitor_intel
 
 IS_PRODUCTION = os.environ.get("FLASK_ENV") == "production"
 BASE_DIR = Path(__file__).resolve().parent
@@ -172,6 +175,90 @@ def _send_contact_notification_email(
         )
     except Exception as e:
         logging.error("Failed to send contact email: %s", e)
+
+
+def _recent_downloads_count(ip: str) -> int:
+    """Count download rows for this IP in the rolling last hour (alert dedupe)."""
+    pool = _get_pool()
+    if not pool:
+        return 0
+    conn = pool.getconn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM download_logs "
+                "WHERE ip_address = %s AND created_at > NOW() - INTERVAL '1 hour'",
+                [ip],
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
+    except Exception as e:
+        logging.error("download alert dedupe count error: %s", e)
+        return 0
+    finally:
+        pool.putconn(conn)
+
+
+def _cached_ip_location(ip: str) -> str:
+    """Org/geo from the ip_enrichment cache only; '' when absent. External
+    lookups belong to the digest (RC1-684); the request path never fetches."""
+    pool = _get_pool()
+    if not pool:
+        return ""
+    conn = pool.getconn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT org, city, region, country FROM ip_enrichment WHERE ip = %s",
+                [ip],
+            )
+            row = cur.fetchone()
+            if not row:
+                return ""
+            return visitor_intel.location_line(
+                {"org": row[0], "city": row[1], "region": row[2], "country": row[3]}
+            )
+    except Exception as e:
+        logging.error("ip_enrichment cache read error: %s", e)
+        return ""
+    finally:
+        pool.putconn(conn)
+
+
+def _referrer_src_tag(referrer: str) -> str:
+    try:
+        return parse_qs(urlparse(referrer or "").query).get("src", [""])[0]
+    except Exception:
+        return ""
+
+
+def _send_download_alert(fmt: str, ip: str, user_agent: str, referrer: str) -> None:
+    """RC1-685: immediate email for human resume downloads. Best-effort:
+    bots and the owner's own IPs never alert, repeat downloads from one IP
+    within an hour collapse into the first alert, and failures only log."""
+    if visitor_intel.is_bot(user_agent) or ip in visitor_intel.self_ips():
+        return
+    if _recent_downloads_count(ip) > 1:  # the count includes this download's row
+        return
+    where = _cached_ip_location(ip)
+    src = _referrer_src_tag(referrer)
+    lines = [
+        f"{fmt.upper()} resume download",
+        "",
+        f"IP: {ip}" + (f" - {where}" if where else ""),
+    ]
+    if src:
+        lines.append(f"src tag: {src}")
+    lines.append(f"Referrer: {referrer or 'none'}")
+    lines.append(f"User agent: {user_agent or 'none'}")
+    try:
+        send_notification_email(
+            subject=f"Resume download: {fmt.upper()}" + (f" - {where}" if where else ""),
+            body="\n".join(lines),
+            from_name="Resume Site",
+        )
+    except Exception as e:
+        logging.error("Failed to send download alert: %s", e)
 
 
 def submit_contact(name, email, message, ip: str) -> dict:
@@ -1450,6 +1537,9 @@ def download(fmt):
     if not filepath.is_file():
         return jsonify({"error": "File not found"}), 404
 
+    _send_download_alert(
+        fmt, ip, request.headers.get("User-Agent", ""), request.headers.get("Referer", "")
+    )
     return send_file(filepath, as_attachment=True, download_name=filename)
 
 
