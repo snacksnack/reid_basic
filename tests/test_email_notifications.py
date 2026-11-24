@@ -93,9 +93,10 @@ def test_digest_groups_page_views_by_path_and_source(monkeypatch):
     ts = datetime(2026, 10, 22, 14, 30)
     ua = "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
     # Order matches run(): chat_logs, download_logs, page_views,
-    # contact_submissions, then the return-visit history query (RC1-684).
-    # 203.0.113.x is TEST-NET-3, not globally routable, so enrichment skips
-    # its lookups and consumes no queued result.
+    # contact_submissions, tool_usage match runs (RC1-686), then the
+    # return-visit history query (RC1-684). 203.0.113.x is TEST-NET-3, not
+    # globally routable, so enrichment skips its lookups and consumes no
+    # queued result.
     results = [
         [],
         [],
@@ -104,6 +105,7 @@ def test_digest_groups_page_views_by_path_and_source(monkeypatch):
             {"ip_address": "203.0.113.2", "path": "/work", "referrer": "", "created_at": ts, "user_agent": ua, "src": None},
             {"ip_address": "203.0.113.3", "path": "/", "referrer": "", "created_at": ts, "user_agent": ua, "src": None},
         ],
+        [],
         [],
         [],
     ]

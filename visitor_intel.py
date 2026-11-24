@@ -13,6 +13,7 @@ import ipaddress
 import json
 import logging
 import os
+import re
 import time
 import urllib.request
 
@@ -177,6 +178,51 @@ def enrich_ips(ips, cur, fetch=fetch_ip_info, pause=time.sleep) -> dict:
             (ip, info["org"], info["city"], info["region"], info["country"]),
         )
     return found
+
+
+# Capitalized tokens that never start a company name; a candidate led by one
+# is noise ("The Role", "We Are", ...), a trailing one gets trimmed.
+_COMPANY_NOISE_TOKENS = frozenset(
+    "the a an we our you your this that it they i us role team job position "
+    "company who what why about senior staff lead principal remote "
+    "responsibilities requirements qualifications benefits overview location "
+    "description duties mission values".split()
+)
+
+# Ordered: the most company-specific phrasings first. Each captures up to
+# four capitalized tokens (allowing &.'-+ inside a token).
+# Keywords match any case via scoped (?i:...) groups; the captured tokens
+# stay case-sensitive so only Capitalized names qualify.
+_TOKEN = r"[A-Z][\w&.'’+-]*"
+_SEP = r"[ \t]+"  # a company name never spans lines
+_NAME = rf"{_TOKEN}(?:{_SEP}{_TOKEN}){{0,3}}"
+_COMPANY_PATTERNS = (
+    re.compile(rf"(?i:\babout){_SEP}({_NAME})"),
+    re.compile(rf"(?i:\bjoin(?:ing)?){_SEP}({_NAME})"),
+    re.compile(rf"(?i:\bat){_SEP}({_NAME})"),
+    re.compile(
+        rf"^({_NAME})(?i:{_SEP}(?:is|helps|builds|makes|provides|empowers|offers)"
+        rf"{_SEP}(?:a\b|an\b|the\b|building|looking|seeking|hiring|on\b|you\b|teams?\b))",
+        re.MULTILINE,
+    ),
+)
+
+
+def guess_company(job_description: str | None) -> str:
+    """Best-effort company name from pasted JD text (RC1-686). A labeled
+    guess for the digest, never a decision input; '' when nothing plausible."""
+    text = (job_description or "")[:4000]
+    for pattern in _COMPANY_PATTERNS:
+        for match in pattern.finditer(text):
+            tokens = match.group(1).split()
+            while tokens and tokens[-1].lower().strip(".,") in _COMPANY_NOISE_TOKENS:
+                tokens.pop()
+            if not tokens or tokens[0].lower().strip(".,") in _COMPANY_NOISE_TOKENS:
+                continue
+            candidate = " ".join(tokens).strip(".,:;")
+            if 1 < len(candidate) <= 40:
+                return candidate
+    return ""
 
 
 def location_line(info: dict | None) -> str:

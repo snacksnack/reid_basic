@@ -146,6 +146,31 @@ class TestSelfIps:
         assert vi.self_ips() == frozenset()
 
 
+class TestGuessCompany:
+    def test_about_header(self):
+        jd = "Senior TPM\n\nAbout Figma\nFigma is a design platform used by teams."
+        assert vi.guess_company(jd) == "Figma"
+
+    def test_at_phrasing(self):
+        jd = "As a Senior Technical Program Manager at Stripe, you'll drive launches."
+        assert vi.guess_company(jd) == "Stripe"
+
+    def test_join_phrasing(self):
+        assert vi.guess_company("Join Datadog as a Senior TPM.") == "Datadog"
+
+    def test_company_is_phrasing(self):
+        assert vi.guess_company("Acme Robotics is building warehouse automation.") == "Acme Robotics"
+
+    def test_noise_tokens_are_not_companies(self):
+        assert vi.guess_company("About The Role\nWe are looking for a leader.") == ""
+        assert vi.guess_company("") == ""
+        assert vi.guess_company(None) == ""
+
+    def test_trailing_noise_is_trimmed(self):
+        jd = "About Figma We believe design belongs to everyone."
+        assert vi.guess_company(jd) == "Figma"
+
+
 class TestLocationLine:
     def test_joins_known_parts(self):
         assert (

@@ -23,6 +23,7 @@ Usage (Heroku Scheduler):
     python scripts/chat_digest.py
 """
 
+import json
 import os
 import sys
 from collections import defaultdict
@@ -87,6 +88,7 @@ def build_digest(
     history: dict[str, dict],
     today: str,
     self_ips: frozenset[str] = frozenset(),
+    match_rows: list[dict] | None = None,
 ) -> tuple[str, str]:
     """Pure formatter: rows in, (subject, body) out. No IO.
 
@@ -184,6 +186,35 @@ def build_digest(
             )
         text += "\n"
 
+    match_rows = match_rows or []
+    nonself_matches = sum(1 for m in match_rows if m["ip_address"] not in self_ips)
+    if match_rows:
+        text += f"MATCH RUNS ({len(match_rows)})\n"
+        text += RULE + "\n"
+        for m in match_rows:
+            args = m.get("tool_args") or {}
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except ValueError:
+                    args = {}
+            jd = " ".join((args.get("job_description") or "").split())
+            guess = vi.guess_company(jd)
+            headline = [
+                _time(m["created_at"]),
+                m["ip_address"] + (" (self)" if m["ip_address"] in self_ips else ""),
+            ]
+            where = vi.location_line(enrichment.get(m["ip_address"]))
+            if where:
+                headline.append(where)
+            headline.append(f"company guess: {guess or 'none'}")
+            text += "* " + " - ".join(headline) + "\n"
+            if m.get("tool_result"):
+                text += f"    {m['tool_result']}\n"
+            if jd:
+                text += f"    JD: {jd[:500]}{'...' if len(jd) > 500 else ''}\n"
+            text += "\n"
+
     if self_view_count or self_download_count:
         text += (
             f"SELF TRAFFIC: {self_view_count} views, "
@@ -245,8 +276,11 @@ def build_digest(
         f"Resume Digest: {v_count} view{'s' if v_count != 1 else ''}, "
         f"{d_count} download{'s' if d_count != 1 else ''}, "
         f"{c_count} contact{'s' if c_count != 1 else ''}, "
-        f"{s_count} chat{'s' if s_count != 1 else ''} - {today}"
+        f"{s_count} chat{'s' if s_count != 1 else ''}"
     )
+    if nonself_matches:
+        subject += f", {nonself_matches} match{'es' if nonself_matches != 1 else ''}"
+    subject += f" - {today}"
     if bots:
         subject += f" (+{bot_views + bot_downloads} bot hits)"
     return subject, text
@@ -287,6 +321,13 @@ def run(dry_run: bool = False):
         )
         contact_rows = cur.fetchall()
 
+        cur.execute(
+            "SELECT session_id, ip_address, tool_args, tool_result, created_at "
+            "FROM tool_usage WHERE tool_name = 'render_fit_card' "
+            "AND created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at"
+        )
+        match_rows = cur.fetchall()
+
         night_ips = sorted(
             {r["ip_address"] for r in view_rows}
             | {r["ip_address"] for r in download_rows}
@@ -315,14 +356,14 @@ def run(dry_run: bool = False):
 
     conn.close()
 
-    if not any([chat_rows, download_rows, view_rows, contact_rows]):
+    if not any([chat_rows, download_rows, view_rows, contact_rows, match_rows]):
         print("No activity in the last 24 hours - skipping email.")
         return
 
     today = datetime.now().strftime("%A, %B %d, %Y")
     subject, text = build_digest(
         view_rows, download_rows, contact_rows, chat_rows, enrichment, history, today,
-        self_ips=vi.self_ips(),
+        self_ips=vi.self_ips(), match_rows=match_rows,
     )
 
     if dry_run:
