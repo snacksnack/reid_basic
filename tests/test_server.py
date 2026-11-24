@@ -87,6 +87,23 @@ class TestDownloadAlert:
         assert res.status_code == 200
         assert "src tag: figma" in sent["body"]
 
+    def test_src_query_param_stored_and_beats_referrer(self, client, sent, monkeypatch):
+        executed = []
+        monkeypatch.setattr(
+            app_module, "_db_execute", lambda q, p=None: executed.append((q, p))
+        )
+        res = client.get(
+            "/api/download/pdf?src=figma",
+            headers={
+                "User-Agent": self.HUMAN_UA,
+                "Referer": "https://www.hihelloreid.com/?src=other",
+            },
+        )
+        assert res.status_code == 200
+        assert "src tag: figma" in sent["body"]
+        _, params = [e for e in executed if "download_logs" in e[0]][0]
+        assert params[4] == "figma"
+
     def test_alert_failure_never_breaks_the_download(self, client, monkeypatch):
         def boom(**_kwargs):
             raise RuntimeError("smtp down")

@@ -209,7 +209,9 @@ def build_digest(
             flag = _return_flag(history.get(ip))
             if flag:
                 headline.append(flag)
-            tags = sorted({r["src"] for r in v["views"] if r.get("src")})
+            tags = sorted(
+                {r["src"] for r in v["views"] + v["downloads"] if r.get("src")}
+            )
             if tags:
                 headline.append("src: " + ", ".join(tags))
             text += "* " + " - ".join(headline) + "\n"
@@ -230,7 +232,9 @@ def build_digest(
             where = humans[dl["ip_address"]]["where"]
             text += (
                 f"  {dl['format'].upper()} - {_time(dl['created_at'])} - "
-                f"IP: {dl['ip_address']} - {where}\n"
+                f"IP: {dl['ip_address']} - {where}"
+                + (f" - src: {dl['src']}" if dl.get("src") else "")
+                + "\n"
             )
         text += "\n"
 
@@ -349,7 +353,7 @@ def run(dry_run: bool = False):
         chat_rows = cur.fetchall()
 
         cur.execute(
-            "SELECT format, ip_address, user_agent, referrer, created_at "
+            "SELECT format, ip_address, user_agent, referrer, src, created_at "
             "FROM download_logs WHERE created_at >= NOW() - INTERVAL '24 hours' "
             "ORDER BY created_at"
         )

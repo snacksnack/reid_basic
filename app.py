@@ -232,7 +232,9 @@ def _referrer_src_tag(referrer: str) -> str:
         return ""
 
 
-def _send_download_alert(fmt: str, ip: str, user_agent: str, referrer: str) -> None:
+def _send_download_alert(
+    fmt: str, ip: str, user_agent: str, referrer: str, src: str = ""
+) -> None:
     """RC1-685: immediate email for human resume downloads. Best-effort:
     bots and the owner's own IPs never alert, repeat downloads from one IP
     within an hour collapse into the first alert, and failures only log."""
@@ -241,7 +243,7 @@ def _send_download_alert(fmt: str, ip: str, user_agent: str, referrer: str) -> N
     if _recent_downloads_count(ip) > 1:  # the count includes this download's row
         return
     where = _cached_ip_location(ip)
-    src = _referrer_src_tag(referrer)
+    src = src or _referrer_src_tag(referrer)
     lines = [
         f"{fmt.upper()} resume download",
         "",
@@ -336,6 +338,8 @@ def _init_db():
                 "ALTER TABLE chat_logs ADD COLUMN IF NOT EXISTS raw_message JSONB",
                 # RC1-684: ?src= tag on tracked links (hihelloreid.com/?src=<company>)
                 "ALTER TABLE page_views ADD COLUMN IF NOT EXISTS src TEXT",
+                # RC1-688: downloads carry the visit's tag first-class
+                "ALTER TABLE download_logs ADD COLUMN IF NOT EXISTS src TEXT",
                 # RC1-684: IP -> org/geo cache, written only by scripts/chat_digest.py
                 """CREATE TABLE IF NOT EXISTS ip_enrichment (
                     ip TEXT PRIMARY KEY, org TEXT, city TEXT, region TEXT,
@@ -1549,10 +1553,14 @@ def download(fmt):
         return jsonify({"error": "invalid format"}), 404
 
     ip = request.remote_addr or "unknown"
+    referrer = request.headers.get("Referer", "")
+    # RC1-688: the tag arrives on the link itself (site download buttons and
+    # direct links both carry it); the referrer's ?src= is the fallback.
+    src = (request.args.get("src") or "").strip()[:120] or _referrer_src_tag(referrer) or None
     _db_execute(
-        "INSERT INTO download_logs (format, ip_address, user_agent, referrer) "
-        "VALUES (%s, %s, %s, %s)",
-        [fmt, ip, request.headers.get("User-Agent", ""), request.headers.get("Referer", "")],
+        "INSERT INTO download_logs (format, ip_address, user_agent, referrer, src) "
+        "VALUES (%s, %s, %s, %s, %s)",
+        [fmt, ip, request.headers.get("User-Agent", ""), referrer, src],
     )
 
     docs_dir = BASE_DIR / ("dist" if IS_PRODUCTION else "public") / "docs"
@@ -1561,7 +1569,7 @@ def download(fmt):
         return jsonify({"error": "File not found"}), 404
 
     _send_download_alert(
-        fmt, ip, request.headers.get("User-Agent", ""), request.headers.get("Referer", "")
+        fmt, ip, request.headers.get("User-Agent", ""), referrer, src or ""
     )
     return send_file(filepath, as_attachment=True, download_name=filename)
 

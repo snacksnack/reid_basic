@@ -9,6 +9,7 @@ import IncidentSummarizerPage from './pages/IncidentSummarizerPage'
 import PrReviewAgentPage from './pages/PrReviewAgentPage'
 import WorkPage from './pages/WorkPage'
 import resume from './data/resume'
+import { captureVisitTag } from './data/visitTag'
 import './resume.css'
 import './testbed/testbed.css'
 
@@ -44,7 +45,7 @@ function App() {
       body: JSON.stringify({
         path: window.location.pathname,
         referrer: document.referrer,
-        src: new URLSearchParams(window.location.search).get('src'),
+        src: captureVisitTag(),
       }),
     }).catch(() => {})
   }, [])
