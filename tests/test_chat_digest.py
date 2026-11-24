@@ -97,6 +97,21 @@ class TestVisitorNarrative:
         assert "returning" not in text
 
 
+class TestDownloadSrc:
+    def test_download_src_shown_and_feeds_headline_and_correlation(self):
+        dl = download(HUMAN_IP, "pdf", t(9, 0))
+        dl["src"] = "figma"
+        apps = [application("Figma", applied_on=date(2026, 10, 15))]
+        _, text = build_digest(
+            [], [dl], [], [], ENRICHMENT, {}, TODAY,
+            applications=apps, as_of=AS_OF,
+        )
+        assert "src: figma" in text.split("DOWNLOADS")[1]
+        headline = [ln for ln in text.splitlines() if ln.startswith("* ")][0]
+        assert "src: figma" in headline
+        assert "applied to Figma 40 days ago (src tag)" in text
+
+
 class TestSrcRollup:
     def test_src_tags_counted(self):
         _, text = _mixed_night()

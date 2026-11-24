@@ -4,6 +4,7 @@ import ProjectIndex from '../components/ProjectIndex'
 import ContactModal from '../components/ContactModal'
 import ChatBot, { type FabCta, type PromptChip } from '../components/ChatBot'
 import resume from '../data/resume'
+import { downloadHref } from '../data/visitTag'
 import './ProjectPage.css'
 
 // This page is about the projects, so the starter chips lead with a projects
@@ -58,7 +59,7 @@ export default function WorkPage() {
       <ProjectIndex />
 
       <footer className="pp-foot">
-        <a className="pp-btn pp-btn-primary" href="/api/download/pdf">
+        <a className="pp-btn pp-btn-primary" href={downloadHref('pdf')}>
           Download résumé
         </a>
         <button className="pp-btn" type="button" onClick={() => setContactOpen(true)}>

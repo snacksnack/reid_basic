@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import CareerTimeline, { slugify } from './CareerTimeline'
 import ProjectIndex from './ProjectIndex'
+import { downloadHref } from '../data/visitTag'
 
 export interface AchievementGroup {
   heading: string
@@ -165,14 +166,14 @@ export default function Resume({ data, onContactClick }: ResumeProps) {
       <div className={`toolbar${isToolbarStuck ? ' stuck' : ''}`} role="group" aria-label="Actions">
         <a
           className="toolbar-button"
-          href="/api/download/pdf"
+          href={downloadHref('pdf')}
           aria-label="Download PDF"
         >
           Download PDF
         </a>
         <a
           className="toolbar-button"
-          href="/api/download/docx"
+          href={downloadHref('docx')}
           aria-label="Download DOCX"
         >
           Download DOCX

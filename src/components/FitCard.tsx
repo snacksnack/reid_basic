@@ -1,3 +1,5 @@
+import { downloadHref } from '../data/visitTag'
+
 export type Verdict = 'strong' | 'good' | 'partial'
 
 export interface FitCardData {
@@ -80,7 +82,7 @@ export default function FitCard({ data }: { data: FitCardData }) {
       )}
 
       <div className="fit-actions">
-        <a className="fit-btn primary" href="/api/download/pdf">
+        <a className="fit-btn primary" href={downloadHref('pdf')}>
           Download matching résumé
         </a>
         <button className="fit-btn secondary" type="button" onClick={openContact}>
