@@ -1,8 +1,12 @@
 """Visitor classification and IP enrichment for the nightly digest (RC1-684).
 
 Pure classification helpers (bot vs. human, device type) plus a cached
-IP -> org/geo lookup against ip-api.com. Lookups run only from the digest
-script, never in the request path; failures degrade to the bare IP.
+IP -> org/geo lookup against ipapi.co over HTTPS. Lookups run only from the
+digest script, never in the request path; failures degrade to the bare IP.
+
+Classification is per event and user-agent based. The owning org never flips
+an event to bot on its own (a recruiter on a corporate network must stay
+visible); is_crawler_org() only marks a visitor as suspected automation.
 """
 
 import ipaddress
@@ -39,11 +43,10 @@ BOT_UA_SIGNATURES = (
     "perplexity",
 )
 
-# Owning orgs that are crawl infrastructure: traffic from them is automated
-# even when the user agent looks like a browser. Deliberately excludes
-# employers whose staff egress through the same org (Google, Microsoft,
-# Apple, Amazon): their real crawlers all carry bot user agents, and a
-# recruiter on a corporate network must not be hidden as a bot.
+# Owning orgs that run crawl infrastructure. A browser-looking event from one
+# of these is SUSPECTED automation, never proof: these orgs are also
+# employers, and a recruiter on their corporate network must not be hidden
+# from human traffic (the Google/Microsoft concern applies to every org here).
 CRAWLER_ORG_SIGNATURES = (
     "meta platforms",
     "facebook",
@@ -59,23 +62,26 @@ CRAWLER_ORG_SIGNATURES = (
     "internet archive",
 )
 
-IP_API_URL = "http://ip-api.com/json/{ip}?fields=status,message,country,regionName,city,isp,org,as"
+# ipapi.co: HTTPS without a key. The free tier allows 1,000 lookups/day; the
+# cache means a normal night needs a handful. The cap is a guard against a
+# backfill-sized night.
+IP_API_URL = "https://ipapi.co/{ip}/json/"
 LOOKUP_TIMEOUT_SECONDS = 5.0
-# ip-api.com free tier allows 45 requests/minute; the cache means a normal
-# night needs a handful. The cap is a guard against a backfill-sized night.
 MAX_LOOKUPS_PER_RUN = 40
 
 
-def is_bot(user_agent: str | None, org: str | None = None) -> bool:
-    """True when the user agent, or the owning org, marks automated traffic."""
+def is_bot(user_agent: str | None) -> bool:
+    """True when this event's user agent marks an automated client."""
     ua = (user_agent or "").strip().lower()
     if not ua:
         return True
-    if any(sig in ua for sig in BOT_UA_SIGNATURES):
-        return True
-    if org and any(sig in org.lower() for sig in CRAWLER_ORG_SIGNATURES):
-        return True
-    return False
+    return any(sig in ua for sig in BOT_UA_SIGNATURES)
+
+
+def is_crawler_org(org: str | None) -> bool:
+    """True when the owning org runs crawl infrastructure: a suspicion
+    signal for annotation, never grounds to exclude a visitor."""
+    return bool(org) and any(sig in org.lower() for sig in CRAWLER_ORG_SIGNATURES)
 
 
 def device_type(user_agent: str | None) -> str:
@@ -97,26 +103,26 @@ def _is_lookupable(ip: str) -> bool:
 
 
 def fetch_ip_info(ip: str) -> dict | None:
-    """One ip-api.com lookup. Returns {org, city, region, country} or None."""
+    """One ipapi.co lookup over HTTPS. Returns {org, city, region, country}
+    or None."""
+    req = urllib.request.Request(
+        IP_API_URL.format(ip=ip),
+        headers={"User-Agent": "resume-site-digest/1.0"},
+    )
     try:
-        with urllib.request.urlopen(
-            IP_API_URL.format(ip=ip), timeout=LOOKUP_TIMEOUT_SECONDS
-        ) as resp:
+        with urllib.request.urlopen(req, timeout=LOOKUP_TIMEOUT_SECONDS) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except Exception as e:
         logging.error("IP lookup failed for %s: %s", ip, e)
         return None
-    if data.get("status") != "success":
-        logging.error("IP lookup refused for %s: %s", ip, data.get("message"))
+    if data.get("error"):
+        logging.error("IP lookup refused for %s: %s", ip, data.get("reason"))
         return None
-    # "as" reads like "AS32934 Facebook, Inc."; keep the name part as a
-    # fallback when org and isp are empty.
-    as_name = " ".join((data.get("as") or "").split(" ")[1:])
     return {
-        "org": data.get("org") or data.get("isp") or as_name or "",
+        "org": data.get("org") or "",
         "city": data.get("city") or "",
-        "region": data.get("regionName") or "",
-        "country": data.get("country") or "",
+        "region": data.get("region") or "",
+        "country": data.get("country_name") or "",
     }
 
 

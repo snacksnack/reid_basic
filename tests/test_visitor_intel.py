@@ -26,14 +26,22 @@ class TestIsBot:
         assert not vi.is_bot(CHROME_UA)
         assert not vi.is_bot(IPHONE_UA)
 
-    def test_crawler_org_overrides_browser_ua(self):
-        assert vi.is_bot(CHROME_UA, org="Meta Platforms Ireland Limited")
-        assert vi.is_bot(CHROME_UA, org="OpenAI, LLC")
+    def test_user_agent_is_the_only_bot_evidence(self):
+        # A recruiter on any corporate network must stay human; the owning
+        # org can only mark a visitor as suspected (is_crawler_org).
+        assert not vi.is_bot(CHROME_UA)
 
-    def test_employer_orgs_do_not_make_a_browser_a_bot(self):
-        # A recruiter on a corporate network must stay human.
-        assert not vi.is_bot(CHROME_UA, org="Google LLC")
-        assert not vi.is_bot(CHROME_UA, org="Microsoft Corporation")
+
+class TestIsCrawlerOrg:
+    def test_crawler_infrastructure_orgs_match(self):
+        assert vi.is_crawler_org("Meta Platforms Ireland Limited")
+        assert vi.is_crawler_org("OpenAI, LLC")
+
+    def test_employer_orgs_and_unknowns_do_not_match(self):
+        assert not vi.is_crawler_org("Google LLC")
+        assert not vi.is_crawler_org("Microsoft Corporation")
+        assert not vi.is_crawler_org(None)
+        assert not vi.is_crawler_org("")
 
 
 class TestDeviceType:

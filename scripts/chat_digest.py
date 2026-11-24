@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """Query last 24 hours of site activity and email a digest.
 
-RC1-684: the digest now answers who visited and from where. Traffic is split
-bot/human (user agent + crawler orgs), unique IPs are enriched with org and
-geography (cached in ip_enrichment; looked up only here, never in the request
-path), human visitors get a per-visit narrative with return-visit flags and
-?src= tags, and bots get their own section. Subject counts are humans only.
+RC1-684: the digest now answers who visited and from where. Every event is
+classified bot/human by its own user agent (an IP can appear on both sides of
+the split), unique IPs are enriched with org and geography (cached in
+ip_enrichment; looked up only here, never in the request path), human
+visitors get a per-visit narrative with return-visit flags and ?src= tags,
+and bots get their own section. Subject counts are humans only. A crawler-owned
+org (Meta, OpenAI, ...) on a browser-looking visitor annotates the line as
+suspected automation; it never hides the visitor.
+
+Caveat: narratives and return flags identify an IP, not necessarily one
+person; a shared or corporate network can blend several people into one block.
 
 Usage (local):
     python scripts/chat_digest.py [--dry-run]
+
+--dry-run prints the digest instead of emailing it, but still performs the
+external enrichment lookups and commits their cache writes.
 
 Usage (Heroku Scheduler):
     python scripts/chat_digest.py
@@ -79,19 +88,23 @@ def build_digest(
     today: str,
 ) -> tuple[str, str]:
     """Pure formatter: rows in, (subject, body) out. No IO."""
-    visitors = _visitor_ips(view_rows, download_rows)
-    for ip, v in visitors.items():
-        info = enrichment.get(ip)
-        v["info"] = info
-        v["bot"] = vi.is_bot(v["ua"], (info or {}).get("org"))
-        v["where"] = vi.location_line(info) or "location unknown"
+    # Per-event classification: each view/download is judged by its own user
+    # agent, so an IP that sends both browser and crawler traffic lands in
+    # both halves instead of inheriting whichever event came first.
+    human_views = [r for r in view_rows if not vi.is_bot(r.get("user_agent"))]
+    human_downloads = [r for r in download_rows if not vi.is_bot(r.get("user_agent"))]
+    bot_view_rows = [r for r in view_rows if vi.is_bot(r.get("user_agent"))]
+    bot_download_rows = [r for r in download_rows if vi.is_bot(r.get("user_agent"))]
+    bot_views = len(bot_view_rows)
+    bot_downloads = len(bot_download_rows)
 
-    human_ips = {ip for ip, v in visitors.items() if not v["bot"]}
-    bot_ips = {ip for ip in visitors if ip not in human_ips}
-    human_views = [r for r in view_rows if r["ip_address"] in human_ips]
-    human_downloads = [r for r in download_rows if r["ip_address"] in human_ips]
-    bot_views = len(view_rows) - len(human_views)
-    bot_downloads = len(download_rows) - len(human_downloads)
+    humans = _visitor_ips(human_views, human_downloads)
+    bots = _visitor_ips(bot_view_rows, bot_download_rows)
+    for group in (humans, bots):
+        for ip, v in group.items():
+            info = enrichment.get(ip)
+            v["info"] = info
+            v["where"] = vi.location_line(info) or "location unknown"
 
     text = f"Resume Site Digest - {today}\n"
     text += "=" * 60 + "\n\n"
@@ -121,9 +134,8 @@ def build_digest(
                 text += f"    {tag} - {count}\n"
         text += "\n"
 
-    humans = {ip: visitors[ip] for ip in human_ips}
     if humans:
-        text += f"VISITORS ({len(humans)})\n"
+        text += f"VISITORS ({len(humans)}, by IP)\n"
         text += RULE + "\n"
         ordered = sorted(
             humans.items(),
@@ -134,6 +146,8 @@ def build_digest(
         )
         for ip, v in ordered:
             headline = [ip, v["where"], vi.device_type(v["ua"])]
+            if vi.is_crawler_org((v["info"] or {}).get("org")):
+                headline.append("suspected automation (crawler org)")
             flag = _return_flag(history.get(ip))
             if flag:
                 headline.append(flag)
@@ -153,18 +167,18 @@ def build_digest(
         text += f"DOWNLOADS ({len(human_downloads)})\n"
         text += RULE + "\n"
         for dl in human_downloads:
-            where = visitors[dl["ip_address"]]["where"]
+            where = humans[dl["ip_address"]]["where"]
             text += (
                 f"  {dl['format'].upper()} - {_time(dl['created_at'])} - "
                 f"IP: {dl['ip_address']} - {where}\n"
             )
         text += "\n"
 
-    if bot_ips:
-        text += f"BOT TRAFFIC ({len(bot_ips)} IPs: {bot_views} views, {bot_downloads} downloads)\n"
+    if bots:
+        text += f"BOT TRAFFIC ({len(bots)} IPs: {bot_views} views, {bot_downloads} downloads)\n"
         text += RULE + "\n"
-        for ip in sorted(bot_ips):
-            v = visitors[ip]
+        for ip in sorted(bots):
+            v = bots[ip]
             counts = []
             if v["views"]:
                 counts.append(f"{len(v['views'])} views")
@@ -216,7 +230,7 @@ def build_digest(
         f"{c_count} contact{'s' if c_count != 1 else ''}, "
         f"{s_count} chat{'s' if s_count != 1 else ''} - {today}"
     )
-    if bot_ips:
+    if bots:
         subject += f" (+{bot_views + bot_downloads} bot hits)"
     return subject, text
 

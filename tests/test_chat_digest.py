@@ -110,6 +110,66 @@ class TestSrcRollup:
         assert "By src tag:" not in text
 
 
+GOOGLEBOT_UA = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+
+
+class TestPerEventClassification:
+    def test_browser_then_crawler_at_same_ip(self):
+        views = [
+            view(HUMAN_IP, "/", t(9, 0)),
+            view(HUMAN_IP, "/work", t(9, 5), ua=GOOGLEBOT_UA),
+        ]
+        subject, text = build_digest(views, [], [], [], ENRICHMENT, {}, TODAY)
+        assert subject.startswith("Resume Digest: 1 view,")
+        assert "(+1 bot hits)" in subject
+        assert HUMAN_IP in text.split("BOT TRAFFIC")[1]
+
+    def test_crawler_then_browser_at_same_ip(self):
+        views = [
+            view(HUMAN_IP, "/", t(9, 0), ua=GOOGLEBOT_UA),
+            view(HUMAN_IP, "/work", t(9, 5)),
+        ]
+        subject, text = build_digest(views, [], [], [], ENRICHMENT, {}, TODAY)
+        assert subject.startswith("Resume Digest: 1 view,")
+        assert "(+1 bot hits)" in subject
+        assert HUMAN_IP in text.split("BOT TRAFFIC")[1]
+
+    def test_bot_download_does_not_ride_a_human_view(self):
+        views = [view(HUMAN_IP, "/", t(9, 0))]
+        downloads = [download(HUMAN_IP, "pdf", t(9, 1), ua="GPTBot/1.0")]
+        subject, text = build_digest(views, downloads, [], [], ENRICHMENT, {}, TODAY)
+        assert "1 view, 0 downloads" in subject
+        assert "1 downloads (PDF)" in text.split("BOT TRAFFIC")[1]
+
+    def test_human_download_does_not_ride_a_bot_view(self):
+        views = [view(HUMAN_IP, "/", t(9, 0), ua=GOOGLEBOT_UA)]
+        downloads = [download(HUMAN_IP, "pdf", t(9, 1))]
+        subject, text = build_digest(views, downloads, [], [], ENRICHMENT, {}, TODAY)
+        assert "0 views, 1 download" in subject
+        assert "PDF download" in text.split("VISITORS")[1].split("BOT TRAFFIC")[0]
+
+
+class TestSuspectedAutomation:
+    def test_crawler_org_annotates_but_keeps_the_visitor(self):
+        enrichment = {
+            HUMAN_IP: {"org": "Anthropic, PBC", "city": "San Francisco",
+                       "region": "California", "country": "United States"}
+        }
+        subject, text = build_digest(
+            [view(HUMAN_IP, "/", t(9, 0))], [], [], [], enrichment, {}, TODAY
+        )
+        assert subject.startswith("Resume Digest: 1 view,")
+        headline = [ln for ln in text.splitlines() if ln.startswith("* ")][0]
+        assert "suspected automation (crawler org)" in headline
+        assert "BOT TRAFFIC" not in text
+
+    def test_residential_org_is_not_annotated(self):
+        _, text = build_digest(
+            [view(HUMAN_IP, "/", t(9, 0))], [], [], [], ENRICHMENT, {}, TODAY
+        )
+        assert "suspected automation" not in text
+
+
 class TestUnknownIp:
     def test_unenriched_human_still_renders(self):
         _, text = build_digest(
