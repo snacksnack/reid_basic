@@ -101,6 +101,30 @@ class TestEnrichIps:
         assert result == {}
         assert cur.inserts == []
 
+    def test_lookups_are_paced_between_requests(self):
+        cur = FakeCursor([])
+        pauses = []
+        info = {"org": "x", "city": "", "region": "", "country": ""}
+        vi.enrich_ips(
+            ["73.10.20.30", "73.10.20.31", "73.10.20.32"],
+            cur,
+            fetch=lambda ip: info,
+            pause=pauses.append,
+        )
+        # No pause before the first lookup, one before each later one.
+        assert pauses == [vi.LOOKUP_PAUSE_SECONDS] * 2
+
+    def test_cached_ips_consume_no_pause(self):
+        cur = FakeCursor(
+            [{"ip": "57.141.0.57", "org": "Meta Platforms", "city": "",
+              "region": "", "country": ""}]
+        )
+        pauses = []
+        vi.enrich_ips(
+            ["57.141.0.57"], cur, fetch=lambda ip: None, pause=pauses.append
+        )
+        assert pauses == []
+
     def test_private_and_garbage_ips_are_skipped(self):
         cur = FakeCursor([])
         calls = []
